@@ -28,13 +28,20 @@ modules_path = os.path.join(os.path.dirname(__file__), 'modules')
 if modules_path not in sys.path:
     sys.path.insert(0, modules_path)
 
+# Test LaTeX processor integration
+try:
+    from modules.latex_processor import LaTeXProcessor, clean_text
+    LATEX_PROCESSOR_AVAILABLE = True
+except ImportError as e:
+    LATEX_PROCESSOR_AVAILABLE = False
+
+# Import existing backend modules
 try:
     from database_transformer import transform_json_to_csv
     from simple_qti import csv_to_qti
     BACKEND_AVAILABLE = True
 except ImportError:
     BACKEND_AVAILABLE = False
-    st.error("⚠️ Backend modules not found. Please ensure database_transformer.py and simple_qti.py are in the 'modules' folder.")
 
 # Page configuration
 st.set_page_config(
@@ -43,6 +50,56 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Show module status
+if LATEX_PROCESSOR_AVAILABLE:
+    st.success("✅ LaTeX Processor ready!")
+else:
+    st.error("❌ LaTeX Processor not available")
+
+if not BACKEND_AVAILABLE:
+    st.error("⚠️ Backend modules not found. Please ensure database_transformer.py and simple_qti.py are in the 'modules' folder.")
+
+# Custom CSS for better LaTeX rendering and styling
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #1f77b4;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background-color: #f0f2f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #1f77b4;
+        margin: 0.5rem 0;
+    }
+    .latex-preview {
+        background-color: #fafafa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #ddd;
+        font-family: 'Times New Roman', serif;
+    }
+    .question-preview {
+        background-color: #ffffff;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e0e0e0;
+        margin: 1rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Custom CSS for better LaTeX rendering and styling
 st.markdown("""
@@ -86,7 +143,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def load_database_from_json(json_content):
-    """Load and process JSON database content"""
+    """Load and process JSON database content with automatic LaTeX processing"""
     try:
         data = json.loads(json_content)
         
@@ -99,7 +156,40 @@ def load_database_from_json(json_content):
             metadata = {}
         else:
             st.error("❌ Unexpected JSON structure")
-            return None, None, None
+            return None, None, None, None
+        
+        # NEW: LaTeX Processing Step
+        cleanup_reports = []
+        processed_questions = questions  # Default to original questions
+        
+        if LATEX_PROCESSOR_AVAILABLE:
+            with st.spinner("🧮 Processing LaTeX notation..."):
+                processor = LaTeXProcessor()
+                processed_questions, cleanup_reports = processor.process_question_database(questions)
+                
+                # Show cleanup summary
+                if cleanup_reports:
+                    questions_changed = len([r for r in cleanup_reports if r.changes_made])
+                    total_unicode = sum(r.unicode_conversions for r in cleanup_reports)
+                    total_fixes = sum(len(r.changes_made) for r in cleanup_reports)
+                    
+                    if questions_changed > 0:
+                        st.success(f"🧮 LaTeX Processing Complete!")
+                        st.info(f"""**Cleanup Summary:**
+- Questions processed: {len(cleanup_reports)}
+- Questions modified: {questions_changed}
+- Unicode symbols converted: {total_unicode}
+- Total formatting fixes: {total_fixes}
+""")
+                    else:
+                        st.info("✨ LaTeX notation was already clean - no changes needed!")
+                else:
+                    st.info("✨ No LaTeX processing needed for this database")
+        else:
+            st.warning("⚠️ LaTeX processor not available - uploading without LaTeX processing")
+        
+        # Use processed questions for DataFrame conversion
+        questions = processed_questions
         
         # Convert to DataFrame using same logic as database_transformer.py
         rows = []
@@ -180,14 +270,16 @@ def load_database_from_json(json_content):
             rows.append(row)
         
         df = pd.DataFrame(rows)
-        return df, metadata, questions
+        
+        # Return processed data including cleanup reports
+        return df, metadata, processed_questions, cleanup_reports
         
     except json.JSONDecodeError as e:
         st.error(f"❌ Invalid JSON: {e}")
-        return None, None, None
+        return None, None, None, None
     except Exception as e:
         st.error(f"❌ Error processing database: {e}")
-        return None, None, None
+        return None, None, None, None
 
 def display_database_summary(df, metadata):
     """Display comprehensive database summary"""
@@ -651,13 +743,13 @@ def main():
         content = uploaded_file.read().decode('utf-8')
         
         with st.spinner("🔄 Processing database..."):
-            df, metadata, original_questions = load_database_from_json(content)
+            df, metadata, original_questions, cleanup_reports = load_database_from_json(content)
         
         if df is not None:
-            # Store in session state
             st.session_state['df'] = df
             st.session_state['metadata'] = metadata
             st.session_state['original_questions'] = original_questions
+            st.session_state['cleanup_reports'] = cleanup_reports  # NEW LINE
             st.session_state['filename'] = uploaded_file.name
             
             st.success(f"✅ Database loaded successfully! {len(df)} questions processed.")
