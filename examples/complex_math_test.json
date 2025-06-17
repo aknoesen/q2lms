@@ -1,0 +1,118 @@
+{
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "title": "Complex Impedance Calculation",
+      "question_text": "Calculate the complex impedance Z for a circuit with R = 50Ω in series with a capacitor C = 10μF at frequency f = 1000 Hz. Use the formula: $$Z = R + j\\omega C$$ where $$\\omega = 2\\pi f$$ and $$j = \\sqrt{-1}$$",
+      "choices": [
+        "$$Z = 50 - j15.9\\,\\Omega$$",
+        "$$Z = 50 + j15.9\\,\\Omega$$",
+        "$$Z = 52.5\\angle{-17.7°}\\,\\Omega$$",
+        "$$Z = 50 - j159\\,\\Omega$$"
+      ],
+      "correct_answer": "$$Z = 50 - j15.9\\,\\Omega$$",
+      "points": 4,
+      "tolerance": 0.1,
+      "feedback_correct": "Correct! $$\\omega = 2\\pi \\times 1000 = 6283\\,\\text{rad/s}$$, so $$X_C = \\frac{1}{\\omega C} = \\frac{1}{6283 \\times 10^{-5}} = 15.9\\,\\Omega$$, giving $$Z = 50 - j15.9\\,\\Omega$$",
+      "feedback_incorrect": "Remember: For a capacitor, $$X_C = \\frac{1}{\\omega C}$$ and the impedance is $$Z = R - jX_C$$",
+      "image_file": [],
+      "topic": "AC Circuit Analysis",
+      "subtopic": "Complex Impedance",
+      "difficulty": "Hard"
+    },
+    {
+      "type": "numerical",
+      "title": "Fourier Series Coefficient",
+      "question_text": "Find the first harmonic coefficient $$a_1$$ for the Fourier series of the periodic function $$f(t) = t$$ for $$-\\pi < t < \\pi$$ with period $$T = 2\\pi$$. Use: $$a_n = \\frac{2}{T}\\int_{-T/2}^{T/2} f(t)\\cos(n\\omega_0 t)\\,dt$$ where $$\\omega_0 = \\frac{2\\pi}{T}$$. Enter your answer to 3 decimal places.",
+      "choices": [],
+      "correct_answer": "0.000",
+      "points": 5,
+      "tolerance": 0.001,
+      "feedback_correct": "Excellent! Since $$f(t) = t$$ is an odd function and $$\\cos(n\\omega_0 t)$$ is even, their product is odd. The integral of an odd function over a symmetric interval is zero, so $$a_1 = 0$$.",
+      "feedback_incorrect": "Consider the symmetry: $$f(t) = t$$ is odd, $$\\cos(\\omega_0 t)$$ is even. What happens when you integrate an odd function over $$[-\\pi, \\pi]$$?",
+      "image_file": [],
+      "topic": "Signal Processing",
+      "subtopic": "Fourier Series",
+      "difficulty": "Hard"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Transfer Function Analysis",
+      "question_text": "Given the transfer function $$H(s) = \\frac{10s}{s^2 + 3s + 2}$$, what are the poles and zeros of this system?",
+      "choices": [
+        "Zero at $$s = 0$$, poles at $$s = -1, -2$$",
+        "Zero at $$s = 0$$, poles at $$s = 1, 2$$", 
+        "Zeros at $$s = -1, -2$$, pole at $$s = 0$$",
+        "Zero at $$s = \\infty$$, poles at $$s = -1, -2$$"
+      ],
+      "correct_answer": "Zero at $$s = 0$$, poles at $$s = -1, -2$$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Zeros occur when the numerator equals zero: $$10s = 0 \\Rightarrow s = 0$$. Poles occur when the denominator equals zero: $$s^2 + 3s + 2 = (s+1)(s+2) = 0 \\Rightarrow s = -1, -2$$",
+      "feedback_incorrect": "Find zeros by setting the numerator to zero, and poles by setting the denominator to zero. Factor $$s^2 + 3s + 2$$.",
+      "image_file": [],
+      "topic": "Control Systems",
+      "subtopic": "Transfer Functions",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "true_false",
+      "title": "Laplace Transform Property",
+      "question_text": "The Laplace transform of the derivative satisfies: $$\\mathcal{L}\\{f'(t)\\} = s\\mathcal{L}\\{f(t)\\} - f(0)$$ where $$f(0)$$ is the initial condition at $$t = 0$$.",
+      "choices": [],
+      "correct_answer": "true",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "True! This is the fundamental differentiation property of Laplace transforms: $$\\mathcal{L}\\{\\frac{df}{dt}\\} = s F(s) - f(0^-)$$",
+      "feedback_incorrect": "Review the differentiation property of Laplace transforms. The initial condition $$f(0)$$ appears as a constant term.",
+      "image_file": [],
+      "topic": "Mathematical Methods",
+      "subtopic": "Laplace Transforms",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "numerical",
+      "title": "RMS Voltage Calculation",
+      "question_text": "Calculate the RMS (Root Mean Square) value of the voltage $$v(t) = 10\\sin(\\omega t) + 5\\cos(2\\omega t + \\frac{\\pi}{4})$$ volts. Use the formula: $$V_{RMS} = \\sqrt{\\frac{1}{T}\\int_0^T v^2(t)\\,dt}$$. Enter your answer in volts to 2 decimal places.",
+      "choices": [],
+      "correct_answer": "7.91",
+      "points": 4,
+      "tolerance": 0.05,
+      "feedback_correct": "Excellent! For sinusoidal components: $$V_{RMS} = \\sqrt{\\frac{V_1^2}{2} + \\frac{V_2^2}{2}} = \\sqrt{\\frac{10^2}{2} + \\frac{5^2}{2}} = \\sqrt{50 + 12.5} = \\sqrt{62.5} = 7.91\\,\\text{V}$$",
+      "feedback_incorrect": "For a sum of sinusoids, $$V_{RMS}^2 = \\sum_{i} \\frac{V_i^2}{2}$$ where $$V_i$$ are the peak amplitudes.",
+      "image_file": [],
+      "topic": "AC Circuit Analysis", 
+      "subtopic": "RMS Calculations",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Matrix Eigenvalue Problem",
+      "question_text": "Find the eigenvalues of the matrix $$\\mathbf{A} = \\begin{pmatrix} 3 & 1 \\\\ 0 & 2 \\end{pmatrix}$$. Use the characteristic equation $$\\det(\\mathbf{A} - \\lambda\\mathbf{I}) = 0$$.",
+      "choices": [
+        "$$\\lambda_1 = 3, \\lambda_2 = 2$$",
+        "$$\\lambda_1 = 2, \\lambda_2 = 3$$",
+        "$$\\lambda_1 = 1, \\lambda_2 = 5$$",
+        "$$\\lambda_1 = 0, \\lambda_2 = 5$$"
+      ],
+      "correct_answer": "$$\\lambda_1 = 3, \\lambda_2 = 2$$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! For an upper triangular matrix, the eigenvalues are the diagonal elements: $$\\lambda_1 = 3, \\lambda_2 = 2$$",
+      "feedback_incorrect": "For triangular matrices, the eigenvalues are simply the diagonal elements. Check $$\\det\\begin{pmatrix} 3-\\lambda & 1 \\\\ 0 & 2-\\lambda \\end{pmatrix} = (3-\\lambda)(2-\\lambda) = 0$$",
+      "image_file": [],
+      "topic": "Linear Algebra",
+      "subtopic": "Eigenvalue Analysis", 
+      "difficulty": "Medium"
+    }
+  ],
+  "metadata": {
+    "generated_by": "LLM Question Generator",
+    "generation_date": "2025-01-16",
+    "format_version": "Phase Four",
+    "total_questions": 6,
+    "subject": "Advanced Electrical Engineering",
+    "topics_covered": ["AC Circuit Analysis", "Signal Processing", "Control Systems", "Mathematical Methods", "Linear Algebra"],
+    "subtopics_covered": ["Complex Impedance", "Fourier Series", "Transfer Functions", "Laplace Transforms", "RMS Calculations", "Eigenvalue Analysis"]
+  }
+}
