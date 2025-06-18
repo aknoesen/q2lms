@@ -652,6 +652,1173 @@ def display_question_preview(question_row):
     
     st.markdown('</div>', unsafe_allow_html=True)
 
+# Enhanced Browse & Edit Functions for Question Database Manager
+# Add these functions to your streamlit_app.py
+
+def display_question_edit_form(question_row, question_index):
+    """Enhanced question edit form with LaTeX editing capabilities"""
+    
+    st.markdown('<div class="question-preview">', unsafe_allow_html=True)
+    
+    # Create a form for editing
+    with st.form(key=f"edit_form_{question_index}"):
+        st.markdown("### ✏️ Edit Question")
+        
+        # Header with metadata (editable)
+        col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+        
+        with col1:
+            title = st.text_input("Title", value=question_row['Title'], key=f"title_{question_index}")
+        with col2:
+            question_type = st.selectbox(
+                "Type", 
+                ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'],
+                index=['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'].index(question_row['Type']),
+                key=f"type_{question_index}"
+            )
+        with col3:
+            difficulty = st.selectbox(
+                "Difficulty",
+                ['Easy', 'Medium', 'Hard'],
+                index=['Easy', 'Medium', 'Hard'].index(question_row['Difficulty']),
+                key=f"difficulty_{question_index}"
+            )
+        with col4:
+            points = st.number_input(
+                "Points", 
+                min_value=0.1, 
+                value=float(question_row['Points']),
+                step=0.1,
+                key=f"points_{question_index}"
+            )
+        
+        # Topic and subtopic info (editable)
+        col1, col2 = st.columns(2)
+        with col1:
+            topic = st.text_input("Topic", value=question_row['Topic'], key=f"topic_{question_index}")
+        with col2:
+            subtopic = st.text_input("Subtopic", value=question_row['Subtopic'] or '', key=f"subtopic_{question_index}")
+        
+        st.markdown("---")
+        
+        # Question text (LaTeX editable)
+        st.markdown("**Question Text** *(LaTeX notation supported)*")
+        question_text = st.text_area(
+            "Question",
+            value=question_row['Question_Text'],
+            height=100,
+            key=f"question_text_{question_index}",
+            help="Use LaTeX notation like \\Omega, \\mu, etc. Math expressions can use $...$ or $$...$$"
+        )
+        
+        # Preview of question text
+        if question_text.strip():
+            with st.expander("📖 Preview Question Text"):
+                rendered_text = render_latex_in_text(question_text)
+                st.markdown(f"**Preview:** {rendered_text}")
+        
+        # Handle different question types
+        if question_type == 'multiple_choice':
+            st.markdown("**Multiple Choice Options** *(LaTeX notation supported)*")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                choice_a = st.text_area(
+                    "Choice A", 
+                    value=question_row['Choice_A'] or '',
+                    height=70,
+                    key=f"choice_a_{question_index}"
+                )
+                choice_c = st.text_area(
+                    "Choice C", 
+                    value=question_row['Choice_C'] or '',
+                    height=70,
+                    key=f"choice_c_{question_index}"
+                )
+            
+            with col2:
+                choice_b = st.text_area(
+                    "Choice B", 
+                    value=question_row['Choice_B'] or '',
+                    height=70,
+                    key=f"choice_b_{question_index}"
+                )
+                choice_d = st.text_area(
+                    "Choice D", 
+                    value=question_row['Choice_D'] or '',
+                    height=70,
+                    key=f"choice_d_{question_index}"
+                )
+            
+            # Correct answer for multiple choice
+            correct_answer = st.selectbox(
+                "Correct Answer",
+                ['A', 'B', 'C', 'D'],
+                index=['A', 'B', 'C', 'D'].index(question_row['Correct_Answer']) if question_row['Correct_Answer'] in ['A', 'B', 'C', 'D'] else 0,
+                key=f"correct_answer_{question_index}"
+            )
+            
+            # Preview choices
+            if any([choice_a.strip(), choice_b.strip(), choice_c.strip(), choice_d.strip()]):
+                with st.expander("📖 Preview Choices"):
+                    choices_data = {'A': choice_a, 'B': choice_b, 'C': choice_c, 'D': choice_d}
+                    for choice_letter, choice_text in choices_data.items():
+                        if choice_text.strip():
+                            rendered_choice = render_latex_in_text(choice_text)
+                            if choice_letter == correct_answer:
+                                st.markdown(f"• **{choice_letter}:** {rendered_choice} ✅")
+                            else:
+                                st.markdown(f"• **{choice_letter}:** {rendered_choice}")
+        
+        elif question_type == 'numerical':
+            col1, col2 = st.columns(2)
+            with col1:
+                correct_answer = st.text_input(
+                    "Correct Answer", 
+                    value=str(question_row['Correct_Answer']),
+                    key=f"correct_answer_{question_index}"
+                )
+            with col2:
+                tolerance = st.number_input(
+                    "Tolerance", 
+                    min_value=0.0, 
+                    value=float(question_row['Tolerance']) if question_row['Tolerance'] else 0.05,
+                    step=0.01,
+                    key=f"tolerance_{question_index}"
+                )
+        
+        elif question_type == 'true_false':
+            correct_answer = st.selectbox(
+                "Correct Answer",
+                ['True', 'False'],
+                index=0 if str(question_row['Correct_Answer']).lower() in ['true', 't', '1'] else 1,
+                key=f"correct_answer_{question_index}"
+            )
+        
+        elif question_type == 'fill_in_blank':
+            correct_answer = st.text_input(
+                "Correct Answer", 
+                value=str(question_row['Correct_Answer']),
+                key=f"correct_answer_{question_index}",
+                help="Use LaTeX notation if needed"
+            )
+            
+            if correct_answer.strip():
+                with st.expander("📖 Preview Answer"):
+                    rendered_answer = render_latex_in_text(correct_answer)
+                    st.markdown(f"**Preview:** {rendered_answer}")
+        
+        # Feedback sections (LaTeX editable)
+        st.markdown("**Feedback** *(LaTeX notation supported)*")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            correct_feedback = st.text_area(
+                "Correct Feedback",
+                value=question_row['Correct_Feedback'] or '',
+                height=80,
+                key=f"correct_feedback_{question_index}"
+            )
+        
+        with col2:
+            incorrect_feedback = st.text_area(
+                "Incorrect Feedback",
+                value=question_row['Incorrect_Feedback'] or '',
+                height=80,
+                key=f"incorrect_feedback_{question_index}"
+            )
+        
+        # Preview feedback
+        if correct_feedback.strip() or incorrect_feedback.strip():
+            with st.expander("📖 Preview Feedback"):
+                if correct_feedback.strip():
+                    rendered_correct = render_latex_in_text(correct_feedback)
+                    st.markdown(f"**Correct:** {rendered_correct}")
+                if incorrect_feedback.strip():
+                    rendered_incorrect = render_latex_in_text(incorrect_feedback)
+                    st.markdown(f"**Incorrect:** {rendered_incorrect}")
+        
+        # Form buttons
+        col1, col2, col3 = st.columns([2, 1, 1])
+        
+        with col2:
+            save_changes = st.form_submit_button("💾 Save Changes", type="primary")
+        
+        with col3:
+            cancel_edit = st.form_submit_button("❌ Cancel")
+        
+        # Handle form submission
+        if save_changes:
+            return save_question_changes(
+                question_index, {
+                    'title': title,
+                    'question_type': question_type,
+                    'difficulty': difficulty,
+                    'points': points,
+                    'topic': topic,
+                    'subtopic': subtopic,
+                    'question_text': question_text,
+                    'choice_a': choice_a if question_type == 'multiple_choice' else '',
+                    'choice_b': choice_b if question_type == 'multiple_choice' else '',
+                    'choice_c': choice_c if question_type == 'multiple_choice' else '',
+                    'choice_d': choice_d if question_type == 'multiple_choice' else '',
+                    'correct_answer': correct_answer,
+                    'tolerance': tolerance if question_type == 'numerical' else 0.05,
+                    'correct_feedback': correct_feedback,
+                    'incorrect_feedback': incorrect_feedback
+                }
+            )
+        
+        elif cancel_edit:
+            st.info("❌ Edit cancelled - refresh page to see changes")
+            return False
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    return False
+
+def save_question_changes(question_index, changes):
+    """Save changes to both DataFrame and original_questions"""
+    
+    try:
+        # Get current data
+        df = st.session_state['df'].copy()
+        original_questions = st.session_state['original_questions'].copy()
+        
+        # Find the question ID to update
+        question_id = df.iloc[question_index]['ID']
+        
+        # Update DataFrame
+        df.loc[question_index, 'Title'] = changes['title']
+        df.loc[question_index, 'Type'] = changes['question_type']
+        df.loc[question_index, 'Difficulty'] = changes['difficulty']
+        df.loc[question_index, 'Points'] = changes['points']
+        df.loc[question_index, 'Topic'] = changes['topic']
+        df.loc[question_index, 'Subtopic'] = changes['subtopic']
+        df.loc[question_index, 'Question_Text'] = changes['question_text']
+        df.loc[question_index, 'Choice_A'] = changes['choice_a']
+        df.loc[question_index, 'Choice_B'] = changes['choice_b']
+        df.loc[question_index, 'Choice_C'] = changes['choice_c']
+        df.loc[question_index, 'Choice_D'] = changes['choice_d']
+        df.loc[question_index, 'Correct_Answer'] = changes['correct_answer']
+        df.loc[question_index, 'Tolerance'] = changes['tolerance']
+        df.loc[question_index, 'Correct_Feedback'] = changes['correct_feedback']
+        df.loc[question_index, 'Incorrect_Feedback'] = changes['incorrect_feedback']
+        
+        # Update feedback field (use correct feedback as general feedback)
+        df.loc[question_index, 'Feedback'] = changes['correct_feedback']
+        
+        # Update original_questions (for QTI export compatibility)
+        if question_index < len(original_questions):
+            q = original_questions[question_index]
+            q['title'] = changes['title']
+            q['type'] = changes['question_type']
+            q['difficulty'] = changes['difficulty']
+            q['points'] = changes['points']
+            q['topic'] = changes['topic']
+            q['subtopic'] = changes['subtopic']
+            q['question_text'] = changes['question_text']
+            q['correct_answer'] = changes['correct_answer']
+            q['tolerance'] = changes['tolerance']
+            q['feedback_correct'] = changes['correct_feedback']
+            q['feedback_incorrect'] = changes['incorrect_feedback']
+            
+            # Update choices for multiple choice
+            if changes['question_type'] == 'multiple_choice':
+                q['choices'] = [
+                    changes['choice_a'],
+                    changes['choice_b'],
+                    changes['choice_c'],
+                    changes['choice_d']
+                ]
+        
+        # Update session state
+        st.session_state['df'] = df
+        st.session_state['original_questions'] = original_questions
+        
+        # Exit edit mode
+        # Don't delete edit mode state - let the selectbox handle the mode switching
+        
+        # Validate the changes
+        validation_results = validate_single_question(df.iloc[question_index])
+        
+        if validation_results['is_valid']:
+            st.success("✅ Question updated successfully!")
+        else:
+            st.warning("⚠️ Question saved but has validation issues:")
+            for error in validation_results['errors']:
+                st.write(f"• {error}")
+        
+        # Don't trigger rerun - let the interface update naturally
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"❌ Error saving changes: {str(e)}")
+        return False
+
+def validate_single_question(question_row):
+    """Validate a single question row - without pandas dependency"""
+    
+    errors = []
+    warnings = []
+    
+    # Check required fields
+    required_fields = ['Title', 'Type', 'Question_Text', 'Correct_Answer']
+    
+    for field in required_fields:
+        # Use a more robust check that doesn't require pandas
+        value = question_row.get(field, '')
+        if value is None or str(value).strip() == '' or str(value).lower() == 'nan':
+            errors.append(f"Missing {field}")
+    
+    # Check question type specific requirements
+    if question_row['Type'] == 'multiple_choice':
+        choices = [question_row.get(f'Choice_{c}', '') for c in ['A', 'B', 'C', 'D']]
+        if sum(1 for c in choices if str(c).strip()) < 2:
+            warnings.append("Fewer than 2 choices for multiple choice")
+        
+        if question_row['Correct_Answer'] not in ['A', 'B', 'C', 'D']:
+            errors.append("Correct answer must be A, B, C, or D for multiple choice")
+    
+    # Check points are positive
+    try:
+        points = float(question_row.get('Points', 0))
+        if points <= 0:
+            warnings.append("Points should be positive")
+    except (ValueError, TypeError):
+        errors.append("Points must be numeric")
+    
+    return {
+        'errors': errors,
+        'warnings': warnings,
+        'is_valid': len(errors) == 0
+    }
+
+def enhanced_browse_and_edit_tab(filtered_df):
+    """Browse & Edit with side-by-side view and real-time updates"""
+    
+    st.markdown(f"### 📝 Browse & Edit Questions ({len(filtered_df)} results)")
+    
+    if len(filtered_df) > 0:
+        st.info("💡 **How to use:** Edit questions on the right, see live preview on the left. Changes auto-save as you type!")
+        
+        # Pagination
+        items_per_page = st.selectbox("Questions per page", [5, 10, 20, 50], index=1)
+        total_pages = (len(filtered_df) - 1) // items_per_page + 1
+        
+        if total_pages > 1:
+            page = st.selectbox("Page", range(1, total_pages + 1))
+            start_idx = (page - 1) * items_per_page
+            end_idx = start_idx + items_per_page
+            page_df = filtered_df.iloc[start_idx:end_idx]
+            page_offset = start_idx
+        else:
+            page_df = filtered_df
+            page_offset = 0
+        
+        st.markdown("---")
+        
+        # Display questions with side-by-side edit
+        for display_idx, (idx, question) in enumerate(page_df.iterrows()):
+            actual_index = page_offset + display_idx
+            
+            st.markdown(f"### Question {actual_index + 1}")
+            
+            # Side-by-side layout: Preview | Edit
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.markdown("#### 👁️ Live Preview")
+                # Create a container for the live preview
+                preview_container = st.container()
+                
+            with col2:
+                st.markdown("#### ✏️ Edit Panel")
+                
+                # Get current values from session state or use defaults
+                title_key = f"edit_title_{actual_index}"
+                question_text_key = f"edit_question_text_{actual_index}"
+                type_key = f"edit_type_{actual_index}"
+                difficulty_key = f"edit_difficulty_{actual_index}"
+                points_key = f"edit_points_{actual_index}"
+                topic_key = f"edit_topic_{actual_index}"
+                subtopic_key = f"edit_subtopic_{actual_index}"
+                
+                # Initialize session state if needed
+                if title_key not in st.session_state:
+                    st.session_state[title_key] = question['Title']
+                if question_text_key not in st.session_state:
+                    st.session_state[question_text_key] = question['Question_Text']
+                if type_key not in st.session_state:
+                    st.session_state[type_key] = question['Type']
+                if difficulty_key not in st.session_state:
+                    st.session_state[difficulty_key] = question['Difficulty']
+                if points_key not in st.session_state:
+                    st.session_state[points_key] = float(question['Points'])
+                if topic_key not in st.session_state:
+                    st.session_state[topic_key] = question['Topic']
+                if subtopic_key not in st.session_state:
+                    st.session_state[subtopic_key] = question['Subtopic'] or ''
+                
+                # Edit fields with real-time updates
+                title = st.text_input("Title", key=title_key)
+                question_text = st.text_area("Question Text", key=question_text_key, height=100,
+                                           help="Use LaTeX notation like \\Omega, \\mu, etc.")
+                
+                # Metadata fields
+                col2a, col2b = st.columns(2)
+                with col2a:
+                    question_type = st.selectbox("Type", 
+                                               ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'],
+                                               key=type_key)
+                    difficulty = st.selectbox("Difficulty", ['Easy', 'Medium', 'Hard'], key=difficulty_key)
+                
+                with col2b:
+                    points = st.number_input("Points", min_value=0.1, key=points_key, step=0.1)
+                    topic = st.text_input("Topic", key=topic_key)
+                
+                subtopic = st.text_input("Subtopic", key=subtopic_key)
+                
+                # Handle different question types
+                if question_type == 'multiple_choice':
+                    st.markdown("**Choices:**")
+                    choice_a_key = f"edit_choice_a_{actual_index}"
+                    choice_b_key = f"edit_choice_b_{actual_index}"
+                    choice_c_key = f"edit_choice_c_{actual_index}"
+                    choice_d_key = f"edit_choice_d_{actual_index}"
+                    correct_answer_key = f"edit_correct_answer_{actual_index}"
+                    
+                    # Initialize choice session states
+                    if choice_a_key not in st.session_state:
+                        st.session_state[choice_a_key] = question['Choice_A'] or ''
+                    if choice_b_key not in st.session_state:
+                        st.session_state[choice_b_key] = question['Choice_B'] or ''
+                    if choice_c_key not in st.session_state:
+                        st.session_state[choice_c_key] = question['Choice_C'] or ''
+                    if choice_d_key not in st.session_state:
+                        st.session_state[choice_d_key] = question['Choice_D'] or ''
+                    if correct_answer_key not in st.session_state:
+                        correct_idx = ['A', 'B', 'C', 'D'].index(question['Correct_Answer']) if question['Correct_Answer'] in ['A', 'B', 'C', 'D'] else 0
+                        st.session_state[correct_answer_key] = correct_idx
+                    
+                    choice_a = st.text_area("Choice A", key=choice_a_key, height=70)
+                    choice_b = st.text_area("Choice B", key=choice_b_key, height=70)
+                    choice_c = st.text_area("Choice C", key=choice_c_key, height=70)
+                    choice_d = st.text_area("Choice D", key=choice_d_key, height=70)
+                    correct_answer_idx = st.selectbox("Correct Answer", [0, 1, 2, 3], 
+                                                     format_func=lambda x: ['A', 'B', 'C', 'D'][x],
+                                                     key=correct_answer_key)
+                    correct_answer = ['A', 'B', 'C', 'D'][correct_answer_idx]
+                    
+                elif question_type == 'numerical':
+                    correct_answer_key = f"edit_correct_answer_{actual_index}"
+                    tolerance_key = f"edit_tolerance_{actual_index}"
+                    
+                    if correct_answer_key not in st.session_state:
+                        st.session_state[correct_answer_key] = str(question['Correct_Answer'])
+                    if tolerance_key not in st.session_state:
+                        st.session_state[tolerance_key] = float(question['Tolerance']) if question['Tolerance'] else 0.05
+                    
+                    correct_answer = st.text_input("Correct Answer", key=correct_answer_key)
+                    tolerance = st.number_input("Tolerance", min_value=0.0, key=tolerance_key, step=0.01)
+                    
+                elif question_type == 'true_false':
+                    correct_answer_key = f"edit_correct_answer_{actual_index}"
+                    if correct_answer_key not in st.session_state:
+                        tf_idx = 0 if str(question['Correct_Answer']).lower() in ['true', 't', '1'] else 1
+                        st.session_state[correct_answer_key] = tf_idx
+                    
+                    correct_answer_idx = st.selectbox("Correct Answer", [0, 1], 
+                                                     format_func=lambda x: ['True', 'False'][x],
+                                                     key=correct_answer_key)
+                    correct_answer = ['True', 'False'][correct_answer_idx]
+                    
+                else:  # fill_in_blank
+                    correct_answer_key = f"edit_correct_answer_{actual_index}"
+                    if correct_answer_key not in st.session_state:
+                        st.session_state[correct_answer_key] = str(question['Correct_Answer'])
+                    
+                    correct_answer = st.text_input("Correct Answer", key=correct_answer_key)
+                
+                # Feedback fields
+                st.markdown("**Feedback:**")
+                correct_feedback_key = f"edit_correct_feedback_{actual_index}"
+                incorrect_feedback_key = f"edit_incorrect_feedback_{actual_index}"
+                
+                if correct_feedback_key not in st.session_state:
+                    st.session_state[correct_feedback_key] = question['Correct_Feedback'] or ''
+                if incorrect_feedback_key not in st.session_state:
+                    st.session_state[incorrect_feedback_key] = question['Incorrect_Feedback'] or ''
+                
+                correct_feedback = st.text_area("Correct Feedback", key=correct_feedback_key, height=70)
+                incorrect_feedback = st.text_area("Incorrect Feedback", key=incorrect_feedback_key, height=70)
+                
+          # Save and Delete buttons
+                col_save, col_delete = st.columns(2)
+                
+                with col_save:
+                    if st.button("💾 Save to Database", key=f"save_{actual_index}", type="primary"):
+                        # Collect changes and save
+                        changes = {
+                            'title': title,
+                            'question_type': question_type,
+                            'difficulty': difficulty,
+                            'points': points,
+                            'topic': topic,
+                            'subtopic': subtopic,
+                            'question_text': question_text,
+                            'choice_a': choice_a if question_type == 'multiple_choice' else '',
+                            'choice_b': choice_b if question_type == 'multiple_choice' else '',
+                            'choice_c': choice_c if question_type == 'multiple_choice' else '',
+                            'choice_d': choice_d if question_type == 'multiple_choice' else '',
+                            'correct_answer': correct_answer,
+                            'tolerance': tolerance if question_type == 'numerical' else 0.05,
+                            'correct_feedback': correct_feedback,
+                            'incorrect_feedback': incorrect_feedback
+                        }
+                        
+                        save_success = save_question_changes_live(actual_index, changes)
+                        if save_success:
+                            st.success("✅ Saved to database!")
+                        else:
+                            st.error("❌ Save failed!")
+                
+                with col_delete:
+                    if st.button("🗑️ Delete Question", key=f"delete_{actual_index}", type="secondary"):
+                        # Show confirmation dialog
+                        st.session_state[f"confirm_delete_{actual_index}"] = True
+                
+                # Handle delete confirmation
+                if st.session_state.get(f"confirm_delete_{actual_index}", False):
+                    st.warning("⚠️ **Are you sure you want to delete this question?**")
+                    st.write("This action cannot be undone!")
+                    
+                    col_yes, col_no = st.columns(2)
+                    with col_yes:
+                        if st.button("✅ Yes, Delete", key=f"confirm_yes_{actual_index}", type="primary"):
+                            delete_success = delete_question(actual_index)
+                            if delete_success:
+                                st.success("🗑️ Question deleted successfully!")
+                                st.session_state[f"confirm_delete_{actual_index}"] = False
+                                st.rerun()
+                            else:
+                                st.error("❌ Delete failed!")
+                    
+                    with col_no:
+                        if st.button("❌ Cancel", key=f"confirm_no_{actual_index}"):
+                            st.session_state[f"confirm_delete_{actual_index}"] = False
+                            st.rerun()      
+            
+            # Update the live preview based on current edit values
+            with preview_container:
+                # Create a mock question row with current edit values
+                live_question = {
+                    'ID': question['ID'],
+                    'Title': st.session_state.get(title_key, question['Title']),
+                    'Type': st.session_state.get(type_key, question['Type']),
+                    'Question_Text': st.session_state.get(question_text_key, question['Question_Text']),
+                    'Difficulty': st.session_state.get(difficulty_key, question['Difficulty']),
+                    'Points': st.session_state.get(points_key, question['Points']),
+                    'Topic': st.session_state.get(topic_key, question['Topic']),
+                    'Subtopic': st.session_state.get(subtopic_key, question['Subtopic']),
+                    'Correct_Answer': correct_answer if 'correct_answer' in locals() else question['Correct_Answer'],
+                    'Choice_A': st.session_state.get(f"edit_choice_a_{actual_index}", question.get('Choice_A', '')),
+                    'Choice_B': st.session_state.get(f"edit_choice_b_{actual_index}", question.get('Choice_B', '')),
+                    'Choice_C': st.session_state.get(f"edit_choice_c_{actual_index}", question.get('Choice_C', '')),
+                    'Choice_D': st.session_state.get(f"edit_choice_d_{actual_index}", question.get('Choice_D', '')),
+                    'Tolerance': tolerance if 'tolerance' in locals() else question.get('Tolerance', 0.05),
+                    'Correct_Feedback': st.session_state.get(correct_feedback_key, question.get('Correct_Feedback', '')),
+                    'Incorrect_Feedback': st.session_state.get(incorrect_feedback_key, question.get('Incorrect_Feedback', ''))
+                }
+                
+                # Display the live preview
+                display_question_preview(live_question)
+            
+            st.markdown("---")
+            st.markdown("<br>", unsafe_allow_html=True)
+    
+    else:
+        st.warning("🔍 No questions match the current filters.")
+
+def save_question_changes_live(question_index, changes):
+    """Save changes with live update support"""
+    try:
+        # Get current data
+        df = st.session_state['df'].copy()
+        original_questions = st.session_state['original_questions'].copy()
+        
+        # Update DataFrame
+        df.loc[question_index, 'Title'] = changes['title']
+        df.loc[question_index, 'Type'] = changes['question_type']
+        df.loc[question_index, 'Difficulty'] = changes['difficulty']
+        df.loc[question_index, 'Points'] = changes['points']
+        df.loc[question_index, 'Topic'] = changes['topic']
+        df.loc[question_index, 'Subtopic'] = changes['subtopic']
+        df.loc[question_index, 'Question_Text'] = changes['question_text']
+        df.loc[question_index, 'Choice_A'] = changes['choice_a']
+        df.loc[question_index, 'Choice_B'] = changes['choice_b']
+        df.loc[question_index, 'Choice_C'] = changes['choice_c']
+        df.loc[question_index, 'Choice_D'] = changes['choice_d']
+        df.loc[question_index, 'Correct_Answer'] = changes['correct_answer']
+        df.loc[question_index, 'Tolerance'] = changes['tolerance']
+        df.loc[question_index, 'Correct_Feedback'] = changes['correct_feedback']
+        df.loc[question_index, 'Incorrect_Feedback'] = changes['incorrect_feedback']
+        df.loc[question_index, 'Feedback'] = changes['correct_feedback']
+        
+        # Update original_questions
+        if question_index < len(original_questions):
+            q = original_questions[question_index]
+            q['title'] = changes['title']
+            q['type'] = changes['question_type']
+            q['difficulty'] = changes['difficulty']
+            q['points'] = changes['points']
+            q['topic'] = changes['topic']
+            q['subtopic'] = changes['subtopic']
+            q['question_text'] = changes['question_text']
+            q['correct_answer'] = changes['correct_answer']
+            q['tolerance'] = changes['tolerance']
+            q['feedback_correct'] = changes['correct_feedback']
+            q['feedback_incorrect'] = changes['incorrect_feedback']
+            
+            if changes['question_type'] == 'multiple_choice':
+                q['choices'] = [
+                    changes['choice_a'],
+                    changes['choice_b'],
+                    changes['choice_c'],
+                    changes['choice_d']
+                ]
+        
+        # Update session state
+        st.session_state['df'] = df
+        st.session_state['original_questions'] = original_questions
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"❌ Error saving: {str(e)}")
+        return False
+
+def delete_question(question_index):
+    """Delete a question from both DataFrame and original_questions"""
+    try:
+        # Get current data
+        df = st.session_state['df']
+        original_questions = st.session_state['original_questions']
+        
+        # Check if index is valid
+        if question_index >= len(df) or question_index >= len(original_questions):
+            st.error("❌ Invalid question index")
+            return False
+        
+        # Remove from DataFrame
+        df_updated = df.drop(df.index[question_index]).reset_index(drop=True)
+        
+        # Remove from original_questions
+        original_questions_updated = original_questions.copy()
+        original_questions_updated.pop(question_index)
+        
+        # Regenerate question IDs to maintain sequence
+        df_updated['ID'] = [f"Q_{i+1:05d}" for i in range(len(df_updated))]
+        
+        # Update session state
+        st.session_state['df'] = df_updated
+        st.session_state['original_questions'] = original_questions_updated
+        
+        # Clear any edit session states for this question to avoid conflicts
+        keys_to_remove = []
+        for key in st.session_state.keys():
+            if key.endswith(f"_{question_index}"):
+                keys_to_remove.append(key)
+        
+        for key in keys_to_remove:
+            del st.session_state[key]
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"❌ Error deleting question: {str(e)}")
+        return False
+
+
+def display_question_with_edit_button(question, actual_index, edit_key):
+    """Display question preview with edit button"""
+    
+    col1, col2 = st.columns([10, 2])
+    
+    with col1:
+        # Show normal question preview
+        display_question_preview(question)
+    
+    with col2:
+        st.markdown("<br>" * 2, unsafe_allow_html=True)  # Add spacing
+        
+        # Edit button - when clicked, sets session state
+        if st.button("✏️ Edit", key=f"edit_btn_{actual_index}", type="secondary"):
+            st.session_state[edit_key] = True
+            st.rerun()
+
+def display_question_edit_form_v3(question_row, question_index, edit_key):
+    """Edit form with session state management"""
+    
+    st.markdown('<div class="question-preview">', unsafe_allow_html=True)
+    st.markdown("### ✏️ Edit Question")
+    
+    # Use a form to prevent individual widget updates from causing issues
+    with st.form(key=f"edit_form_v3_{question_index}"):
+        # Header with metadata (editable)
+        col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+        
+        with col1:
+            title = st.text_input("Title", value=question_row['Title'])
+        with col2:
+            question_type = st.selectbox(
+                "Type", 
+                ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'],
+                index=['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'].index(question_row['Type'])
+            )
+        with col3:
+            difficulty = st.selectbox(
+                "Difficulty",
+                ['Easy', 'Medium', 'Hard'],
+                index=['Easy', 'Medium', 'Hard'].index(question_row['Difficulty'])
+            )
+        with col4:
+            points = st.number_input(
+                "Points", 
+                min_value=0.1, 
+                value=float(question_row['Points']),
+                step=0.1
+            )
+        
+        # Topic and subtopic info (editable)
+        col1, col2 = st.columns(2)
+        with col1:
+            topic = st.text_input("Topic", value=question_row['Topic'])
+        with col2:
+            subtopic = st.text_input("Subtopic", value=question_row['Subtopic'] or '')
+        
+        st.markdown("---")
+        
+        # Question text (LaTeX editable)
+        st.markdown("**Question Text** *(LaTeX notation supported)*")
+        question_text = st.text_area(
+            "Question",
+            value=question_row['Question_Text'],
+            height=100,
+            help="Use LaTeX notation like \\Omega, \\mu, etc. Math expressions can use $...$ or $...$"
+        )
+        
+        # Handle different question types
+        if question_type == 'multiple_choice':
+            st.markdown("**Multiple Choice Options** *(LaTeX notation supported)*")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                choice_a = st.text_area("Choice A", value=question_row['Choice_A'] or '', height=70)
+                choice_c = st.text_area("Choice C", value=question_row['Choice_C'] or '', height=70)
+            
+            with col2:
+                choice_b = st.text_area("Choice B", value=question_row['Choice_B'] or '', height=70)
+                choice_d = st.text_area("Choice D", value=question_row['Choice_D'] or '', height=70)
+            
+            # Correct answer for multiple choice
+            correct_answer = st.selectbox(
+                "Correct Answer",
+                ['A', 'B', 'C', 'D'],
+                index=['A', 'B', 'C', 'D'].index(question_row['Correct_Answer']) if question_row['Correct_Answer'] in ['A', 'B', 'C', 'D'] else 0
+            )
+        
+        elif question_type == 'numerical':
+            col1, col2 = st.columns(2)
+            with col1:
+                correct_answer = st.text_input("Correct Answer", value=str(question_row['Correct_Answer']))
+            with col2:
+                tolerance = st.number_input(
+                    "Tolerance", 
+                    min_value=0.0, 
+                    value=float(question_row['Tolerance']) if question_row['Tolerance'] else 0.05,
+                    step=0.01
+                )
+        
+        elif question_type == 'true_false':
+            correct_answer = st.selectbox(
+                "Correct Answer",
+                ['True', 'False'],
+                index=0 if str(question_row['Correct_Answer']).lower() in ['true', 't', '1'] else 1
+            )
+        
+        elif question_type == 'fill_in_blank':
+            correct_answer = st.text_input(
+                "Correct Answer", 
+                value=str(question_row['Correct_Answer']),
+                help="Use LaTeX notation if needed"
+            )
+        
+        # Feedback sections (LaTeX editable)
+        st.markdown("**Feedback** *(LaTeX notation supported)*")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            correct_feedback = st.text_area(
+                "Correct Feedback",
+                value=question_row['Correct_Feedback'] or '',
+                height=80
+            )
+        
+        with col2:
+            incorrect_feedback = st.text_area(
+                "Incorrect Feedback",
+                value=question_row['Incorrect_Feedback'] or '',
+                height=80
+            )
+        
+        # Form buttons
+        col1, col2, col3 = st.columns([2, 1, 1])
+        
+        with col2:
+            save_changes = st.form_submit_button("💾 Save Changes", type="primary")
+        
+        with col3:
+            cancel_edit = st.form_submit_button("❌ Cancel")
+    
+    # Handle form submission outside the form
+    if save_changes:
+        # Collect all the data and save
+        changes = {
+            'title': title,
+            'question_type': question_type,
+            'difficulty': difficulty,
+            'points': points,
+            'topic': topic,
+            'subtopic': subtopic,
+            'question_text': question_text,
+            'choice_a': choice_a if question_type == 'multiple_choice' else '',
+            'choice_b': choice_b if question_type == 'multiple_choice' else '',
+            'choice_c': choice_c if question_type == 'multiple_choice' else '',
+            'choice_d': choice_d if question_type == 'multiple_choice' else '',
+            'correct_answer': correct_answer,
+            'tolerance': tolerance if question_type == 'numerical' else 0.05,
+            'correct_feedback': correct_feedback,
+            'incorrect_feedback': incorrect_feedback
+        }
+        
+        save_success = save_question_changes_v2(question_index, changes)
+        if save_success:
+            # Exit edit mode
+            st.session_state[edit_key] = False
+            st.rerun()
+    
+    elif cancel_edit:
+        # Exit edit mode without saving
+        st.session_state[edit_key] = False
+        st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def display_question_edit_form_v2(question_row, question_index):
+    """Simplified edit form that doesn't rely on form submission to avoid page jumping"""
+    
+    st.markdown('<div class="question-preview">', unsafe_allow_html=True)
+    st.markdown("### ✏️ Edit Question")
+    
+    # Header with metadata (editable) - use columns for better layout
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+    
+    with col1:
+        title = st.text_input("Title", value=question_row['Title'], key=f"edit_title_{question_index}")
+    with col2:
+        question_type = st.selectbox(
+            "Type", 
+            ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'],
+            index=['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'].index(question_row['Type']),
+            key=f"edit_type_{question_index}"
+        )
+    with col3:
+        difficulty = st.selectbox(
+            "Difficulty",
+            ['Easy', 'Medium', 'Hard'],
+            index=['Easy', 'Medium', 'Hard'].index(question_row['Difficulty']),
+            key=f"edit_difficulty_{question_index}"
+        )
+    with col4:
+        points = st.number_input(
+            "Points", 
+            min_value=0.1, 
+            value=float(question_row['Points']),
+            step=0.1,
+            key=f"edit_points_{question_index}"
+        )
+    
+    # Topic and subtopic info (editable)
+    col1, col2 = st.columns(2)
+    with col1:
+        topic = st.text_input("Topic", value=question_row['Topic'], key=f"edit_topic_{question_index}")
+    with col2:
+        subtopic = st.text_input("Subtopic", value=question_row['Subtopic'] or '', key=f"edit_subtopic_{question_index}")
+    
+    st.markdown("---")
+    
+    # Question text (LaTeX editable)
+    st.markdown("**Question Text** *(LaTeX notation supported)*")
+    question_text = st.text_area(
+        "Question",
+        value=question_row['Question_Text'],
+        height=100,
+        key=f"edit_question_text_{question_index}",
+        help="Use LaTeX notation like \\Omega, \\mu, etc. Math expressions can use $...$ or $...$"
+    )
+    
+    # Preview of question text
+    if question_text.strip():
+        with st.expander("📖 Preview Question Text"):
+            rendered_text = render_latex_in_text(question_text)
+            st.markdown(f"**Preview:** {rendered_text}")
+    
+    # Handle different question types
+    if question_type == 'multiple_choice':
+        st.markdown("**Multiple Choice Options** *(LaTeX notation supported)*")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            choice_a = st.text_area(
+                "Choice A", 
+                value=question_row['Choice_A'] or '',
+                height=70,
+                key=f"edit_choice_a_{question_index}"
+            )
+            choice_c = st.text_area(
+                "Choice C", 
+                value=question_row['Choice_C'] or '',
+                height=70,
+                key=f"edit_choice_c_{question_index}"
+            )
+        
+        with col2:
+            choice_b = st.text_area(
+                "Choice B", 
+                value=question_row['Choice_B'] or '',
+                height=70,
+                key=f"edit_choice_b_{question_index}"
+            )
+            choice_d = st.text_area(
+                "Choice D", 
+                value=question_row['Choice_D'] or '',
+                height=70,
+                key=f"edit_choice_d_{question_index}"
+            )
+        
+        # Correct answer for multiple choice
+        correct_answer = st.selectbox(
+            "Correct Answer",
+            ['A', 'B', 'C', 'D'],
+            index=['A', 'B', 'C', 'D'].index(question_row['Correct_Answer']) if question_row['Correct_Answer'] in ['A', 'B', 'C', 'D'] else 0,
+            key=f"edit_correct_answer_{question_index}"
+        )
+        
+        # Preview choices
+        if any([choice_a.strip(), choice_b.strip(), choice_c.strip(), choice_d.strip()]):
+            with st.expander("📖 Preview Choices"):
+                choices_data = {'A': choice_a, 'B': choice_b, 'C': choice_c, 'D': choice_d}
+                for choice_letter, choice_text in choices_data.items():
+                    if choice_text.strip():
+                        rendered_choice = render_latex_in_text(choice_text)
+                        if choice_letter == correct_answer:
+                            st.markdown(f"• **{choice_letter}:** {rendered_choice} ✅")
+                        else:
+                            st.markdown(f"• **{choice_letter}:** {rendered_choice}")
+    
+    elif question_type == 'numerical':
+        col1, col2 = st.columns(2)
+        with col1:
+            correct_answer = st.text_input(
+                "Correct Answer", 
+                value=str(question_row['Correct_Answer']),
+                key=f"edit_correct_answer_{question_index}"
+            )
+        with col2:
+            tolerance = st.number_input(
+                "Tolerance", 
+                min_value=0.0, 
+                value=float(question_row['Tolerance']) if question_row['Tolerance'] else 0.05,
+                step=0.01,
+                key=f"edit_tolerance_{question_index}"
+            )
+    
+    elif question_type == 'true_false':
+        correct_answer = st.selectbox(
+            "Correct Answer",
+            ['True', 'False'],
+            index=0 if str(question_row['Correct_Answer']).lower() in ['true', 't', '1'] else 1,
+            key=f"edit_correct_answer_{question_index}"
+        )
+    
+    elif question_type == 'fill_in_blank':
+        correct_answer = st.text_input(
+            "Correct Answer", 
+            value=str(question_row['Correct_Answer']),
+            key=f"edit_correct_answer_{question_index}",
+            help="Use LaTeX notation if needed"
+        )
+        
+        if correct_answer.strip():
+            with st.expander("📖 Preview Answer"):
+                rendered_answer = render_latex_in_text(correct_answer)
+                st.markdown(f"**Preview:** {rendered_answer}")
+    
+    # Feedback sections (LaTeX editable)
+    st.markdown("**Feedback** *(LaTeX notation supported)*")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        correct_feedback = st.text_area(
+            "Correct Feedback",
+            value=question_row['Correct_Feedback'] or '',
+            height=80,
+            key=f"edit_correct_feedback_{question_index}"
+        )
+    
+    with col2:
+        incorrect_feedback = st.text_area(
+            "Incorrect Feedback",
+            value=question_row['Incorrect_Feedback'] or '',
+            height=80,
+            key=f"edit_incorrect_feedback_{question_index}"
+        )
+    
+    # Preview feedback
+    if correct_feedback.strip() or incorrect_feedback.strip():
+        with st.expander("📖 Preview Feedback"):
+            if correct_feedback.strip():
+                rendered_correct = render_latex_in_text(correct_feedback)
+                st.markdown(f"**Correct:** {rendered_correct}")
+            if incorrect_feedback.strip():
+                rendered_incorrect = render_latex_in_text(incorrect_feedback)
+                st.markdown(f"**Incorrect:** {rendered_incorrect}")
+    
+    # Save button (not in a form to avoid page refresh)
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col2:
+        if st.button("💾 Save Changes", key=f"save_btn_{question_index}", type="primary"):
+            # Collect all the data and save
+            changes = {
+                'title': title,
+                'question_type': question_type,
+                'difficulty': difficulty,
+                'points': points,
+                'topic': topic,
+                'subtopic': subtopic,
+                'question_text': question_text,
+                'choice_a': choice_a if question_type == 'multiple_choice' else '',
+                'choice_b': choice_b if question_type == 'multiple_choice' else '',
+                'choice_c': choice_c if question_type == 'multiple_choice' else '',
+                'choice_d': choice_d if question_type == 'multiple_choice' else '',
+                'correct_answer': correct_answer,
+                'tolerance': tolerance if question_type == 'numerical' else 0.05,
+                'correct_feedback': correct_feedback,
+                'incorrect_feedback': incorrect_feedback
+            }
+            
+            save_success = save_question_changes_v2(question_index, changes)
+            if save_success:
+                # Switch back to view mode after saving by turning off the toggle
+                st.session_state[f"edit_toggle_{question_index}"] = False
+    
+    with col3:
+        if st.button("❌ Cancel", key=f"cancel_btn_{question_index}"):
+            # Just switch back to view mode by turning off the toggle
+            st.session_state[f"edit_toggle_{question_index}"] = False
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def save_question_changes_v2(question_index, changes):
+    """Simplified save function without form dependencies"""
+    
+    try:
+        # Get current data
+        df = st.session_state['df'].copy()
+        original_questions = st.session_state['original_questions'].copy()
+        
+        # Update DataFrame
+        df.loc[question_index, 'Title'] = changes['title']
+        df.loc[question_index, 'Type'] = changes['question_type']
+        df.loc[question_index, 'Difficulty'] = changes['difficulty']
+        df.loc[question_index, 'Points'] = changes['points']
+        df.loc[question_index, 'Topic'] = changes['topic']
+        df.loc[question_index, 'Subtopic'] = changes['subtopic']
+        df.loc[question_index, 'Question_Text'] = changes['question_text']
+        df.loc[question_index, 'Choice_A'] = changes['choice_a']
+        df.loc[question_index, 'Choice_B'] = changes['choice_b']
+        df.loc[question_index, 'Choice_C'] = changes['choice_c']
+        df.loc[question_index, 'Choice_D'] = changes['choice_d']
+        df.loc[question_index, 'Correct_Answer'] = changes['correct_answer']
+        df.loc[question_index, 'Tolerance'] = changes['tolerance']
+        df.loc[question_index, 'Correct_Feedback'] = changes['correct_feedback']
+        df.loc[question_index, 'Incorrect_Feedback'] = changes['incorrect_feedback']
+        
+        # Update feedback field (use correct feedback as general feedback)
+        df.loc[question_index, 'Feedback'] = changes['correct_feedback']
+        
+        # Update original_questions (for QTI export compatibility)
+        if question_index < len(original_questions):
+            q = original_questions[question_index]
+            q['title'] = changes['title']
+            q['type'] = changes['question_type']
+            q['difficulty'] = changes['difficulty']
+            q['points'] = changes['points']
+            q['topic'] = changes['topic']
+            q['subtopic'] = changes['subtopic']
+            q['question_text'] = changes['question_text']
+            q['correct_answer'] = changes['correct_answer']
+            q['tolerance'] = changes['tolerance']
+            q['feedback_correct'] = changes['correct_feedback']
+            q['feedback_incorrect'] = changes['incorrect_feedback']
+            
+            # Update choices for multiple choice
+            if changes['question_type'] == 'multiple_choice':
+                q['choices'] = [
+                    changes['choice_a'],
+                    changes['choice_b'],
+                    changes['choice_c'],
+                    changes['choice_d']
+                ]
+        
+        # Update session state
+        st.session_state['df'] = df
+        st.session_state['original_questions'] = original_questions
+        
+        # Validate the changes
+        validation_results = validate_single_question(df.iloc[question_index])
+        
+        if validation_results['is_valid']:
+            st.success("✅ Question updated successfully!")
+        else:
+            st.warning("⚠️ Question saved but has validation issues:")
+            for error in validation_results['errors']:
+                st.write(f"• {error}")
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"❌ Error saving changes: {str(e)}")
+        return False
+
+# Modified main function - replace the Browse Questions tab section
+def main_modified_tab_section():
+    """
+    Replace this section in your main() function:
+    
+    with tab2:
+        st.markdown(f"### 📋 Filtered Questions ({len(filtered_df)} results)")
+        # ... existing browse code ...
+    
+    With:
+    
+    with tab2:
+        enhanced_browse_and_edit_tab(filtered_df)
+    """
+    pass  # This is just documentation
+
 def create_download_link(data, filename, link_text):
     """Create a download link for data"""
     if isinstance(data, pd.DataFrame):
@@ -957,7 +2124,7 @@ def handle_single_upload():
         
         with col2:
             assign_new_ids = st.checkbox("🔄 Assign new IDs", value=False, help="Generate new question IDs (preserves originals)")
-            preview_mode = st.checkbox("👁️ Preview mode", value=False, help="Show detailed processing steps")
+            # Preview mode removed - we now have Live Preview in Browse & Edit tab
         
         # Process button
         if st.button("🚀 Process Database", type="primary"):
@@ -966,7 +2133,6 @@ def handle_single_upload():
                 'auto_latex': auto_latex,
                 'validate_questions': validate_questions,
                 'assign_new_ids': assign_new_ids,
-                'preview_mode': preview_mode,
                 'format_version': format_version,
                 'metadata': metadata
             })
@@ -1141,14 +2307,7 @@ def handle_append_upload():
 def process_single_database(content, options):
     """Process a single database with enhanced options"""
     
-    if options['preview_mode']:
-        st.markdown("### 🔍 Processing Preview")
-        
-        with st.spinner("🔄 Analyzing database structure..."):
-            # Show processing steps
-            st.write("1. ✅ JSON parsing successful")
-            st.write("2. ✅ Format detection complete")
-            st.write("3. 🔄 Starting LaTeX processing...")
+
     
     # Use your existing load_database_from_json function with enhancements
     df, metadata, original_questions, cleanup_reports = load_database_from_json(content)
@@ -1706,7 +2865,7 @@ def main():
         filtered_df = apply_filters(df)
         
         # Main content tabs
-        tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "🔍 Browse Questions", "🎯 Quiz Builder", "📥 Export"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📝 Browse & Edit", "🎯 Quiz Builder", "📥 Export"])
         
         with tab1:
             display_database_summary(df, metadata)
@@ -1714,27 +2873,7 @@ def main():
             create_summary_charts(df)
         
         with tab2:
-            st.markdown(f"### 📋 Filtered Questions ({len(filtered_df)} results)")
-            
-            if len(filtered_df) > 0:
-                # Pagination
-                items_per_page = st.selectbox("Questions per page", [5, 10, 20, 50], index=1)
-                total_pages = (len(filtered_df) - 1) // items_per_page + 1
-                
-                if total_pages > 1:
-                    page = st.selectbox("Page", range(1, total_pages + 1))
-                    start_idx = (page - 1) * items_per_page
-                    end_idx = start_idx + items_per_page
-                    page_df = filtered_df.iloc[start_idx:end_idx]
-                else:
-                    page_df = filtered_df
-                
-                # Display questions
-                for idx, question in page_df.iterrows():
-                    display_question_preview(question)
-                    st.markdown("---")
-            else:
-                st.warning("🔍 No questions match the current filters.")
+            enhanced_browse_and_edit_tab(filtered_df)
         
         with tab3:
             if len(filtered_df) > 0:
