@@ -458,19 +458,134 @@ def apply_filters(df):
     return filtered_df
 
 def render_latex_in_text(text):
-    """Convert LaTeX notation to display format"""
+    """
+    Enhanced LaTeX rendering for Streamlit with proper spacing and complete conversion
+    Handles both math mode preservation and text mode symbol conversion
+    """
     if not text or not isinstance(text, str):
         return text
     
-    # Handle $$...$$ (display math)
-    text = re.sub(r'\$\$(.*?)\$\$', r'$$\1$$', text)
-    # Handle $...$ (inline math) 
-    text = re.sub(r'(?<!\$)\$(?!\$)(.*?)(?<!\$)\$(?!\$)', r'$\1$', text)
+    # Step 1: Preserve math environments ($$...$$ and $...$)
+    math_pattern = r'(\$\$.*?\$\$|\$.*?\$)'
+    parts = re.split(math_pattern, text)
     
-    return text
+    # Step 2: LaTeX to Unicode conversion mapping
+    latex_to_unicode = {
+        # Greek letters
+        r'\\Omega': 'Ω',
+        r'\\mu': 'μ', 
+        r'\\omega': 'ω',
+        r'\\pi': 'π',
+        r'\\alpha': 'α',
+        r'\\beta': 'β',
+        r'\\gamma': 'γ',
+        r'\\delta': 'δ',
+        r'\\theta': 'θ',
+        r'\\lambda': 'λ',
+        r'\\sigma': 'σ',
+        r'\\phi': 'φ',
+        r'\\tau': 'τ',
+        
+        # Mathematical symbols
+        r'\\infty': '∞',
+        r'\\pm': '±',
+        r'\\mp': '∓',
+        r'\\times': '×',
+        r'\\div': '÷',
+        r'\\neq': '≠',
+        r'\\leq': '≤',
+        r'\\geq': '≥',
+        r'\\approx': '≈',
+        r'\\angle': '∠',
+        r'\\sqrt': '√',
+        r'\\partial': '∂',
+        r'\\nabla': '∇',
+        r'\\sum': '∑',
+        r'\\int': '∫',
+        r'\\prod': '∏',
+    }
+    
+    # Step 3: Process each part
+    for i, part in enumerate(parts):
+        # Only convert LaTeX in non-math parts (even indices)
+        if i % 2 == 0:  # Non-math part
+            
+            # First handle specific patterns that need special treatment
+            # Fix \muF pattern specifically
+            part = re.sub(r'\\mu([A-Z])', r'μ\1', part)
+            
+            # Fix superscripts and subscripts with better patterns
+            part = re.sub(r'\^{?([0-9])}?', lambda m: {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'}.get(m.group(1), f'^{m.group(1)}'), part)
+            part = re.sub(r'_{?([0-9])}?', lambda m: {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'}.get(m.group(1), f'_{m.group(1)}'), part)
+            
+            # Fix multiplication symbol
+            part = re.sub(r'\bx\b', '×', part)  # Replace standalone 'x' with multiplication
+            part = re.sub(r'(\d)\s*x\s*(\d)', r'\1×\2', part)  # Replace 'x' between numbers
+            
+            # Apply general LaTeX to Unicode conversions
+            for latex_cmd, unicode_char in latex_to_unicode.items():
+                # Use proper word boundaries to avoid partial matches
+                pattern = latex_cmd + r'(?=\s|$|[^a-zA-Z\\])'
+                part = re.sub(pattern, unicode_char, part)
+            
+            # Step 4: Fix spacing around units and symbols - ENHANCED
+            # Add space between numbers and Greek letters/symbols
+            part = re.sub(r'(\d+)(Ω|μ|ω|π|α|β|γ|δ|θ|λ|σ|φ|τ|∞|°)', r'\1 \2', part)
+            
+            # Add space between numbers and units
+            part = re.sub(r'(\d+)(Hz|V|A|W|F|H|Ω|S|m|s|J)', r'\1 \2', part)
+            
+            # Fix specific unit combinations with proper spacing
+            part = re.sub(r'(\d+)\s*μ\s*([A-Z])', r'\1 μ\2', part)  # e.g., "10μF" → "10 μF"
+            part = re.sub(r'(\d+)\s*m\s*([A-Z])', r'\1 m\2', part)  # e.g., "50mH" → "50 mH"
+            part = re.sub(r'(\d+)\s*k\s*([A-Z])', r'\1 k\2', part)  # e.g., "2kΩ" → "2 kΩ"
+            
+            # Fix spacing around mathematical operators
+            part = re.sub(r'(\w)\s*=\s*(\w)', r'\1 = \2', part)  # Ensure space around =
+            part = re.sub(r'(\w)\s*\+\s*(\w)', r'\1 + \2', part)  # Ensure space around +
+            part = re.sub(r'(\w)\s*-\s*(\w)', r'\1 - \2', part)   # Ensure space around -
+            part = re.sub(r'(\w)\s*×\s*(\w)', r'\1 × \2', part)   # Ensure space around ×
+            
+            # Fix spacing around commas and periods in numbers
+            part = re.sub(r'(\d),\s*(\d)', r'\1, \2', part)  # "120,000" stays, but "120, 000" gets space
+            
+            # Clean up LaTeX spacing commands
+            part = re.sub(r'\\,', ' ', part)  # Convert LaTeX thin space
+            part = re.sub(r'\\text\{([^}]+)\}', r'\1', part)  # Remove \text{} commands
+            part = re.sub(r'\\mathrm\{([^}]+)\}', r'\1', part)  # Remove \mathrm{} commands
+            
+            # Clean up extra spaces but preserve intentional spacing
+            part = re.sub(r'\s{3,}', ' ', part)  # 3+ spaces to single space
+            part = re.sub(r'([.!?])\s{2,}', r'\1 ', part)  # Clean up sentence endings
+            part = part.strip()  # Remove leading/trailing spaces
+        
+        parts[i] = part
+    
+    # Step 5: Rejoin all parts
+    result = ''.join(parts)
+    
+    # Step 6: Final cleanup - ensure math delimiters are properly spaced
+    result = re.sub(r'([a-zA-Z0-9])\$', r'\1 $', result)  # Space before $
+    result = re.sub(r'\$([a-zA-Z0-9])', r'$ \1', result)  # Space after $
+    result = re.sub(r'([a-zA-Z0-9])\$\$', r'\1 $$', result)  # Space before $$
+    result = re.sub(r'\$\$([a-zA-Z0-9])', r'$$ \1', result)  # Space after $$
+    
+    # Fix specific spacing issues around common patterns
+    result = re.sub(r'(\w)\s*,\s*(\w)', r'\1, \2', result)  # Proper comma spacing
+    result = re.sub(r'(\w)\s*\.\s*(\w)', r'\1. \2', result)  # Proper period spacing (when not decimals)
+    result = re.sub(r'(\d+)\.\s*(\d+)', r'\1.\2', result)   # Keep decimal numbers together
+    
+    # Ensure parentheses have proper spacing
+    result = re.sub(r'(\w)\s*\(\s*', r'\1(', result)  # Remove space before (
+    result = re.sub(r'\s*\)\s*(\w)', r') \1', result)  # Space after )
+    
+    # Final cleanup of multiple spaces
+    result = re.sub(r'\s{2,}', ' ', result)  # Multiple spaces to single
+    
+    return result
 
 def display_question_preview(question_row):
-    """Display a single question with proper formatting"""
+    """Enhanced question preview with better LaTeX rendering"""
     
     st.markdown('<div class="question-preview">', unsafe_allow_html=True)
     
@@ -496,7 +611,7 @@ def display_question_preview(question_row):
     
     st.markdown("---")
     
-    # Question text with LaTeX rendering
+    # Question text with enhanced LaTeX rendering
     question_text = render_latex_in_text(question_row['Question_Text'])
     st.markdown(f"**Question:** {question_text}")
     
@@ -508,7 +623,7 @@ def display_question_preview(question_row):
             choice_text = question_row[f'Choice_{choice}']
             if choice_text and choice_text.strip():
                 choice_text = render_latex_in_text(choice_text)
-                if choice_text == question_row['Correct_Answer']:
+                if choice_text == render_latex_in_text(question_row['Correct_Answer']):
                     st.markdown(f"• **{choice}:** {choice_text} ✅")
                 else:
                     st.markdown(f"• **{choice}:** {choice_text}")
@@ -526,7 +641,7 @@ def display_question_preview(question_row):
         correct_answer = render_latex_in_text(str(question_row['Correct_Answer']))
         st.markdown(f"**Correct Answer:** {correct_answer}")
     
-    # Feedback
+    # Feedback with enhanced rendering
     if question_row['Correct_Feedback']:
         with st.expander("💡 View Feedback"):
             correct_feedback = render_latex_in_text(question_row['Correct_Feedback'])
