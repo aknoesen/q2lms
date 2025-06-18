@@ -72,7 +72,7 @@ class LaTeXProcessor:
         }
     
     def unicode_to_latex(self, text: str) -> Tuple[str, int]:
-        """Convert Unicode symbols to LaTeX - this we know works"""
+        """Convert Unicode symbols to LaTeX with proper spacing"""
         if not text:
             return text, 0
             
@@ -85,7 +85,38 @@ class LaTeXProcessor:
                 result = result.replace(unicode_char, latex_cmd)
                 conversion_count += count
         
+        # NEW: Add proper spacing after LaTeX commands when followed by letters
+        result = self.add_latex_spacing(result)
+        
         return result, conversion_count
+
+    def add_latex_spacing(self, text: str) -> str:
+        """Add proper spacing around LaTeX commands"""
+        if not text:
+            return text
+        
+        # Add space after LaTeX commands when followed by letters
+        # \pi + letter → \pi + space + letter
+        spacing_fixes = [
+            (r'\\pi([a-zA-Z])', r'\\pi \1'),      # \pift → \pi ft
+            (r'\\mu([a-zA-Z])', r'\\mu \1'),      # \muF → \mu F  
+            (r'\\omega([a-zA-Z])', r'\\omega \1'), # \omegat → \omega t
+            (r'\\alpha([a-zA-Z])', r'\\alpha \1'),
+            (r'\\beta([a-zA-Z])', r'\\beta \1'),
+            (r'\\gamma([a-zA-Z])', r'\\gamma \1'),
+            (r'\\delta([a-zA-Z])', r'\\delta \1'),
+            (r'\\theta([a-zA-Z])', r'\\theta \1'),
+            (r'\\lambda([a-zA-Z])', r'\\lambda \1'),
+            (r'\\sigma([a-zA-Z])', r'\\sigma \1'),
+            (r'\\phi([a-zA-Z])', r'\\phi \1'),
+            (r'\\Omega([a-zA-Z])', r'\\Omega \1'),
+        ]
+        
+        result = text
+        for pattern, replacement in spacing_fixes:
+            result = re.sub(pattern, replacement, result)
+        
+        return result
     
     def fix_simple_spacing(self, text: str) -> Tuple[str, int]:
         """Fix only the simplest spacing issues"""

@@ -142,6 +142,31 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
+
+def find_correct_letter(correct_text, choices):
+    """Convert correct answer text to letter (A, B, C, D)"""
+    if not correct_text:
+        return 'A'
+    
+    correct_clean = str(correct_text).strip().lower()
+    
+    # Check if it's already a letter
+    if correct_clean.upper() in ['A', 'B', 'C', 'D']:
+        return correct_clean.upper()
+    
+    # Match against choices
+    for i, choice in enumerate(choices):
+        if choice and str(choice).strip().lower() == correct_clean:
+            return ['A', 'B', 'C', 'D'][i]
+    
+    print(f"⚠️ Could not match '{correct_text}' to choices: {choices}")
+    return 'A'  # Fallback
+
+
+
+
+
 def load_database_from_json(json_content):
     """Load and process JSON database content with automatic LaTeX processing"""
     try:
@@ -201,7 +226,30 @@ def load_database_from_json(json_content):
             question_type = q.get('type', 'multiple_choice')
             title = q.get('title', f"Question {i+1}")
             question_text = q.get('question_text', '')
-            correct_answer = q.get('correct_answer', '')
+            # FIXED: Handle correct_answer properly for multiple choice
+            original_correct_answer = q.get('correct_answer', '')
+            choices = q.get('choices', [])
+
+            # Clean up choices and handle None values
+            if choices is None:
+                choices = []
+            elif not isinstance(choices, list):
+                choices = []
+
+            # Ensure we have 4 choices
+            while len(choices) < 4:
+                choices.append('')
+
+            choice_a = str(choices[0]) if choices[0] else ''
+            choice_b = str(choices[1]) if choices[1] else ''
+            choice_c = str(choices[2]) if choices[2] else ''
+            choice_d = str(choices[3]) if choices[3] else ''
+
+            # Convert correct answer text to letter for multiple choice
+            if question_type == 'multiple_choice':
+                correct_answer = find_correct_letter(original_correct_answer, [choice_a, choice_b, choice_c, choice_d])
+            else:
+                correct_answer = str(original_correct_answer) if original_correct_answer else ''
             points = q.get('points', 1)
             tolerance = q.get('tolerance', 0.05)
             topic = q.get('topic', 'General')
@@ -229,10 +277,7 @@ def load_database_from_json(json_content):
             elif not isinstance(choices, list):
                 choices = []
             
-            choice_a = choices[0] if len(choices) > 0 else ''
-            choice_b = choices[1] if len(choices) > 1 else ''
-            choice_c = choices[2] if len(choices) > 2 else ''
-            choice_d = choices[3] if len(choices) > 3 else ''
+
             
             # Handle None values for tolerance and points
             if tolerance is None:
@@ -459,9 +504,35 @@ def apply_filters(df):
 
 def render_latex_in_text(text):
     """
-    Enhanced LaTeX rendering for Streamlit with proper spacing and complete conversion
-    Handles both math mode preservation and text mode symbol conversion
+    Enhanced LaTeX rendering for Streamlit with comprehensive mathematical notation support
     """
+    if not text or not isinstance(text, str):
+        return text
+    
+    # NEW: Preserve existing Unicode symbols first
+    unicode_preservations = {
+        'π': '###PI###',
+        'Ω': '###OMEGA###', 
+        'μ': '###MU###',
+        'α': '###ALPHA###',
+        'β': '###BETA###',
+        'γ': '###GAMMA###',
+        'δ': '###DELTA###',
+        'θ': '###THETA###',
+        'λ': '###LAMBDA###',
+        'σ': '###SIGMA###',
+        'φ': '###PHI###',
+        'τ': '###TAU###',
+        '·': '###DOT###',
+        '×': '###TIMES###',
+        '±': '###PLUSMINUS###'
+    }
+    
+    # Temporarily replace Unicode with placeholders
+    protected_text = text
+    for unicode_char, placeholder in unicode_preservations.items():
+        protected_text = protected_text.replace(unicode_char, placeholder)
+
     if not text or not isinstance(text, str):
         return text
     
@@ -524,9 +595,12 @@ def render_latex_in_text(text):
             
             # Apply general LaTeX to Unicode conversions
             for latex_cmd, unicode_char in latex_to_unicode.items():
-                # Use proper word boundaries to avoid partial matches
-                pattern = latex_cmd + r'(?=\s|$|[^a-zA-Z\\])'
-                part = re.sub(pattern, unicode_char, part)
+                # Only match actual LaTeX commands (with proper backslash escaping)
+                if latex_cmd.startswith(r'\\'):
+                    # Create proper regex pattern that matches \pi but not \pift
+                    clean_cmd = latex_cmd.replace(r'\\', '\\\\')  # Escape for regex
+                    pattern = clean_cmd + r'(?![a-zA-Z])'  # Not followed by letters
+                    part = re.sub(pattern, unicode_char, part)
             
             # Step 4: Fix spacing around units and symbols - ENHANCED
             # Add space between numbers and Greek letters/symbols
@@ -582,75 +656,191 @@ def render_latex_in_text(text):
     # Final cleanup of multiple spaces
     result = re.sub(r'\s{2,}', ' ', result)  # Multiple spaces to single
     
+        # NEW: Restore preserved Unicode symbols
+    for unicode_char, placeholder in unicode_preservations.items():
+        result = result.replace(placeholder, unicode_char)
+    
     return result
 
 def display_question_preview(question_row):
-    """Enhanced question preview with better LaTeX rendering"""
+    """FIXED VERSION: Display question preview with correct answer highlighting"""
     
     st.markdown('<div class="question-preview">', unsafe_allow_html=True)
+    
+    # Handle both dict and pandas Series
+    if hasattr(question_row, 'get'):
+        get_value = lambda key, default='': question_row.get(key, default)
+    else:
+        get_value = lambda key, default='': question_row[key] if key in question_row else default
     
     # Header with metadata
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     
     with col1:
-        st.markdown(f"**{question_row['Title']}**")
+        st.markdown(f"**{get_value('Title')}**")
     with col2:
-        st.markdown(f"🏷️ **{question_row['Type'].replace('_', ' ').title()}**")
+        question_type = get_value('Type', 'unknown')
+        st.markdown(f"🏷️ **{question_type.replace('_', ' ').title()}**")
     with col3:
+        difficulty = get_value('Difficulty', 'Unknown')
         difficulty_colors = {'Easy': '🟢', 'Medium': '🟡', 'Hard': '🔴'}
-        difficulty_icon = difficulty_colors.get(question_row['Difficulty'], '⚪')
-        st.markdown(f"{difficulty_icon} **{question_row['Difficulty']}**")
+        difficulty_icon = difficulty_colors.get(difficulty, '⚪')
+        st.markdown(f"{difficulty_icon} **{difficulty}**")
     with col4:
-        st.markdown(f"**{question_row['Points']} pts**")
+        points = get_value('Points', 1)
+        st.markdown(f"**{points} pts**")
     
     # Topic and subtopic info
-    topic_info = f"📚 {question_row['Topic']}"
-    if question_row['Subtopic'] and question_row['Subtopic'] not in ['', 'N/A']:
-        topic_info += f" → {question_row['Subtopic']}"
+    topic = get_value('Topic', 'Unknown')
+    subtopic = get_value('Subtopic', '')
+    topic_info = f"📚 {topic}"
+    if subtopic and subtopic not in ['', 'N/A', 'empty']:
+        topic_info += f" → {subtopic}"
     st.markdown(f"*{topic_info}*")
     
     st.markdown("---")
     
     # Question text with enhanced LaTeX rendering
-    question_text = render_latex_in_text(question_row['Question_Text'])
+    question_text_raw = get_value('Question_Text', '')
+    st.write(f"**DEBUG - Raw stored text:** `{question_text_raw}`")  # TEMPORARY DEBUG LINE
+    question_text = render_latex_in_text(question_text_raw)
     st.markdown(f"**Question:** {question_text}")
     
-    # Handle different question types
-    if question_row['Type'] == 'multiple_choice':
+    # Handle different question types with FIXED answer matching
+    if get_value('Type') == 'multiple_choice':
         st.markdown("**Choices:**")
         choices = ['A', 'B', 'C', 'D']
-        for choice in choices:
-            choice_text = question_row[f'Choice_{choice}']
-            if choice_text and choice_text.strip():
-                choice_text = render_latex_in_text(choice_text)
-                if choice_text == render_latex_in_text(question_row['Correct_Answer']):
-                    st.markdown(f"• **{choice}:** {choice_text} ✅")
+        correct_answer_raw = get_value('Correct_Answer', '')
+        
+        # Clean up the correct answer
+        correct_answer_text = str(correct_answer_raw).strip()
+        
+        # Get all choice texts
+        choice_texts = {}
+        for choice_letter in choices:
+            choice_text = get_value(f'Choice_{choice_letter}', '')
+            if choice_text and str(choice_text).strip():
+                choice_texts[choice_letter] = str(choice_text).strip()
+        
+        # FIXED: Determine correct answer letter using robust matching
+        correct_letter = determine_correct_answer_letter(correct_answer_text, choice_texts)
+        
+        # Display choices with correct highlighting
+        for choice_letter in choices:
+            if choice_letter in choice_texts:
+                choice_text_clean = choice_texts[choice_letter]
+                choice_text_rendered = render_latex_in_text(choice_text_clean)
+                
+                # Simple, reliable correct answer detection
+                is_correct = (choice_letter == correct_letter)
+                
+                if is_correct:
+                    st.markdown(f"• **{choice_letter}:** {choice_text_rendered} ✅ **← Correct Answer**")
                 else:
-                    st.markdown(f"• **{choice}:** {choice_text}")
+                    st.markdown(f"• **{choice_letter}:** {choice_text_rendered}")
+        
+        # Optional debug info
+        if st.checkbox("🐛 Show Debug Info", key=f"debug_{hash(str(question_row))}"):
+            st.markdown("**Debug Information:**")
+            st.write(f"Raw Correct Answer: `{repr(correct_answer_raw)}`")
+            st.write(f"Determined Letter: `{correct_letter}`")
+            st.write("**All Choices:**")
+            for letter, text in choice_texts.items():
+                st.write(f"  {letter}: `{repr(text)}`")
     
-    elif question_row['Type'] == 'numerical':
-        correct_answer = render_latex_in_text(str(question_row['Correct_Answer']))
-        st.markdown(f"**Correct Answer:** {correct_answer}")
-        if question_row['Tolerance'] and float(question_row['Tolerance']) > 0:
-            st.markdown(f"**Tolerance:** ±{question_row['Tolerance']}")
+    elif get_value('Type') == 'numerical':
+        correct_answer = render_latex_in_text(str(get_value('Correct_Answer', '')))
+        st.markdown(f"**Correct Answer:** {correct_answer} ✅")
+        tolerance = get_value('Tolerance', 0)
+        if tolerance and float(tolerance) > 0:
+            st.markdown(f"**Tolerance:** ±{tolerance}")
     
-    elif question_row['Type'] == 'true_false':
-        st.markdown(f"**Correct Answer:** {question_row['Correct_Answer']}")
+    elif get_value('Type') == 'true_false':
+        correct_answer = str(get_value('Correct_Answer', '')).strip()
+        st.markdown(f"**Correct Answer:** {correct_answer} ✅")
     
-    elif question_row['Type'] == 'fill_in_blank':
-        correct_answer = render_latex_in_text(str(question_row['Correct_Answer']))
-        st.markdown(f"**Correct Answer:** {correct_answer}")
+    elif get_value('Type') == 'fill_in_blank':
+        correct_answer = render_latex_in_text(str(get_value('Correct_Answer', '')))
+        st.markdown(f"**Correct Answer:** {correct_answer} ✅")
     
     # Feedback with enhanced rendering
-    if question_row['Correct_Feedback']:
+    correct_feedback = get_value('Correct_Feedback', '') or get_value('feedback_correct', '')
+    incorrect_feedback = get_value('Incorrect_Feedback', '') or get_value('feedback_incorrect', '')
+    
+    if correct_feedback or incorrect_feedback:
         with st.expander("💡 View Feedback"):
-            correct_feedback = render_latex_in_text(question_row['Correct_Feedback'])
-            st.markdown(f"**Correct:** {correct_feedback}")
-            if question_row['Incorrect_Feedback']:
-                incorrect_feedback = render_latex_in_text(question_row['Incorrect_Feedback'])
+            if correct_feedback:
+                correct_feedback = render_latex_in_text(str(correct_feedback))
+                st.markdown(f"**Correct:** {correct_feedback}")
+            
+            if incorrect_feedback:
+                incorrect_feedback = render_latex_in_text(str(incorrect_feedback))
                 st.markdown(f"**Incorrect:** {incorrect_feedback}")
     
     st.markdown('</div>', unsafe_allow_html=True)
+
+
+def determine_correct_answer_letter(correct_answer_text, choice_texts):
+    """
+    CRITICAL HELPER FUNCTION: Determine the correct answer letter (A, B, C, D)
+    from the correct answer text and available choices
+    
+    Args:
+        correct_answer_text (str): The correct answer from the database
+        choice_texts (dict): Dictionary of {letter: text} for choices
+    
+    Returns:
+        str: The letter (A, B, C, D) of the correct choice
+    """
+    if not correct_answer_text:
+        return 'A'  # Default fallback
+    
+    answer_clean = str(correct_answer_text).strip()
+    
+    # Case 1: Already a letter (A, B, C, D)
+    if answer_clean.upper() in ['A', 'B', 'C', 'D']:
+        return answer_clean.upper()
+    
+    # Case 2: Exact text match (case insensitive)
+    answer_lower = answer_clean.lower()
+    for letter, choice_text in choice_texts.items():
+        if choice_text.lower().strip() == answer_lower:
+            return letter
+    
+    # Case 3: Partial match for long answers
+    if len(answer_clean) > 10:
+        for letter, choice_text in choice_texts.items():
+            if (len(choice_text) > 10 and 
+                answer_lower in choice_text.lower()):
+                return letter
+    
+    # Case 4: Word-based similarity matching
+    answer_words = set(answer_lower.split())
+    best_match = 'A'
+    best_score = 0
+    
+    for letter, choice_text in choice_texts.items():
+        choice_words = set(choice_text.lower().split())
+        
+        if answer_words and choice_words:
+            # Calculate Jaccard similarity
+            intersection = len(answer_words.intersection(choice_words))
+            union = len(answer_words.union(choice_words))
+            
+            if union > 0:
+                similarity = intersection / union
+                if similarity > best_score:
+                    best_score = similarity
+                    best_match = letter
+    
+    # Return best match if similarity is reasonable
+    if best_score > 0.3:  # 30% similarity threshold
+        return best_match
+    else:
+        # Last resort: log the issue and return A
+        print(f"⚠️ Could not match '{answer_clean}' to any choice, defaulting to A")
+        print(f"   Available choices: {list(choice_texts.values())}")
+        return 'A'
 
 # Enhanced Browse & Edit Functions for Question Database Manager
 # Add these functions to your streamlit_app.py
