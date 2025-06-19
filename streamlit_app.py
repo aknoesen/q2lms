@@ -674,7 +674,7 @@ def display_question_preview(question_row):
     
     # Question text with enhanced LaTeX rendering
     question_text_raw = get_value('Question_Text', '')
-    st.write(f"**DEBUG - Raw stored text:** `{question_text_raw}`")  # TEMPORARY DEBUG LINE
+
     question_text = render_latex_in_text(question_text_raw)
     st.markdown(f"**Question:** {question_text}")
     
@@ -1159,8 +1159,21 @@ def validate_single_question(question_row):
 def enhanced_browse_and_edit_tab(filtered_df):
     """Browse & Edit with side-by-side view and real-time updates"""
     
-    # Create anchor point at the top
-    top_anchor = st.empty()
+    # Force scroll to top with JavaScript when page changes
+    if 'last_page' not in st.session_state:
+        st.session_state['last_page'] = 1
+    
+    # Check if page changed and scroll to top
+    current_page = st.session_state.get('current_page', 1)
+    if current_page != st.session_state['last_page']:
+        st.markdown("""
+        <script>
+        setTimeout(function() {
+            window.parent.document.querySelector('.main').scrollTop = 0;
+        }, 100);
+        </script>
+        """, unsafe_allow_html=True)
+        st.session_state['last_page'] = current_page
     
     st.markdown(f"### 📝 Browse & Edit Questions ({len(filtered_df)} results)")
     
@@ -1168,7 +1181,7 @@ def enhanced_browse_and_edit_tab(filtered_df):
         st.info("💡 **How to use:** Edit questions on the right, see live preview on the left. Changes auto-save as you type!")
         
         # Pagination
-        items_per_page = st.selectbox("Questions per page", [5, 10, 20, 50], index=1)
+        items_per_page = st.selectbox("Questions per page", [10, 20, 50, 100], index=2)
         total_pages = (len(filtered_df) - 1) // items_per_page + 1
         
         if total_pages > 1:
@@ -1453,13 +1466,13 @@ def enhanced_browse_and_edit_tab(filtered_df):
             with col1:
                 if st.button("⬅️ Previous", key="bottom_prev") and st.session_state['current_page'] > 1:
                     st.session_state['current_page'] -= 1
-                    top_anchor.empty()  # Force scroll to top
+
                     st.rerun()
             
             with col2:
                 if st.button("⏪ First", key="bottom_first"):
                     st.session_state['current_page'] = 1
-                    top_anchor.empty()  # Force scroll to top
+
                     st.rerun()
             
             with col3:
@@ -1468,13 +1481,13 @@ def enhanced_browse_and_edit_tab(filtered_df):
             with col4:
                 if st.button("⏩ Last", key="bottom_last"):
                     st.session_state['current_page'] = total_pages
-                    top_anchor.empty()  # Force scroll to top
+
                     st.rerun()
             
             with col5:
                 if st.button("Next ➡️", key="bottom_next") and st.session_state['current_page'] < total_pages:
                     st.session_state['current_page'] += 1
-                    top_anchor.empty()  # Force scroll to top
+
                     st.rerun()
     
     else:
