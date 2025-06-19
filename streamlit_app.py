@@ -187,31 +187,16 @@ def load_database_from_json(json_content):
         cleanup_reports = []
         processed_questions = questions  # Default to original questions
         
-        if LATEX_PROCESSOR_AVAILABLE:
+        if False:  # DISABLED: Testing LaTeX-native approach
             with st.spinner("🧮 Processing LaTeX notation..."):
                 processor = LaTeXProcessor()
                 processed_questions, cleanup_reports = processor.process_question_database(questions)
-                
-                # Show cleanup summary
-                if cleanup_reports:
-                    questions_changed = len([r for r in cleanup_reports if r.changes_made])
-                    total_unicode = sum(r.unicode_conversions for r in cleanup_reports)
-                    total_fixes = sum(len(r.changes_made) for r in cleanup_reports)
-                    
-                    if questions_changed > 0:
-                        st.success(f"🧮 LaTeX Processing Complete!")
-                        st.info(f"""**Cleanup Summary:**
-- Questions processed: {len(cleanup_reports)}
-- Questions modified: {questions_changed}
-- Unicode symbols converted: {total_unicode}
-- Total formatting fixes: {total_fixes}
-""")
-                    else:
-                        st.info("✨ LaTeX notation was already clean - no changes needed!")
-                else:
-                    st.info("✨ No LaTeX processing needed for this database")
         else:
-            st.warning("⚠️ LaTeX processor not available - uploading without LaTeX processing")
+            st.info("✨ Using raw mathematical notation (no processing)")
+
+        # Use questions directly (no Unicode conversion)
+        processed_questions = questions
+        cleanup_reports = []
         
         # Use processed questions for DataFrame conversion
         questions = processed_questions
@@ -226,6 +211,7 @@ def load_database_from_json(json_content):
             question_type = q.get('type', 'multiple_choice')
             title = q.get('title', f"Question {i+1}")
             question_text = q.get('question_text', '')
+            
             # FIXED: Handle correct_answer properly for multiple choice
             original_correct_answer = q.get('correct_answer', '')
             choices = q.get('choices', [])
@@ -250,6 +236,7 @@ def load_database_from_json(json_content):
                 correct_answer = find_correct_letter(original_correct_answer, [choice_a, choice_b, choice_c, choice_d])
             else:
                 correct_answer = str(original_correct_answer) if original_correct_answer else ''
+                
             points = q.get('points', 1)
             tolerance = q.get('tolerance', 0.05)
             topic = q.get('topic', 'General')
@@ -270,26 +257,11 @@ def load_database_from_json(json_content):
             feedback_incorrect = q.get('feedback_incorrect', '') or ''
             general_feedback = feedback_correct  # Use correct feedback as default
             
-            # Handle choices for multiple choice questions (handle None values)
-            choices = q.get('choices', [])
-            if choices is None:
-                choices = []
-            elif not isinstance(choices, list):
-                choices = []
-            
-
-            
             # Handle None values for tolerance and points
             if tolerance is None:
                 tolerance = 0.05
             if points is None:
                 points = 1
-            
-            # Convert correct_answer to string
-            if correct_answer is None:
-                correct_answer = ''
-            else:
-                correct_answer = str(correct_answer)
             
             # Create row
             row = {
