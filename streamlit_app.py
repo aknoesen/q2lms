@@ -1159,6 +1159,9 @@ def validate_single_question(question_row):
 def enhanced_browse_and_edit_tab(filtered_df):
     """Browse & Edit with side-by-side view and real-time updates"""
     
+    # Create anchor point at the top
+    top_anchor = st.empty()
+    
     st.markdown(f"### 📝 Browse & Edit Questions ({len(filtered_df)} results)")
     
     if len(filtered_df) > 0:
@@ -1169,8 +1172,48 @@ def enhanced_browse_and_edit_tab(filtered_df):
         total_pages = (len(filtered_df) - 1) // items_per_page + 1
         
         if total_pages > 1:
-            page = st.selectbox("Page", range(1, total_pages + 1))
-            start_idx = (page - 1) * items_per_page
+            # Enhanced pagination with navigation buttons
+            col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+            
+            # Initialize page in session state
+            if 'current_page' not in st.session_state:
+                st.session_state['current_page'] = 1
+            
+            with col1:
+                if st.button("⬅️ Previous") and st.session_state['current_page'] > 1:
+                    st.session_state['current_page'] -= 1
+                    st.rerun()
+            
+            with col2:
+                if st.button("⏪ First"):
+                    st.session_state['current_page'] = 1
+                    st.rerun()
+            
+            with col3:
+                # Use selectbox with current page as index
+                page = st.selectbox("Page", range(1, total_pages + 1), 
+                                  index=st.session_state['current_page'] - 1, 
+                                  key="page_selector")
+                # Update session state from selectbox if it changed
+                if page != st.session_state['current_page']:
+                    st.session_state['current_page'] = page
+                    st.rerun()
+            
+            with col4:
+                if st.button("⏩ Last"):
+                    st.session_state['current_page'] = total_pages
+                    st.rerun()
+            
+            with col5:
+                if st.button("Next ➡️") and st.session_state['current_page'] < total_pages:
+                    st.session_state['current_page'] += 1
+                    st.rerun()
+            
+            # Show page info
+            st.info(f"Page {st.session_state['current_page']} of {total_pages} ({len(filtered_df)} total questions)")
+            
+            # Calculate indices using the session state current_page
+            start_idx = (st.session_state['current_page'] - 1) * items_per_page
             end_idx = start_idx + items_per_page
             page_df = filtered_df.iloc[start_idx:end_idx]
             page_offset = start_idx
@@ -1315,7 +1358,7 @@ def enhanced_browse_and_edit_tab(filtered_df):
                 correct_feedback = st.text_area("Correct Feedback", key=correct_feedback_key, height=70)
                 incorrect_feedback = st.text_area("Incorrect Feedback", key=incorrect_feedback_key, height=70)
                 
-          # Save and Delete buttons
+                # Save and Delete buttons
                 col_save, col_delete = st.columns(2)
                 
                 with col_save:
@@ -1398,6 +1441,41 @@ def enhanced_browse_and_edit_tab(filtered_df):
             
             st.markdown("---")
             st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Add navigation buttons at the bottom too
+        if total_pages > 1:
+            st.markdown("---")
+            st.markdown("### 🔄 Page Navigation")
+            
+            # Duplicate the navigation buttons at the bottom
+            col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+            
+            with col1:
+                if st.button("⬅️ Previous", key="bottom_prev") and st.session_state['current_page'] > 1:
+                    st.session_state['current_page'] -= 1
+                    top_anchor.empty()  # Force scroll to top
+                    st.rerun()
+            
+            with col2:
+                if st.button("⏪ First", key="bottom_first"):
+                    st.session_state['current_page'] = 1
+                    top_anchor.empty()  # Force scroll to top
+                    st.rerun()
+            
+            with col3:
+                st.info(f"Page {st.session_state['current_page']} of {total_pages}")
+            
+            with col4:
+                if st.button("⏩ Last", key="bottom_last"):
+                    st.session_state['current_page'] = total_pages
+                    top_anchor.empty()  # Force scroll to top
+                    st.rerun()
+            
+            with col5:
+                if st.button("Next ➡️", key="bottom_next") and st.session_state['current_page'] < total_pages:
+                    st.session_state['current_page'] += 1
+                    top_anchor.empty()  # Force scroll to top
+                    st.rerun()
     
     else:
         st.warning("🔍 No questions match the current filters.")
