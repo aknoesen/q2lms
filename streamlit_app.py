@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Question Database Manager - Main Streamlit Application (Modular Version)
-Replaces MATLAB QuestionDatabaseManager with modern web interface
-Supports Phase 3 & 4 JSON formats with subtopic organization
+Question Database Manager - Main Streamlit Application (Safe Phase 3D Integration)
+This version safely handles missing Phase 3 modules and falls back gracefully
 """
 
 import streamlit as st
@@ -29,7 +28,58 @@ modules_path = os.path.join(os.path.dirname(__file__), 'modules')
 if modules_path not in sys.path:
     sys.path.insert(0, modules_path)
 
-# Import our modular components
+# ========================================
+# SAFE PHASE 3D DETECTION AND IMPORT
+# ========================================
+
+def detect_phase3_modules():
+    """Detect which Phase 3 modules are available"""
+    
+    phase3_status = {
+        'phase3a': False,
+        'phase3b': False, 
+        'phase3c': False,
+        'phase3d': False
+    }
+    
+    # Check Phase 3A
+    try:
+        from modules.file_processor_module import FileProcessor
+        phase3_status['phase3a'] = True
+        st.sidebar.success("✅ Phase 3A: File Processor")
+    except ImportError as e:
+        st.sidebar.warning("⚠️ Phase 3A: Not available")
+    
+    # Check Phase 3B
+    try:
+        from modules.upload_state_manager import UploadState, get_upload_state
+        phase3_status['phase3b'] = True
+        st.sidebar.success("✅ Phase 3B: State Manager")
+    except ImportError as e:
+        st.sidebar.warning("⚠️ Phase 3B: Not available")
+    
+    # Check Phase 3C
+    try:
+        from modules.database_merger import MergeStrategy
+        phase3_status['phase3c'] = True
+        st.sidebar.success("✅ Phase 3C: Database Merger")
+    except ImportError as e:
+        st.sidebar.warning("⚠️ Phase 3C: Not available")
+    
+    # Check Phase 3D (only if all others available)
+    if all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
+        try:
+            from modules.upload_interface_v2 import render_upload_interface_v2
+            phase3_status['phase3d'] = True
+            st.sidebar.success("✅ Phase 3D: Upload Interface V2")
+        except ImportError as e:
+            st.sidebar.warning(f"⚠️ Phase 3D: {e}")
+    else:
+        st.sidebar.info("ℹ️ Phase 3D: Requires 3A+3B+3C")
+    
+    return phase3_status
+
+# Import our modular components with safe error handling
 try:
     from modules.session_manager import (
         initialize_session_state, clear_session_state, 
@@ -67,6 +117,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ========================================
+# DETECT PHASE 3 STATUS
+# ========================================
+with st.sidebar:
+    st.markdown("### 🔍 Phase 3 Module Status")
+    phase3_status = detect_phase3_modules()
+    
+    # Show overall status
+    if phase3_status['phase3d']:
+        st.success("🚀 Phase 3D Ready!")
+    elif all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
+        st.info("⚙️ Phase 3A+3B+3C Ready (3D available)")
+    else:
+        st.info("📦 Using Legacy Interface")
+
 # Show module status
 if SESSION_MANAGER_AVAILABLE:
     st.success("✅ Modular session management ready!")
@@ -81,7 +146,7 @@ else:
 if not BACKEND_AVAILABLE:
     st.error("⚠️ Backend modules not found. Please ensure database_transformer.py and simple_qti.py are in the 'modules' folder.")
 
-# Custom CSS for better LaTeX rendering and styling
+# Custom CSS (unchanged from original)
 st.markdown("""
 <style>
     .main-header {
@@ -118,6 +183,23 @@ st.markdown("""
         padding: 1rem;
         border-radius: 0.5rem;
         margin-bottom: 1rem;
+    }
+    
+    /* Phase 3D container styling */
+    .phase3d-container {
+        background: linear-gradient(135deg, #e3f2fd, #f0f8ff);
+        padding: 2rem;
+        border-radius: 1rem;
+        margin: 1rem 0;
+        border: 2px solid #2196f3;
+    }
+    
+    .legacy-container {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        border: 1px solid #ddd;
     }
     
     /* Make tabs more prominent */
@@ -164,40 +246,108 @@ from modules.ui_components import display_database_summary, create_summary_chart
 from modules.exporter import export_to_csv, create_qti_package
 from modules.simple_browse import simple_browse_questions_tab
 
+def render_upload_interface_smart():
+    """Smart upload interface that uses Phase 3D if available, legacy otherwise"""
+    
+    if phase3_status['phase3d']:
+        # Use Phase 3D Upload Interface V2
+        st.markdown("### 🚀 Phase 3D Upload Interface")
+        st.markdown('<div class="phase3d-container">', unsafe_allow_html=True)
+        
+        try:
+            from modules.upload_interface_v2 import render_upload_interface_v2
+            render_upload_interface_v2()
+            
+            # Check database status using Phase 3D
+            try:
+                from modules.upload_state_manager import get_upload_state, UploadState
+                current_state = get_upload_state()
+                has_database = (current_state == UploadState.DATABASE_LOADED and 
+                              hasattr(st.session_state, 'df') and 
+                              st.session_state.df is not None)
+            except:
+                # Fallback to session state check
+                has_database = (hasattr(st.session_state, 'df') and 
+                              st.session_state.df is not None)
+        
+        except Exception as e:
+            st.error(f"Phase 3D error: {e}")
+            st.info("Falling back to legacy interface...")
+            has_database = smart_upload_interface()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    else:
+        # Use legacy interface
+        st.markdown("### 📤 Upload Interface")
+        st.markdown('<div class="legacy-container">', unsafe_allow_html=True)
+        has_database = smart_upload_interface()
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    return has_database
+
 def main():
-    """Main Streamlit application with modular architecture"""
+    """Main Streamlit application with smart Phase 3D integration"""
     if SESSION_MANAGER_AVAILABLE:
         initialize_session_state()
+    
     st.markdown("""
     # 📊 Question Database Manager
     **Web-based interface for managing educational question databases and generating Canvas-ready QTI packages**
-    ---
     """)
+    
+    # Show Phase status
+    if phase3_status['phase3d']:
+        st.markdown("🚀 **Phase 3D Active**: State-driven upload interface with conflict resolution")
+    elif all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
+        st.markdown("⚙️ **Phase 3 Backend Ready**: Upload Interface V2 can be activated")
+    else:
+        st.markdown("📦 **Legacy Mode**: Using original upload interface")
+    
+    st.markdown("---")
+    
+    # ========================================
+    # SMART UPLOAD INTERFACE
+    # ========================================
     if SESSION_MANAGER_AVAILABLE:
-        has_database = smart_upload_interface()
+        has_database = render_upload_interface_smart()
     else:
         st.error("❌ Session management not available. Please check module imports.")
         has_database = False
+    
+    # ========================================
+    # MAIN APPLICATION TABS (UNCHANGED)
+    # ========================================
     if has_database and 'df' in st.session_state:
         df = st.session_state['df']
         metadata = st.session_state['metadata']
         original_questions = st.session_state['original_questions']
         filtered_df = apply_filters(df)
+        
+        # Show success message
+        interface_type = "Phase 3D" if phase3_status['phase3d'] else "Legacy"
+        st.success(f"✅ Database loaded successfully via {interface_type} interface! {len(df)} questions ready.")
+        
         tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📋 Browse Questions", "📝 Browse & Edit", "📥 Export"])
+        
         with tab1:
             display_database_summary(df, metadata)
             st.markdown("---")
             create_summary_charts(df)
+        
         with tab2:
             simple_browse_questions_tab(filtered_df)
+        
         with tab3:
             if SESSION_MANAGER_AVAILABLE:
                 side_by_side_question_editor(filtered_df)
             else:
                 st.error("❌ Question editor not available. Please check module imports.")
+        
         with tab4:
             st.markdown("### 📥 Export Options")
             col1, col2 = st.columns(2)
+            
             with col1:
                 st.markdown("**📊 CSV Export**")
                 st.markdown("Export filtered questions as CSV file for further analysis or backup.")
@@ -205,6 +355,7 @@ def main():
                     export_to_csv(filtered_df, f"filtered_questions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
                 else:
                     st.warning("No questions to export")
+            
             with col2:
                 st.markdown("**📦 QTI Package**")
                 st.markdown("Create Canvas-ready QTI package for direct import into your LMS.")
@@ -214,6 +365,7 @@ def main():
                         create_qti_package(filtered_df, original_questions, qti_title, transform_json_to_csv, csv_to_qti)
                 else:
                     st.warning("No questions to export")
+            
             st.markdown("---")
             st.markdown("### 📋 Export Summary")
             if len(filtered_df) > 0:
@@ -222,11 +374,13 @@ def main():
                 topic_counts = filtered_df['Topic'].value_counts()
                 total_points = filtered_df['Points'].sum()
                 avg_points = filtered_df['Points'].mean()
+                
                 st.info(f"""**Current Selection:**\n- **Questions:** {len(filtered_df)}\n- **Total Points:** {total_points:.0f}\n- **Average Points:** {avg_points:.1f}\n\n**Difficulty Distribution:**\n{chr(10).join([f"- {diff}: {count}" for diff, count in difficulty_counts.items()])}\n\n**Question Types:**\n{chr(10).join([f"- {qtype}: {count}" for qtype, count in type_counts.items()])}\n\n**Topics Covered:**\n{chr(10).join([f"- {topic}: {count}" for topic, count in topic_counts.items()])}""")
             else:
                 st.warning("No questions selected for export")
+    
     else:
-        # No database loaded - show helpful information
+        # No database loaded - show getting started
         st.markdown("---")
         st.markdown("## 🚀 Getting Started")
         
@@ -242,6 +396,17 @@ def main():
             4. **📦 Export** to Canvas-ready QTI packages
             5. **📊 Analyze** question distributions and statistics
             """)
+            
+            if phase3_status['phase3d']:
+                st.markdown("""
+                ### 🚀 Phase 3D Features:
+                
+                - **Smart Conflict Detection** when merging files
+                - **Multiple Merge Strategies** (append, skip, replace, rename)  
+                - **Real-time Preview** of merge operations
+                - **State-driven Interface** with clear workflow
+                - **Rollback Support** for safe operations
+                """)
         
         with col2:
             st.markdown("""
@@ -253,6 +418,25 @@ def main():
             - **Topic Organization** with subtopics
             - **Canvas Integration** via QTI export
             """)
+            
+            # Phase status info
+            if phase3_status['phase3d']:
+                st.markdown("""
+                ### 🔄 Available Workflows:
+                
+                - **Fresh Start**: Upload your first database
+                - **Append Questions**: Add to existing database
+                - **Replace Database**: Complete replacement
+                - **Multi-file Merge**: Combine multiple files
+                """)
+            else:
+                st.markdown("""
+                ### 📦 Current Mode:
+                
+                - **Single File Upload**: Basic upload functionality
+                - **Replace Mode**: Upload new database
+                - **Legacy Interface**: Proven reliable workflow
+                """)
         
         # Show sample file format
         with st.expander("📄 Sample JSON Format", expanded=False):
@@ -285,7 +469,6 @@ def main():
             }
             
             st.json(sample_json, expanded=False)
-
 
 if __name__ == "__main__":
     main()

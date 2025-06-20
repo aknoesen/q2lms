@@ -59,8 +59,10 @@ class UploadStateManager:
         ],
         UploadState.DATABASE_LOADED: [
             UploadState.PROCESSING_FILES,
+            UploadState.PREVIEW_MERGE,      # Add this line - enables append operations
             UploadState.NO_DATABASE,
-            UploadState.ERROR_STATE
+            UploadState.SUCCESS_STATE,  # Add this line
+        UploadState.ERROR_STATE
         ],
         UploadState.PROCESSING_FILES: [
             UploadState.DATABASE_LOADED,
