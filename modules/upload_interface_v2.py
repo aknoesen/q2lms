@@ -16,6 +16,9 @@ import pandas as pd
 from typing import List, Dict, Any, Optional
 import traceback
 from pathlib import Path
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Import all proven backend modules
 try:
@@ -934,15 +937,37 @@ class UploadInterfaceV2:
                 st.session_state.error_message = "No questions found in uploaded file"
                 transition_upload_state(UploadState.ERROR_STATE, "no_questions_for_merge")
                 return
-            
+            logger.info("=== PREPARING TO CALL create_merge_preview ===")
+            logger.info(f"Existing DF shape: {existing_df.shape if existing_df is not None else 'None'}")
+            logger.info(f"New questions count: {len(new_questions)}")
+            logger.info(f"About to call with auto_renumber=True")
+
+
             # Create preview with default strategy
-            preview = create_merge_preview(
-                existing_df=existing_df,
-                new_questions=new_questions,
-                strategy=MergeStrategy.SKIP_DUPLICATES,
-                auto_renumber=True
-            )
+            # Create preview with default strategy
+            try:
+                preview = create_merge_preview(
+                    existing_df=existing_df,
+                    new_questions=new_questions,
+                    strategy=MergeStrategy.SKIP_DUPLICATES,
+                    auto_renumber=True
+                )
+                
+                logger.info(f"Auto-renumbered flag: {preview.merge_summary.get('auto_renumbered', 'MISSING')}")
+                logger.info(f"Total conflicts: {len(preview.conflicts) if hasattr(preview, 'conflicts') else 'MISSING'}")
+                logger.info(f"Renumbering info: {preview.merge_summary.get('renumbering_info', 'MISSING')}")
+                
+            except Exception as e:
+                logger.error(f"❌ EXCEPTION in create_merge_preview: {e}")
+                logger.error(f"❌ Exception type: {type(e)}")
+                import traceback
+                logger.error(f"❌ Full traceback:\n{traceback.format_exc()}")
+                raise e
             
+
+
+
+
             # Prepare UI-friendly data using safe attribute access
             processing_results_dict = {
                 'questions': new_questions,

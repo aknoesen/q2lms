@@ -388,8 +388,25 @@ def smart_upload_interface() -> bool:
     has_database = display_enhanced_database_status()
     
     # Upload section
+    # Upload section with tabs
     st.markdown("---")
     st.markdown("### 📤 Upload Database File")
+
+    # Create tabs for different upload modes
+    upload_tab1, upload_tab2 = st.tabs(["🔄 Replace Database", "➕ Append Questions"])
+
+    with upload_tab1:
+        if has_database:
+            st.info("💡 **Current database loaded.** Upload a new file to replace it.")
+        else:
+            st.info("💡 **No database loaded.** Upload a JSON file to get started.")
+        
+        # Enhanced file upload widget
+        handle_single_upload()
+
+    with upload_tab2:
+        # Call your existing append function
+        handle_append_upload()
     
     if has_database:
         st.info("💡 **Current database loaded.** Upload a new file to replace it, or use history to restore previous databases.")

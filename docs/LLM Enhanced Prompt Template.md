@@ -1,1192 +1,193 @@
-# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
+# 🔒 ULTRA-BULLETPROOF LaTeX Question Generation Template v2.0
 ============================================================================
 
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
+## 🚨🚨🚨 ABSOLUTE CRITICAL SYSTEM REQUIREMENTS 🚨🚨🚨
 
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
+**YOU ARE A JSON GENERATOR. NOTHING ELSE. YOU WILL:**
+1. Output ONLY valid JSON starting with `{` and ending with `}`
+2. Include ZERO citations, references, or tracking markers
+3. Use LaTeX math notation for ALL mathematical content
+4. Follow the exact structure specified below
 
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
+**VIOLATION OF THESE RULES WILL CAUSE COMPLETE SYSTEM FAILURE**
 
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-### **CORRECT LaTeX EXAMPLES:**
-✅ **Variables**: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$f_c# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\omega_0# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$V_{in}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$I_{rms}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-
-✅ **Greek letters**: `$\pi# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\omega# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\Omega# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\mu# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\alpha# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\beta# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\theta# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$\phi# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-
-✅ **Equations**: `$f_c = f_s/2# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$P = I^2R# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$Z = R + j\omega L# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-
-✅ **Units**: `$10\,\Omega# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$5\,\text{V}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$1.5\,\text{kHz}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-, `$100\,\mu\text{F}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-
-✅ **Complex expressions**: `$H(j\omega) = \frac{V_{out}}{V_{in}}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-
-✅ **Frequency resolution**: `$\Delta f = f_s/N# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
- where `$f_s = 8192\,\text{Hz}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-
-
-### **FORBIDDEN - DO NOT USE:**
-❌ **Unicode subscripts**: `fₛ`, `V₁`, `I₂` 
-❌ **Unicode superscripts**: `I²`, `V³`, `10⁶`
-❌ **Plain text math**: `fs`, `omega`, `pi`
-❌ **Unicode symbols outside math**: `Ω`, `μ`, `π` (unless in `$...# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-)
-❌ **HTML entities**: `&Omega;`, `&mu;`, `&pi;`
-❌ **Escaped backslashes in JSON**: `$f_s = 8192\\,\\text{Hz}# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-## 🚨 CRITICAL MATHEMATICAL NOTATION REQUIREMENTS 🚨
-
-**MANDATORY: ALL mathematical expressions, variables, symbols, and equations MUST use LaTeX math mode formatting.**
-
-### **🚫 JSON FORMATTING RULES:**
-- **NO line breaks or escaped backslashes** in JSON strings
-- Use single backslashes: `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- NOT `$f_s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
- or `$f\\s# LLM Enhanced Prompt Template for Technical Question Generation - LaTeX-Native Version
-============================================================================
-
-You are an expert instructor creating autograded questions for [SUBJECT]. Generate [NUMBER] questions covering [TOPICS].
-
-
-- Use `\text{}` NOT `\\text{}`
-- Use `\,` for spacing NOT `\\,`
-- Keep all LaTeX on single lines within JSON strings
-
-### **LaTeX FORMATTING RULES - NO EXCEPTIONS:**
-
-1. **ALL mathematical variables**: Wrap in `$...$` → `$f_s$`, `$V_{rms}$`, `$\omega$`
-2. **ALL Greek letters**: Use LaTeX commands → `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`
-3. **ALL subscripts/superscripts**: Use LaTeX → `$f_s$`, `$V^2$`, `$I^2R$`, `$x_1$`
-4. **ALL mathematical expressions**: Use LaTeX → `$I = V/R$`, `$P = I^2R$`, `$H(j\omega)$`
-5. **ALL units with values**: Use LaTeX → `$10\,\Omega$`, `$5\,\text{V}$`, `$60\,\text{Hz}$`
-6. **ALL complex equations**: Use LaTeX → `$H(j\omega) = \frac{1}{1 + j\omega RC}$`
-
-
-❌ **Line breaks in JSON strings**: Split LaTeX across multiple lines
-
-### **MATHEMATICAL EXPRESSION REQUIREMENTS:**
+## ❌ THESE PATTERNS ARE ABSOLUTELY FORBIDDEN ❌
 
-**For ALL mathematical content, use LaTeX math mode:**
+**IF YOU INCLUDE ANY OF THESE, THE SYSTEM WILL CRASH:**
 
-- **Simple variables**: `$f$`, `$V$`, `$I$`, `$R$`, `$C$`, `$L$`
-- **Subscripted variables**: `$f_s$`, `$V_{rms}$`, `$I_{max}$`, `$R_1$`, `$C_{eq}$`
-- **Equations**: `$I = V/R$`, `$P = V^2/R$`, `$\omega = 2\pi f$`
-- **Greek letters**: `$\pi$`, `$\omega$`, `$\Omega$`, `$\mu$`, `$\alpha$`, `$\beta$`, `$\gamma$`, `$\delta$`, `$\theta$`, `$\phi$`, `$\lambda$`, `$\sigma$`, `$\tau$`
-- **Complex expressions**: `$H(s) = \frac{K}{s^2 + 2\zeta\omega_n s + \omega_n^2}$`
-- **Units with values**: `$50\,\Omega$`, `$10\,\text{V}$`, `$1\,\text{kHz}$`, `$100\,\mu\text{F}$`
+### **Citation Patterns - NEVER USE:**
+- `[cite_start]` anywhere in your response
+- `[cite: 1]`, `[cite: 2]`, `[cite: any_number]`
+- `[cite_start]"feedback_correct"` 
+- `"question_text": "[cite_start]Calculate...`
+- Any text containing `[cite`
+- Any reference tracking whatsoever
 
-### **EXAMPLES OF CORRECT LaTeX USAGE:**
+### **Format Patterns - NEVER USE:**
+- Markdown code blocks: `` ```json ``
+- Explanatory text before JSON: "Here are the questions:"
+- Explanatory text after JSON: "This completes the questions."
+- Line breaks inside JSON string values
+- Comments inside JSON
 
-**Question Text Examples:**
+### **EXAMPLES OF WHAT WILL BREAK THE SYSTEM:**
 ```
-"For an $N = 1024$-point FFT with sampling frequency $f_s = 8192\,\text{Hz}$, calculate the frequency resolution $\Delta f = f_s/N$ in Hz."
-
-"A resistor $R = 10\,\Omega$ has voltage $V = 5\,\text{V}$ applied. Calculate current using $I = V/R$."
-
-"For the transfer function $H(j\omega) = \frac{1}{1 + j\omega RC}$, find the cutoff frequency $\omega_c$."
+❌ WRONG: [cite_start]"feedback_correct": "Correct! The impedance is..."
+❌ WRONG: "question_text": "Calculate [cite_start]the frequency..."
+❌ WRONG: ```json\n{\n"questions": [...]
+❌ WRONG: Here are 5 electrical engineering questions:
 ```
 
-**Choice Examples:**
+## ✅ REQUIRED OUTPUT FORMAT - FOLLOW EXACTLY ✅
+
+**YOUR ENTIRE RESPONSE MUST LOOK EXACTLY LIKE THIS:**
+
 ```
-["$0.5\,\text{A}$", "$2\,\text{A}$", "$50\,\text{A}$", "$0.05\,\text{A}$"]
-["$f_c = \pi/RC$", "$f_c = 1/(2\pi RC)$", "$f_c = 2\pi RC$", "$f_c = RC/2\pi$"]
-```
-
-**Feedback Examples:**
-```
-"Correct! $I = V/R = 5\,\text{V}/10\,\Omega = 0.5\,\text{A}$"
-"The cutoff frequency is $f_c = \frac{1}{2\pi RC}$ where $R$ is in ohms and $C$ is in farads."
-```
-
-## 🔍 **LaTeX QUALITY CHECKLIST:**
-
-Before submitting your JSON, verify:
-✅ Every mathematical variable is in `$...$` format
-✅ All Greek letters use LaTeX commands (`$\pi$`, not `π`)
-✅ All subscripts use LaTeX (`$f_s$`, not `fₛ`)
-✅ All superscripts use LaTeX (`$I^2$`, not `I²`)
-✅ All equations use proper LaTeX (`$I = V/R$`, not `I = V/R`)
-✅ All units use LaTeX text mode (`$10\,\text{V}$`, not `10V`)
-✅ No Unicode mathematical symbols outside LaTeX
-
-## **CRITICAL OUTPUT REQUIREMENTS:**
-Return ONLY valid JSON. No explanations, no markdown formatting, no extra text. 
-Start with { and end with }. Nothing else.
-
-## **JSON OUTPUT FORMAT:**
-
-```json
 {
   "questions": [
     {
-      "type": "multiple_choice|true_false|numerical|fill_in_blank",
-      "title": "Brief descriptive title",
-      "question_text": "Question with ALL math in LaTeX: $f_s$, $\omega = 2\pi f$, etc.",
-      "choices": ["$option_1$", "$option_2$", "$option_3$", "$option_4$"],
-      "correct_answer": "$correct\,answer$",
-      "points": 1-5,
+      "type": "multiple_choice",
+      "title": "Impedance Calculation",
+      "question_text": "For an RL circuit with $R = 100\\,\\Omega$ and $L = 50\\,\\text{mH}$, calculate the impedance at $f = 1\\,\\text{kHz}$.",
+      "choices": [
+        "$Z = 100 + j314\\,\\Omega$",
+        "$Z = 100 + j50\\,\\Omega$",
+        "$Z = 314 + j100\\,\\Omega$",
+        "$Z = 50 + j100\\,\\Omega$"
+      ],
+      "correct_answer": "$Z = 100 + j314\\,\\Omega$",
+      "points": 3,
       "tolerance": 0.05,
-      "feedback_correct": "Explanation with LaTeX: $equation = result$",
-      "feedback_incorrect": "Hint with LaTeX: $variable = expression$",
+      "feedback_correct": "Correct! Impedance $Z = R + j\\omega L = 100 + j(2\\pi \\times 1000 \\times 0.05) = 100 + j314\\,\\Omega$",
+      "feedback_incorrect": "Remember that inductive reactance is $X_L = \\omega L = 2\\pi f L$",
       "image_file": [],
-      "topic": "[MAIN_TOPIC]",
-      "subtopic": "[SPECIFIC_SUBTOPIC]", 
-      "difficulty": "Easy|Medium|Hard"
+      "topic": "Circuit Analysis",
+      "subtopic": "AC Impedance",
+      "difficulty": "Medium"
     }
   ],
   "metadata": {
     "generated_by": "LLM Question Generator",
-    "generation_date": "[CURRENT_DATE]",
+    "generation_date": "2025-06-19",
     "format_version": "Phase Four LaTeX-Native",
-    "total_questions": [NUMBER],
-    "subject": "[SUBJECT]",
-    "mathematical_notation": "LaTeX math mode",
-    "topics_covered": ["topic1", "topic2"],
-    "subtopics_covered": ["subtopic1", "subtopic2"]
+    "total_questions": 1,
+    "subject": "Electrical Engineering"
   }
 }
 ```
 
-## **SAMPLE QUESTION WITH CORRECT LaTeX:**
+## 🔒 CRITICAL JSON SYNTAX RULES 🔒
+
+### **1. STRING FORMATTING:**
+- ✅ CORRECT: `"feedback_correct": "Correct! The answer is $Z = 100\\,\\Omega$"`
+- ❌ FORBIDDEN: `[cite_start]"feedback_correct": "Correct!..."`
+- ❌ FORBIDDEN: `"feedback_correct": "[cite_start]Correct!..."`
+
+### **2. NO EXTRA TEXT:**
+- ✅ CORRECT: Start immediately with `{`
+- ❌ FORBIDDEN: "Here are the questions: {..."
+- ❌ FORBIDDEN: ```json followed by {
+- ❌ FORBIDDEN: Any text after the closing `}`
+
+### **3. LaTeX ESCAPING IN JSON:**
+- ✅ CORRECT: `"$\\omega = 2\\pi f$"`
+- ❌ WRONG: `"$\\\\omega = 2\\\\pi f$"` (double escaping)
+- ✅ CORRECT: `"$R = 10\\,\\Omega$"`
+- ❌ WRONG: `"$R = 10\\\\,\\\\Omega$"`
+
+## 🧮 MANDATORY LaTeX MATHEMATICAL NOTATION 🧮
+
+**EVERY mathematical symbol, variable, equation, or unit MUST be in LaTeX:**
+
+### **Variables and Symbols:**
+- ✅ `$f$`, `$V$`, `$I$`, `$R$`, `$C$`, `$L$`
+- ✅ `$\\omega$`, `$\\pi$`, `$\\Omega$`, `$\\mu$`, `$\\alpha$`
+- ❌ Never use: `f`, `V`, `I`, `R`, `omega`, `pi`, `Ω`
+
+### **Equations:**
+- ✅ `$I = V/R$`, `$P = I^2R$`, `$Z = R + j\\omega L$`
+- ✅ `$H(j\\omega) = \\frac{V_{out}}{V_{in}}$`
+
+### **Units:**
+- ✅ `$10\\,\\Omega$`, `$5\\,\\text{V}$`, `$1\\,\\text{kHz}$`
+- ✅ `$100\\,\\text{mA}$`, `$50\\,\\text{mH}$`
+
+### **Subscripts/Superscripts:**
+- ✅ `$V_{rms}$`, `$I_{max}$`, `$f_0$`, `$X^2$`
+
+## 📝 REQUIRED QUESTION STRUCTURE 📝
+
+**Each question MUST have ALL these fields:**
 
 ```json
 {
-  "type": "multiple_choice",
-  "title": "Anti-Aliasing Filter Placement",
-  "question_text": "In a digital sampling system with sampling frequency $f_s$, where should an anti-aliasing filter with cutoff frequency $f_c = f_s/2$ be positioned to prevent aliasing?",
-  "choices": [
-    "Before the analog-to-digital converter (ADC)",
-    "After the analog-to-digital converter (ADC)", 
-    "Between the sample-and-hold circuit and the ADC",
-    "After the digital signal processor (DSP)"
-  ],
-  "correct_answer": "Before the analog-to-digital converter (ADC)",
-  "points": 3,
-  "feedback_correct": "Correct! The anti-aliasing filter must be placed before the ADC to remove frequency components above $f_s/2$ from the analog input signal. This prevents aliasing during sampling, as frequencies above the Nyquist frequency ($f_s/2$) would fold back into the baseband.",
-  "feedback_incorrect": "The anti-aliasing filter must be positioned in the analog domain before sampling occurs. It removes high-frequency components to satisfy the Nyquist criterion: $f_{max} < f_s/2$.",
+  "type": "multiple_choice" | "numerical" | "true_false" | "fill_in_blank",
+  "title": "Brief descriptive title",
+  "question_text": "Question with ALL math in LaTeX $...$",
+  "choices": ["Option 1", "Option 2", "Option 3", "Option 4"],
+  "correct_answer": "Exact correct option text or numerical value",
+  "points": 1-5,
+  "tolerance": 0.05,
+  "feedback_correct": "Explanation with LaTeX math",
+  "feedback_incorrect": "Hint with LaTeX math",
   "image_file": [],
-  "topic": "Electrical Signals and Systems",
-  "subtopic": "Sampling Theory", 
-  "difficulty": "Medium"
+  "topic": "Main topic",
+  "subtopic": "Specific concept",
+  "difficulty": "Easy" | "Medium" | "Hard"
 }
 ```
 
-## **TOPIC AND SUBTOPIC ORGANIZATION:**
-- **Topic**: Broad subject area (e.g., "Circuit Analysis", "Signal Processing", "Programming")
-- **Subtopic**: Specific concept (e.g., "Ohm's Law", "Sampling Theory", "Object-Oriented Design")
+## 🎯 PRE-SUBMISSION VALIDATION CHECKLIST 🎯
 
-## **SUBJECT-SPECIFIC LaTeX SYMBOLS:**
+**BEFORE SUBMITTING, VERIFY:**
 
-### **ELECTRICAL ENGINEERING:**
-- **Resistance**: `$\Omega$`, `$\text{k}\Omega$`, `$\text{M}\Omega$`
-- **Current**: `$\text{A}$`, `$\text{mA}$`, `$\mu\text{A}$`
-- **Voltage**: `$\text{V}$`, `$\text{mV}$`, `$\text{kV}$`
-- **Power**: `$\text{W}$`, `$\text{mW}$`, `$\text{kW}$`
-- **Frequency**: `$\text{Hz}$`, `$\text{kHz}$`, `$\text{MHz}$`, `$\text{GHz}$`
-- **Capacitance**: `$\text{F}$`, `$\text{pF}$`, `$\text{nF}$`, `$\mu\text{F}$`
-- **Inductance**: `$\text{H}$`, `$\mu\text{H}$`, `$\text{mH}$`
-- **Angular frequency**: `$\omega = 2\pi f$`
-- **Complex impedance**: `$Z = R + j\omega L$`
+### **Format Validation:**
+- [ ] Response starts with `{` (first character)
+- [ ] Response ends with `}` (last character)
+- [ ] No text before or after JSON
+- [ ] No markdown code blocks
+- [ ] No citation markers anywhere
 
-### **COMMON ELECTRICAL EQUATIONS (LaTeX FORMAT):**
-- Ohm's Law: `$V = IR$`, `$I = V/R$`, `$P = I^2R$`
-- AC Analysis: `$Z = R + j\omega L + \frac{1}{j\omega C}$`
-- Transfer Functions: `$H(j\omega) = \frac{V_{out}}{V_{in}}$`
-- Cutoff Frequency: `$f_c = \frac{1}{2\pi RC}$`
-- Time Constants: `$\tau = RC$`, `$\tau = L/R$`
+### **Content Validation:**
+- [ ] All math in LaTeX: `$...$` format
+- [ ] All required fields present
+- [ ] Valid JSON syntax (no trailing commas)
+- [ ] Proper escaping in JSON strings
 
-## **FINAL REMINDER:**
-🚨 **EVERY mathematical symbol, variable, equation, or expression MUST be in LaTeX format using `$...$` notation. NO EXCEPTIONS!** 🚨
+### **Citation Validation:**
+- [ ] ZERO occurrences of `[cite`
+- [ ] ZERO occurrences of `cite_start`
+- [ ] ZERO occurrences of `cite:`
+- [ ] Clean feedback strings with no references
 
-Generate exactly [NUMBER] questions now with strict LaTeX mathematical notation compliance.
+## 🚨 FINAL ENFORCEMENT RULES 🚨
+
+### **RESPONSE REQUIREMENTS:**
+1. **First character MUST be:** `{`
+2. **Last character MUST be:** `}`
+3. **Total citation markers allowed:** 0 (ZERO)
+4. **Markdown formatting allowed:** NONE
+5. **Explanatory text allowed:** NONE
+
+### **AUTOMATIC FAILURE CONDITIONS:**
+- Contains `[cite` anywhere → SYSTEM CRASH
+- Starts with anything other than `{` → REJECTED
+- Contains markdown `` ``` `` → REJECTED  
+- Has explanatory text → REJECTED
+- Missing LaTeX for math → REJECTED
+
+### **SUCCESS CRITERIA:**
+- Parses as valid JSON ✓
+- Contains no citation artifacts ✓  
+- All math properly formatted in LaTeX ✓
+- Follows exact structure specification ✓
+
+---
+
+## 🎯 GENERATION COMMAND 🎯
+
+**Generate [NUMBER] questions for [SUBJECT] covering [TOPICS].**
+
+**CRITICAL REMINDER: Your response must be PURE JSON starting with `{` and ending with `}` - NO OTHER TEXT ALLOWED.**
+
+**Start your response now with the opening brace `{`**

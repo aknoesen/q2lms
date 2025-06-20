@@ -416,7 +416,15 @@ class DatabaseMerger:
             if existing_df is None or len(existing_df) == 0:
                 # No existing database, keep original numbering
                 return new_questions
+
+    def auto_renumber_questions(self, existing_df: pd.DataFrame, new_questions: List[Dict]) -> List[Dict]:
+            """Automatically renumber new questions to avoid ID conflicts."""
             
+            if existing_df is None or len(existing_df) == 0:
+                # No existing database, keep original numbering
+                return new_questions
+            
+            # ADD THIS MISSING CODE:
             # Find the highest existing ID
             existing_ids = []
             
@@ -446,8 +454,20 @@ class DatabaseMerger:
                     except:
                         continue
             
+            # NOW your debug logging and rest of the function...   
+           
+            # Add this right before the "# Find the next available ID" section
+            logger.info(f"🔍 DEBUG auto_renumber: existing_ids = {existing_ids}")
+            logger.info(f"🔍 DEBUG auto_renumber: id_column = {id_column}")
+            logger.info(f"🔍 DEBUG auto_renumber: len(existing_df) = {len(existing_df)}")
+
+    
             # Find the next available ID
-            if existing_ids:
+            if id_column is None:
+                # No ID column exists, use row count
+                next_id = len(existing_df)
+                logger.info(f"No ID column found in auto_renumber_questions, using row count: {next_id}")
+            elif existing_ids:
                 next_id = max(existing_ids) + 1
             else:
                 next_id = 0
@@ -549,26 +569,35 @@ class DatabaseMerger:
         return result
 
     def get_next_available_id(self, existing_df: pd.DataFrame) -> int:
-            """Get the next available ID number."""
-            if existing_df is None or len(existing_df) == 0:
-                return 0
-            
-            existing_ids = []
-            id_columns = ['id', 'question_id', 'ID', 'Question_ID']
-            
-            for col in id_columns:
-                if col in existing_df.columns:
-                    for idx, row in existing_df.iterrows():
-                        try:
-                            existing_id = str(row[col])
-                            if existing_id.isdigit():
-                                existing_ids.append(int(existing_id))
-                        except:
-                            continue
-                    break
+        """Get the next available ID number."""
+        if existing_df is None or len(existing_df) == 0:
+            return 0
         
-    
-            return max(existing_ids) + 1 if existing_ids else 0
+        existing_ids = []
+        id_columns = ['id', 'question_id', 'ID', 'Question_ID']
+        
+        # Check if any ID column exists
+        id_column_found = False
+        for col in id_columns:
+            if col in existing_df.columns:
+                id_column_found = True
+                for idx, row in existing_df.iterrows():
+                    try:
+                        existing_id = str(row[col])
+                        if existing_id.isdigit():
+                            existing_ids.append(int(existing_id))
+                    except:
+                        continue
+                break
+        
+        # If no ID column exists, use the row count as the next ID
+        if not id_column_found:
+            next_id = len(existing_df)
+            logger.info(f"No ID column found, using row count as next ID: {next_id}")
+            return next_id
+        
+        return max(existing_ids) + 1 if existing_ids else 0
+
     def generate_preview(self, existing_df: pd.DataFrame, 
                         new_questions: List[Dict[str, Any]],
                         strategy: Optional[MergeStrategy] = None) -> MergePreview:
@@ -978,8 +1007,7 @@ def create_merge_preview(existing_df: pd.DataFrame,
                         similarity_threshold: float = 0.8,
                         auto_renumber: bool = True) -> MergePreview:
     """
-    Enhanced convenience function to create merge preview with auto-renumbering.
-    Integrates with Phase 3A (FileProcessor) output and Phase 3B (UploadStateManager).
+    Clean, systematic implementation of merge preview with auto-renumbering.
     
     Args:
         existing_df: Current database DataFrame from session state
@@ -991,49 +1019,198 @@ def create_merge_preview(existing_df: pd.DataFrame,
     Returns:
         MergePreview object for UI consumption
     """
+    logger.info(f"🔍 create_merge_preview called with auto_renumber: {auto_renumber}")
+    
+    # Step 1: Initialize merger
     merger = DatabaseMerger(strategy, similarity_threshold)
     
-    # Check if we should auto-renumber to avoid sequential conflicts
-    if auto_renumber and merger.detect_sequential_id_conflicts(existing_df, new_questions):
-        logger.info("Sequential ID conflicts detected - applying auto-renumbering for preview")
-        
-        # Auto-renumber new questions
-        renumbered_questions = merger.auto_renumber_questions(existing_df, new_questions)
-        
-        # Generate preview with renumbered questions
-        preview = merger.generate_preview(existing_df, renumbered_questions, strategy)
-        
-        # Add info about auto-renumbering to the preview
-        preview.merge_summary['auto_renumbered'] = True
-        preview.merge_summary['renumbering_info'] = {
-            'original_conflicts': len(merger.conflict_detector.detect_conflicts(existing_df, new_questions)),
-            'conflicts_after_renumbering': len(preview.conflicts),
-            'next_id': merger.get_next_available_id(existing_df),
-            'renumbered_count': len(new_questions)
-        }
-        
-        # Update warnings
-        preview.warnings.insert(0, f"Auto-renumbered {len(new_questions)} questions to avoid ID conflicts")
-        
-        return preview
+    # Step 2: Ensure new questions have IDs
+    new_questions = _ensure_questions_have_ids(new_questions)
+    
+    # Step 3: Check if auto-renumbering should be applied
+    should_auto_renumber = _should_apply_auto_renumbering(
+        existing_df, new_questions, auto_renumber
+    )
+    
+    # Step 4: Apply auto-renumbering if needed
+    if should_auto_renumber:
+        logger.info("🚀 Applying auto-renumbering")
+        final_questions = merger.auto_renumber_questions(existing_df, new_questions)
+        auto_renumbered = True
+        renumbering_info = _create_renumbering_info(merger, existing_df, new_questions)
     else:
-        # Use original questions (no auto-renumbering)
-        return merger.generate_preview(existing_df, new_questions, strategy)
+        logger.info("📝 Using original questions (no auto-renumbering)")
+        final_questions = new_questions
+        auto_renumbered = False
+        renumbering_info = {}
+    
+    # Step 5: Generate preview with final questions
+    preview = merger.generate_preview(existing_df, final_questions, strategy)
+    
+    # Step 6: Add auto-renumbering metadata to preview
+    preview.merge_summary['auto_renumbered'] = auto_renumbered
+    preview.merge_summary['renumbering_info'] = renumbering_info
+    
+    if auto_renumbered:
+        renumbered_count = len(new_questions)
+        preview.warnings.insert(0, f"Auto-renumbered {renumbered_count} questions to avoid ID conflicts")
+    
+    logger.info(f"✅ Preview generated: {preview.existing_count} + {len(new_questions)} -> {preview.final_count} questions, {len(preview.conflicts)} conflicts")
+    logger.info(f"✅ Auto-renumbered: {auto_renumbered}")
+    
+    return preview
 
 
+def _ensure_questions_have_ids(new_questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Ensure all new questions have ID fields.
+    
+    Args:
+        new_questions: List of questions that may be missing IDs
+        
+    Returns:
+        List of questions with IDs added
+    """
+    logger.info(f"🔧 Ensuring {len(new_questions)} questions have IDs")
+    
+    # Check if questions already have ID fields
+    has_ids = any('id' in q or 'Question_ID' in q for q in new_questions if isinstance(q, dict))
+    
+    if has_ids:
+        logger.info("✅ Questions already have ID fields")
+        return new_questions
+    
+    # Add sequential IDs starting from 0
+    logger.info(f"🔧 Adding sequential IDs (0 to {len(new_questions)-1}) to questions")
+    
+    questions_with_ids = []
+    for i, question in enumerate(new_questions):
+        if isinstance(question, dict):
+            question_copy = question.copy()
+            question_copy['id'] = i
+            question_copy['Question_ID'] = i
+            questions_with_ids.append(question_copy)
+        else:
+            questions_with_ids.append(question)
+    
+    logger.info(f"✅ Added IDs to {len(questions_with_ids)} questions")
+    return questions_with_ids
+
+
+def _should_apply_auto_renumbering(existing_df: pd.DataFrame, 
+                                  new_questions: List[Dict[str, Any]], 
+                                  auto_renumber: bool) -> bool:
+    """
+    Determine if auto-renumbering should be applied.
+    
+    Args:
+        existing_df: Existing database DataFrame
+        new_questions: New questions with IDs
+        auto_renumber: User preference for auto-renumbering
+        
+    Returns:
+        True if auto-renumbering should be applied
+    """
+    logger.info("🔍 Checking if auto-renumbering should be applied")
+    
+    # Check 1: Auto-renumbering must be enabled
+    if not auto_renumber:
+        logger.info("❌ Auto-renumbering disabled by user")
+        return False
+    
+    # Check 2: Must have new questions
+    if not new_questions:
+        logger.info("❌ No new questions to renumber")
+        return False
+    
+    # Check 3: Check if existing database has no ID column
+    existing_has_no_ids = _existing_db_has_no_ids(existing_df)
+    if existing_has_no_ids:
+        logger.info("✅ Existing database has no ID column - auto-renumbering recommended")
+        return True
+    
+    # Check 4: Check for sequential ID conflicts
+    merger = DatabaseMerger()
+    sequential_conflicts = merger.detect_sequential_id_conflicts(existing_df, new_questions)
+    if sequential_conflicts:
+        logger.info("✅ Sequential ID conflicts detected - auto-renumbering recommended")
+        return True
+    
+    logger.info("❌ No conditions met for auto-renumbering")
+    return False
+
+
+def _existing_db_has_no_ids(existing_df: pd.DataFrame) -> bool:
+    """
+    Check if existing database has no ID columns.
+    
+    Args:
+        existing_df: Existing database DataFrame
+        
+    Returns:
+        True if existing database has no ID columns
+    """
+    if existing_df is None or len(existing_df) == 0:
+        logger.info("🔍 Existing database is empty - treating as no IDs")
+        return True
+    
+    # Check for common ID column names
+    id_columns = ['id', 'question_id', 'ID', 'Question_ID']
+    has_id_column = any(col in existing_df.columns for col in id_columns)
+    
+    logger.info(f"🔍 Existing DB columns: {list(existing_df.columns)}")
+    logger.info(f"🔍 Has ID column: {has_id_column}")
+    
+    return not has_id_column
+
+
+def _create_renumbering_info(merger: 'DatabaseMerger', 
+                           existing_df: pd.DataFrame, 
+                           original_questions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Create renumbering information for UI display.
+    
+    Args:
+        merger: DatabaseMerger instance
+        existing_df: Existing database
+        original_questions: Original questions before renumbering
+        
+    Returns:
+        Dictionary with renumbering information
+    """
+    # Calculate original conflicts
+    original_conflicts = merger.conflict_detector.detect_conflicts(existing_df, original_questions)
+    original_conflict_count = len(original_conflicts)
+    
+    # Get next ID used
+    next_id = merger.get_next_available_id(existing_df)
+    
+    # Create renumbering info
+    renumbering_info = {
+        'original_conflicts': original_conflict_count,
+        'conflicts_after_renumbering': 0,  # Will be updated by preview generation
+        'next_id': next_id,
+        'renumbered_count': len(original_questions),
+        'renumbering_range': f"{next_id} to {next_id + len(original_questions) - 1}"
+    }
+    
+    logger.info(f"🔧 Renumbering info: {renumbering_info}")
+    return renumbering_info
+
+
+# Enhanced execute_database_merge function with systematic approach
 def execute_database_merge(existing_df: pd.DataFrame,
-                          processing_result: Dict[str, Any],  # Changed to match Phase 3A format
+                          processing_result: Dict[str, Any],
                           strategy: MergeStrategy = MergeStrategy.SKIP_DUPLICATES,
                           preview: Optional[MergePreview] = None,
                           similarity_threshold: float = 0.8,
                           auto_renumber: bool = True) -> MergeResult:
     """
-    Enhanced convenience function to execute database merge with auto-renumbering.
-    Integrates with Phase 3A and 3B for complete workflow.
+    Systematic database merge execution with auto-renumbering.
     
     Args:
         existing_df: Current database DataFrame
-        processing_result: Results dict from FileProcessor (contains 'questions' key)
+        processing_result: Results dict from FileProcessor
         strategy: Merge strategy to use
         preview: Pre-generated preview (optional)
         similarity_threshold: Similarity threshold for conflict detection
@@ -1042,52 +1219,293 @@ def execute_database_merge(existing_df: pd.DataFrame,
     Returns:
         MergeResult with merged database and operation details
     """
-    # Extract questions from processing result
-    new_questions = processing_result.get('questions', [])
+    logger.info(f"🚀 Starting systematic database merge with auto_renumber={auto_renumber}")
     
-    if not new_questions:
-        # Return empty result if no questions
-        return MergeResult(
-            success=False,
-            merged_df=None,
-            conflicts_resolved=[],
-            merge_preview=MergePreview(
-                strategy=strategy,
-                existing_count=len(existing_df) if existing_df is not None else 0,
-                new_count=0,
-                final_count=len(existing_df) if existing_df is not None else 0,
-                conflicts=[],
-                merge_summary={},
-                statistics={}
-            ),
-            error_message="No questions found in processing result"
-        )
-    
-    merger = DatabaseMerger(strategy, similarity_threshold)
-    
-    # Check if we should auto-renumber
-    if auto_renumber and merger.detect_sequential_id_conflicts(existing_df, new_questions):
-        logger.info("Sequential ID conflicts detected - applying auto-renumbering for merge")
+    try:
+        # Step 1: Extract and validate questions
+        new_questions = processing_result.get('questions', [])
+        if not new_questions:
+            return _create_empty_merge_result(strategy, "No questions found in processing result")
         
-        # Auto-renumber new questions
-        renumbered_questions = merger.auto_renumber_questions(existing_df, new_questions)
+        logger.info(f"📊 Merge setup: {len(existing_df) if existing_df is not None else 0} existing + {len(new_questions)} new questions")
         
-        # Execute merge with renumbered questions
-        result = merger.merge_databases(existing_df, renumbered_questions, strategy, preview)
+        # Step 2: Create preview if not provided (this handles auto-renumbering)
+        if preview is None:
+            logger.info("🔍 Generating merge preview with auto-renumbering")
+            preview = create_merge_preview(
+                existing_df, new_questions, strategy, similarity_threshold, auto_renumber
+            )
         
-        # Add auto-renumbering info to metadata
-        if result.success and result.merge_metadata:
-            result.merge_metadata['auto_renumbered'] = True
-            result.merge_metadata['renumbering_info'] = {
-                'next_id_used': merger.get_next_available_id(existing_df),
-                'questions_renumbered': len(new_questions)
-            }
+        # Step 3: Check if auto-renumbering was applied
+        auto_renumbered = preview.merge_summary.get('auto_renumbered', False)
+        renumbering_info = preview.merge_summary.get('renumbering_info', {})
+        
+        # Step 4: Get final questions (auto-renumbered if applicable)
+        if auto_renumbered:
+            logger.info("🔧 Using auto-renumbered questions for merge")
+            merger = DatabaseMerger(strategy, similarity_threshold)
+            final_questions = merger.auto_renumber_questions(existing_df, new_questions)
+            logger.info(f"✅ Auto-renumbered {len(final_questions)} questions")
+        else:
+            logger.info("📝 Using original questions for merge")
+            final_questions = new_questions
+        
+        # Step 5: Execute the merge
+        logger.info(f"⚙️ Executing merge with strategy: {strategy.value}")
+        merger = DatabaseMerger(strategy, similarity_threshold)
+        result = merger.merge_databases(existing_df, final_questions, strategy, preview)
+        
+        # Step 6: Enhance result with auto-renumbering metadata
+        if result.success:
+            if not result.merge_metadata:
+                result.merge_metadata = {}
+            
+            result.merge_metadata['auto_renumbered'] = auto_renumbered
+            if auto_renumbered:
+                result.merge_metadata['renumbering_info'] = renumbering_info
+                result.merge_metadata['renumbering_summary'] = {
+                    'auto_renumbered': True,
+                    'message': f"Auto-renumbered {renumbering_info.get('renumbered_count', 0)} questions to avoid ID conflicts",
+                    'original_conflicts': renumbering_info.get('original_conflicts', 0),
+                    'final_conflicts': len(preview.conflicts)
+                }
+            
+            logger.info(f"✅ Merge completed successfully")
+            logger.info(f"   - Final question count: {result.merge_metadata.get('final_count', 'unknown')}")
+            logger.info(f"   - Auto-renumbered: {auto_renumbered}")
+            logger.info(f"   - Final conflicts: {len(preview.conflicts)}")
+        else:
+            logger.error(f"❌ Merge failed: {result.error_message}")
         
         return result
-    else:
-        # Use original questions (no auto-renumbering needed)
-        return merger.merge_databases(existing_df, new_questions, strategy, preview)
+        
+    except Exception as e:
+        error_msg = f"Merge execution failed: {str(e)}"
+        logger.error(error_msg)
+        logger.error(f"Exception details: {type(e).__name__}: {e}")
+        return _create_empty_merge_result(strategy, error_msg)
 
+
+def _create_empty_merge_result(strategy: MergeStrategy, error_message: str) -> MergeResult:
+    """Create an empty/failed merge result."""
+    return MergeResult(
+        success=False,
+        merged_df=None,
+        conflicts_resolved=[],
+        merge_preview=MergePreview(
+            strategy=strategy,
+            existing_count=0,
+            new_count=0,
+            final_count=0,
+            conflicts=[],
+            merge_summary={},
+            statistics={}
+        ),
+        error_message=error_message
+    )
+
+
+def _create_empty_merge_result(strategy: MergeStrategy, error_message: str) -> MergeResult:
+    """Create an empty/failed merge result."""
+    return MergeResult(
+        success=False,
+        merged_df=None,
+        conflicts_resolved=[],
+        merge_preview=MergePreview(
+            strategy=strategy,
+            existing_count=0,
+            new_count=0,
+            final_count=0,
+            conflicts=[],
+            merge_summary={},
+            statistics={}
+        ),
+        error_message=error_message
+    )
+
+
+# Test function to validate the systematic implementation
+def test_systematic_auto_renumbering():
+    """
+    Test the systematic auto-renumbering implementation.
+    """
+    import pandas as pd
+    
+    print("🧪 Testing systematic auto-renumbering implementation")
+    
+    # Test data
+    existing_df = pd.DataFrame({
+        'question_text': ['Question 1', 'Question 2'],
+        'correct_answer': ['A', 'B'],
+        'type': ['multiple_choice', 'multiple_choice']
+        # Note: No ID column
+    })
+    
+    new_questions = [
+        {'question_text': 'New Question 1', 'correct_answer': 'C', 'type': 'multiple_choice'},
+        {'question_text': 'New Question 2', 'correct_answer': 'D', 'type': 'multiple_choice'}
+        # Note: No IDs
+    ]
+    
+    print(f"📊 Test setup: {len(existing_df)} existing questions, {len(new_questions)} new questions")
+    print(f"📊 Existing DB has ID column: {'id' in existing_df.columns or 'Question_ID' in existing_df.columns}")
+    
+    # Test the systematic implementation
+    preview = create_merge_preview(
+        existing_df=existing_df,
+        new_questions=new_questions,
+        auto_renumber=True
+    )
+    
+    print(f"✅ Test result:")
+    print(f"   - Auto-renumbered: {preview.merge_summary.get('auto_renumbered', False)}")
+    print(f"   - Final conflicts: {len(preview.conflicts)}")
+    print(f"   - Final count: {preview.final_count}")
+    print(f"   - Warnings: {preview.warnings}")
+    
+    return preview.merge_summary.get('auto_renumbered', False) and len(preview.conflicts) == 0
+
+
+if __name__ == "__main__":
+    # Run test
+    success = test_systematic_auto_renumbering()
+    print(f"🎯 Systematic implementation test: {'✅ PASSED' if success else '❌ FAILED'}")
+
+def _ensure_questions_have_ids(new_questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Ensure all new questions have ID fields.
+    
+    Args:
+        new_questions: List of questions that may be missing IDs
+        
+    Returns:
+        List of questions with IDs added
+    """
+    logger.info(f"🔧 Ensuring {len(new_questions)} questions have IDs")
+    
+    # Check if questions already have ID fields
+    has_ids = any('id' in q or 'Question_ID' in q for q in new_questions if isinstance(q, dict))
+    
+    if has_ids:
+        logger.info("✅ Questions already have ID fields")
+        return new_questions
+    
+    # Add sequential IDs starting from 0
+    logger.info(f"🔧 Adding sequential IDs (0 to {len(new_questions)-1}) to questions")
+    
+    questions_with_ids = []
+    for i, question in enumerate(new_questions):
+        if isinstance(question, dict):
+            question_copy = question.copy()
+            question_copy['id'] = i
+            question_copy['Question_ID'] = i
+            questions_with_ids.append(question_copy)
+        else:
+            questions_with_ids.append(question)
+    
+    logger.info(f"✅ Added IDs to {len(questions_with_ids)} questions")
+    return questions_with_ids
+
+
+def _should_apply_auto_renumbering(existing_df: pd.DataFrame, 
+                                  new_questions: List[Dict[str, Any]], 
+                                  auto_renumber: bool) -> bool:
+    """
+    Determine if auto-renumbering should be applied.
+    
+    Args:
+        existing_df: Existing database DataFrame
+        new_questions: New questions with IDs
+        auto_renumber: User preference for auto-renumbering
+        
+    Returns:
+        True if auto-renumbering should be applied
+    """
+    logger.info("🔍 Checking if auto-renumbering should be applied")
+    
+    # Check 1: Auto-renumbering must be enabled
+    if not auto_renumber:
+        logger.info("❌ Auto-renumbering disabled by user")
+        return False
+    
+    # Check 2: Must have new questions
+    if not new_questions:
+        logger.info("❌ No new questions to renumber")
+        return False
+    
+    # Check 3: Check if existing database has no ID column
+    existing_has_no_ids = _existing_db_has_no_ids(existing_df)
+    if existing_has_no_ids:
+        logger.info("✅ Existing database has no ID column - auto-renumbering recommended")
+        return True
+    
+    # Check 4: Check for sequential ID conflicts
+    merger = DatabaseMerger()
+    sequential_conflicts = merger.detect_sequential_id_conflicts(existing_df, new_questions)
+    if sequential_conflicts:
+        logger.info("✅ Sequential ID conflicts detected - auto-renumbering recommended")
+        return True
+    
+    logger.info("❌ No conditions met for auto-renumbering")
+    return False
+
+
+def _existing_db_has_no_ids(existing_df: pd.DataFrame) -> bool:
+    """
+    Check if existing database has no ID columns.
+    
+    Args:
+        existing_df: Existing database DataFrame
+        
+    Returns:
+        True if existing database has no ID columns
+    """
+    if existing_df is None or len(existing_df) == 0:
+        logger.info("🔍 Existing database is empty - treating as no IDs")
+        return True
+    
+    # Check for common ID column names
+    id_columns = ['id', 'question_id', 'ID', 'Question_ID']
+    has_id_column = any(col in existing_df.columns for col in id_columns)
+    
+    logger.info(f"🔍 Existing DB columns: {list(existing_df.columns)}")
+    logger.info(f"🔍 Has ID column: {has_id_column}")
+    
+    return not has_id_column
+
+
+def _create_renumbering_info(merger, 
+                           existing_df: pd.DataFrame, 
+                           original_questions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Create renumbering information for UI display.
+    
+    Args:
+        merger: DatabaseMerger instance
+        existing_df: Existing database
+        original_questions: Original questions before renumbering
+        
+    Returns:
+        Dictionary with renumbering information
+    """
+    # Calculate original conflicts
+    original_conflicts = merger.conflict_detector.detect_conflicts(existing_df, original_questions)
+    original_conflict_count = len(original_conflicts)
+    
+    # Get next ID used
+    next_id = merger.get_next_available_id(existing_df)
+    
+    # Create renumbering info
+    renumbering_info = {
+        'original_conflicts': original_conflict_count,
+        'conflicts_after_renumbering': 0,  # Will be updated by preview generation
+        'next_id': next_id,
+        'renumbered_count': len(original_questions),
+        'renumbering_range': f"{next_id} to {next_id + len(original_questions) - 1}"
+    }
+    
+    logger.info(f"🔧 Renumbering info: {renumbering_info}")
+    return renumbering_info
 
 def prepare_session_state_for_preview(preview: MergePreview, 
                                      processing_results: Dict[str, Any]) -> Dict[str, Any]:

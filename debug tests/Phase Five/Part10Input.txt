@@ -1,0 +1,500 @@
+   {
+      "type": "multiple_choice",
+      "title": "Water Pump Electrical Analogy",
+      "question_text": "What electrical component corresponds to a water pump creating pressure difference in hydraulic systems?",
+      "correct_answer": "Battery/Power source",
+      "choices": [
+        "Resistor",
+        "Capacitor",
+        "Inductor",
+        "Battery/Power source"
+      ],
+      "feedback_correct": "Correct! Pumps create pressure difference (ΔP), while batteries create voltage difference (ΔV = V₊ - V₋).",
+      "feedback_incorrect": "Water pumps provide the energy to create pressure difference, analogous to batteries creating voltage difference.",
+      "points": 1,
+      "difficulty": "Medium",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Voltage"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Closed Valve Electrical Analogy",
+      "question_text": "In hydraulic analogies, a closed valve or disconnected pipe represents which circuit condition?",
+      "correct_answer": "Open circuit",
+      "choices": [
+        "Short circuit",
+        "Open circuit",
+        "Current-limiting resistor",
+        "Energy-storing capacitor"
+      ],
+      "feedback_correct": "Correct! Closed valves stop flow (I = 0), just as open circuits prevent current flow.",
+      "feedback_incorrect": "Closed valves block flow completely, analogous to open circuits preventing current flow.",
+      "points": 1,
+      "difficulty": "Medium",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Switch"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Pipe Dimensions Electrical Analogy",
+      "question_text": "Pipe diameter and length affecting water flow correspond to which electrical property?",
+      "correct_answer": "Resistance",
+      "choices": [
+        "Voltage",
+        "Current",
+        "Resistance",
+        "Power"
+      ],
+      "feedback_correct": "Correct! R = ρL/A shows resistance depends on length L and area A, just as pipe flow depends on dimensions.",
+      "feedback_incorrect": "Pipe geometry affects flow resistance, analogous to how conductor geometry determines electrical resistance.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Resistor"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Rubber Membrane Electrical Analogy",
+      "question_text": "A stretchable rubber membrane in a pipe that stores pressure corresponds to which electrical component?",
+      "correct_answer": "Capacitor",
+      "choices": [
+        "Resistor",
+        "Capacitor",
+        "Inductor",
+        "Diode"
+      ],
+      "feedback_correct": "Correct! Membranes store pressure energy (∝ ΔP²), while capacitors store electric energy (E = ½CV²).",
+      "feedback_incorrect": "Elastic membranes store pressure energy, analogous to capacitors storing electrical energy in electric fields.",
+      "points": 2,
+      "difficulty": "Hard",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Capacitor"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Bypass Pipe Electrical Analogy",
+      "question_text": "A large bypass pipe allowing excessive water flow around obstacles represents which dangerous circuit condition?",
+      "correct_answer": "Short circuit",
+      "choices": [
+        "Open circuit",
+        "High resistance",
+        "Short circuit",
+        "Low voltage"
+      ],
+      "feedback_correct": "Correct! Bypass pipes allow uncontrolled flow, like short circuits allowing dangerous current bypassing normal resistance.",
+      "feedback_incorrect": "Large bypass pipes create uncontrolled flow paths, analogous to short circuits bypassing intended circuit resistance.",
+      "points": 2,
+      "difficulty": "Hard",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Short"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Ground Reference in Circuit Analysis",
+      "question_text": "In circuit analysis, what is the primary function of the ground reference symbol (⏚)?",
+      "correct_answer": "Serves as voltage reference point (0V)",
+      "choices": [
+        "Provides current return path",
+        "Serves as voltage reference point (0V)",
+        "Limits circuit current",
+        "Stores electrical energy"
+      ],
+      "feedback_correct": "Correct! Ground establishes the zero-volt reference point for all voltage measurements in the circuit.",
+      "feedback_incorrect": "Ground serves as the 0V reference point for measuring voltages throughout the circuit.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ground"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Node Voltage Interpretation",
+      "question_text": "When stating 'the voltage at node A is 5V,' what does this measurement specifically represent?",
+      "correct_answer": "Voltage relative to ground reference",
+      "choices": [
+        "Voltage difference to unspecified node",
+        "Absolute potential energy (5J/C)",
+        "Voltage relative to ground reference",
+        "Direct 5V source connection"
+      ],
+      "feedback_correct": "Correct! Node voltages are always measured relative to the ground reference (VA = 5V means VA - Vground = 5V).",
+      "feedback_incorrect": "Voltage measurements are relative to ground: VA = 5V means the potential difference between node A and ground.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "NOdes"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "True Ground vs Circuit Ground",
+      "question_text": "What distinguishes 'true ground' from 'circuit ground' in modern electrical design?",
+      "correct_answer": "True ground = Earth potential, circuit ground = 0V reference",
+      "choices": [
+        "True ground carries significant current",
+        "Circuit ground connects to Earth",
+        "True ground = Earth potential, circuit ground = 0V reference",
+        "No significant difference exists"
+      ],
+      "feedback_correct": "Correct! True ground connects to Earth's potential (safety), while circuit ground is simply a chosen 0V reference point.",
+      "feedback_incorrect": "True ground physically connects to Earth's potential, while circuit ground is an arbitrary 0V reference point.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ground"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Differential Voltage Measurement",
+      "question_text": "When measuring voltage 'across' a resistor R₁ not connected to ground, what type of measurement is this?",
+      "correct_answer": "Differential voltage",
+      "choices": [
+        "Single-ended voltage",
+        "Differential voltage",
+        "Ground-referenced voltage",
+        "Absolute voltage"
+      ],
+      "feedback_correct": "Correct! Differential voltage measures VR₁ = V₊ - V₋ between two arbitrary points, not referenced to ground.",
+      "feedback_incorrect": "Voltage 'across' implies differential measurement: VR₁ = Vnode1 - Vnode2, independent of ground reference.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "empty"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Circuit Node Definition",
+      "question_text": "What precisely defines a node in electrical circuit topology?",
+      "correct_answer": "Connection point of ≥2 elements",
+      "choices": [
+        "Current flow pathway",
+        "Connection point of ≥2 elements",
+        "Closed current loop",
+        "Energy storage location"
+      ],
+      "feedback_correct": "Correct! A node is a junction where two or more circuit elements connect, establishing a common potential point.",
+      "feedback_incorrect": "A node is defined as a connection point where multiple circuit elements meet.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Nodes"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Circuit Branch Characteristics",
+      "question_text": "How is a branch properly characterized in circuit analysis?",
+      "correct_answer": "Path connecting two distinct nodes",
+      "choices": [
+        "Multi-component connection point",
+        "Closed path for current flow",
+        "Path connecting two distinct nodes",
+        "Circuit voltage source"
+      ],
+      "feedback_correct": "Correct! A branch is a current path between two nodes, potentially containing circuit elements in series.",
+      "feedback_incorrect": "A branch connects exactly two nodes and may contain one or more circuit elements.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Branches"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Circuit Loop Properties",
+      "question_text": "What fundamental property defines a loop in circuit topology?",
+      "correct_answer": "Closed path without retracing",
+      "choices": [
+        "Current entry point",
+        "Open pathway",
+        "Closed path without retracing",
+        "Current-opposing element"
+      ],
+      "feedback_correct": "Correct! A loop is a closed path that returns to its starting node without traversing any branch twice.",
+      "feedback_incorrect": "A loop must form a closed path that starts and ends at the same node without retracing branches.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Loops"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Water Flow Rate Electrical Analogy",
+      "question_text": "In hydraulic-electrical analogies, water flow rate (L/s) corresponds to which electrical quantity?",
+      "correct_answer": "Current (A)",
+      "choices": [
+        "Voltage (V)",
+        "Resistance (Ω)",
+        "Current (A)",
+        "Power (W)"
+      ],
+      "feedback_correct": "Correct! Flow rate represents current I = dQ/dt (charge flow per unit time), both measuring flow quantities.",
+      "feedback_incorrect": "Water flow rate (volume/time) analogously represents electric current (charge/time).",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Current"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Water Pressure Electrical Analogy",
+      "question_text": "In hydraulic analogies, water pressure (Pa) represents which electrical parameter?",
+      "correct_answer": "Voltage (V)",
+      "choices": [
+        "Current (A)",
+        "Resistance (Ω)",
+        "Voltage (V)",
+        "Power (W)"
+      ],
+      "feedback_correct": "Correct! Pressure difference ΔP drives water flow, just as voltage difference ΔV drives electric current.",
+      "feedback_incorrect": "Water pressure provides the driving force for flow, analogous to voltage driving current.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Voltage"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Pipe Geometry Electrical Analogy",
+      "question_text": "Pipe diameter and length affecting hydraulic flow correspond to which electrical property described by R = ρℓ/A?",
+      "correct_answer": "Resistance",
+      "choices": [
+        "Voltage",
+        "Current",
+        "Resistance",
+        "Power"
+      ],
+      "feedback_correct": "Correct! Hydraulic resistance ∝ ℓ/d² and electrical resistance R = ρℓ/A both depend on geometry.",
+      "feedback_incorrect": "Pipe geometry affects flow resistance, directly analogous to how conductor geometry determines electrical resistance.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Resistor"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Elastic Membrane Electrical Analogy",
+      "question_text": "In hydraulic-electrical analogies, a stretchable rubber membrane in a pipe that stores pressure energy corresponds to which electrical component?",
+      "correct_answer": "Capacitor (C)",
+      "choices": [
+        "Resistor (R)",
+        "Capacitor (C)",
+        "Inductor (L)",
+        "Diode"
+      ],
+      "feedback_correct": "Correct! The membrane stores pressure energy (E ∝ ΔP²), analogous to capacitors storing electric energy (E = ½CV²).",
+      "feedback_incorrect": "The elastic membrane stores pressure energy, similar to how capacitors store electrical energy in electric fields.",
+      "points": 2,
+      "difficulty": "Hard",
+      "topic": "Water Analogy",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Capacitor"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Ground Reference Function",
+      "question_text": "What is the primary function of the ground reference symbol (⏚) in circuit analysis?",
+      "correct_answer": "Serves as voltage reference point (0V)",
+      "choices": [
+        "Provides current return path",
+        "Serves as voltage reference point (0V)",
+        "Limits circuit current",
+        "Stores electrical energy"
+      ],
+      "feedback_correct": "Correct! Ground establishes the zero-volt reference point (Vground = 0V) for all voltage measurements in the circuit.",
+      "feedback_incorrect": "Ground serves as the 0V reference point. All node voltages are measured relative to this reference.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ground"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Node Voltage Interpretation",
+      "question_text": "When stating 'the voltage at node A is 5V,' what does this measurement specifically represent?",
+      "correct_answer": "Voltage relative to ground (VA - Vground = 5V)",
+      "choices": [
+        "Voltage difference to unspecified node",
+        "Absolute potential energy (5J/C)",
+        "Voltage relative to ground (VA - Vground = 5V)",
+        "Direct 5V source connection"
+      ],
+      "feedback_correct": "Correct! Node voltages are always measured relative to ground reference: VA = 5V means VA - Vground = 5V - 0V = 5V.",
+      "feedback_incorrect": "Node voltage measurements are relative to ground reference. VA = 5V means the potential difference between node A and ground.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Nodes"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "True Ground vs Circuit Ground Distinction",
+      "question_text": "What distinguishes 'true ground' from 'circuit ground' in electrical engineering practice?",
+      "correct_answer": "True ground = Earth potential, circuit ground = 0V reference",
+      "choices": [
+        "True ground carries significant current",
+        "Circuit ground connects to Earth",
+        "True ground = Earth potential, circuit ground = 0V reference",
+        "No significant difference exists"
+      ],
+      "feedback_correct": "Correct! True ground physically connects to Earth's potential (safety ground), while circuit ground is an arbitrary chosen 0V reference point for voltage measurements.",
+      "feedback_incorrect": "True ground connects to Earth's actual potential for safety, while circuit ground is simply a convenient 0V reference point.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ground"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Differential Voltage Measurement",
+      "question_text": "When measuring voltage 'across' a resistor R₁ that is not connected to ground, what type of measurement is this?",
+      "correct_answer": "Differential voltage (V₊ - V₋)",
+      "choices": [
+        "Single-ended voltage",
+        "Differential voltage (V₊ - V₋)",
+        "Ground-referenced voltage",
+        "Absolute voltage"
+      ],
+      "feedback_correct": "Correct! Differential voltage measures VR₁ = V₊ - V₋ between two arbitrary points, independent of ground reference.",
+      "feedback_incorrect": "Voltage 'across' implies differential measurement: VR₁ = Vnode1 - Vnode2, measured between two arbitrary points.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Circuit Analysis",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Voltage Measurement"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Phasor to Time Domain Conversion",
+      "question_text": "Convert the phasor V = 120∠0° V at ω = 377 rad/s to its time-harmonic signal form.",
+      "correct_answer": "v(t) = 120cos(377t) V",
+      "choices": [
+        "v(t) = 120cos(377t) V",
+        "v(t) = 120sin(377t) V",
+        "v(t) = 120cos(377t + 90°) V",
+        "v(t) = 120sin(377t - 90°) V"
+      ],
+      "feedback_correct": "Correct! For phasor V∠θ, the time domain form is v(t) = V cos(ωt + θ). Here: v(t) = 120cos(377t + 0°) = 120cos(377t) V.",
+      "feedback_incorrect": "For phasor V∠θ, use v(t) = V cos(ωt + θ). With θ = 0°, the result is v(t) = 120cos(377t) V.",
+      "points": 2,
+      "difficulty": "Easy",
+      "topic": "Phasors",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Circuit Analysis"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Current Phasor with Phase Shift",
+      "question_text": "Convert the phasor I = 3.5∠-30° A at ω = 50π rad/s to time-harmonic signal form.",
+      "correct_answer": "i(t) = 3.5cos(50πt - 30°) A",
+      "choices": [
+        "i(t) = 3.5cos(50πt - 30°) A",
+        "i(t) = 3.5sin(50πt - 30°) A",
+        "i(t) = 3.5cos(50πt + 30°) A",
+        "i(t) = 3.5sin(50πt + 30°) A"
+      ],
+      "feedback_correct": "Correct! For phasor I∠θ, the time domain form is i(t) = I cos(ωt + θ) = 3.5cos(50πt - 30°) A.",
+      "feedback_incorrect": "Use the conversion formula i(t) = I cos(ωt + θ) for phasor I∠θ. The phase angle is preserved in the cosine argument.",
+      "points": 2,
+      "difficulty": "Easy",
+      "topic": "Phasors",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Circuit Analysis"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Complex Number to Time Domain",
+      "question_text": "Convert the complex number X = 5 + j3 at ω = 100 rad/s to time-harmonic signal form.",
+      "correct_answer": "x(t) = 5.83cos(100t + 30.96°)",
+      "choices": [
+        "x(t) = 5cos(100t) + 3sin(100t)",
+        "x(t) = 5.83cos(100t + 30.96°)",
+        "x(t) = 5.83sin(100t + 30.96°)",
+        "x(t) = 5cos(100t) - 3sin(100t)"
+      ],
+      "feedback_correct": "Correct! |X| = √(5² + 3²) = 5.83, θ = arctan(3/5) = 30.96°. Therefore x(t) = 5.83cos(100t + 30.96°).",
+      "feedback_incorrect": "Convert to polar form: magnitude = √(a² + b²), phase = arctan(b/a), then use x(t) = |X|cos(ωt + θ).",
+      "points": 3,
+      "difficulty": "Medium",
+      "topic": "Complex Numbers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "empty"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Third Quadrant Complex Number",
+      "question_text": "Convert the complex number F = -4 - j2 at ω = 25π rad/s to time-harmonic signal form.",
+      "correct_answer": "f(t) = 4.47cos(25πt - 153.43°) N",
+      "choices": [
+        "f(t) = 4.47cos(25πt - 153.43°) N",
+        "f(t) = 4.47sin(25πt - 153.43°) N",
+        "f(t) = 4.47cos(25πt + 206.57°) N",
+        "f(t) = 4.47sin(25πt + 206.57°) N"
+      ],
+      "feedback_correct": "Correct! |F| = √((-4)² + (-2)²) = 4.47, θ = arctan(-2/-4) - 180° = -153.43° (third quadrant adjustment).",
+      "feedback_incorrect": "For third quadrant: magnitude = √(a² + b²), phase = arctan(b/a) ± 180° to place in correct quadrant.",
+      "points": 3,
+      "difficulty": "Medium",
+      "topic": "Impedance",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Circuit Analysis"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "AC Voltage Phasor Conversion",
+      "question_text": "Convert the phasor V = 220∠45° V at ω = 314 rad/s to time-harmonic signal form.",
+      "correct_answer": "v(t) = 220cos(314t + 45°) V",
+      "choices": [
+        "v(t) = 220cos(314t + 45°) V",
+        "v(t) = 220sin(314t + 45°) V",
+        "v(t) = 220cos(314t - 45°) V",
+        "v(t) = 311cos(314t + 45°) V"
+      ],
+      "feedback_correct": "Correct! Direct phasor-to-time conversion: V∠θ → V cos(ωt + θ) = 220cos(314t + 45°) V.",
+      "feedback_incorrect": "For phasor V∠θ, the time domain representation is v(t) = V cos(ωt + θ). Phase angle is preserved.",
+      "points": 2,
+      "difficulty": "Easy",
+      "topic": "Phasors",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Circuit Analysis"
+    },

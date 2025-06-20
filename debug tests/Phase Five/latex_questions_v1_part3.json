@@ -1,0 +1,513 @@
+{
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "title": "Sine Wave with Phase Shift",
+      "question_text": "For $v(t) = 2\\sin(2\\pi t + \\pi/2)$, determine amplitude $A$, frequency $f$, and phase $\\phi$:",
+      "choices": [
+        "$A = 2, f = 2\\,\\text{Hz}, \\phi = 0$",
+        "$A = 2, f = 1\\,\\text{Hz}, \\phi = 0$",
+        "$A = 1, f = 2\\,\\text{Hz}, \\phi = \\pi/2$",
+        "$A = 2, f = 1\\,\\text{Hz}, \\phi = \\pi/2$"
+      ],
+      "correct_answer": "$A = 2, f = 1\\,\\text{Hz}, \\phi = \\pi/2$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! $A = 2$, $\\omega = 2\\pi$ gives $f = 1\\,\\text{Hz}$, phase shift $\\phi = \\pi/2$ radians.",
+      "feedback_incorrect": "Standard form: $A \\sin(\\omega t + \\phi)$. Extract $A = 2$, $\\omega = 2\\pi \\to f = 1\\,\\text{Hz}$, $\\phi = \\pi/2$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Negative Amplitude Cosine",
+      "question_text": "For $i(t) = -3\\cos(6\\pi t)$, what are the correct amplitude $A$, frequency $f$, and phase $\\phi$?",
+      "choices": [
+        "$A = -3, f = 3\\,\\text{Hz}, \\phi = 0$",
+        "$A = 3, f = 3\\,\\text{Hz}, \\phi = 0$",
+        "$A = 3, f = 6\\,\\text{Hz}, \\phi = \\pi/2$",
+        "$A = 6, f = 3\\,\\text{Hz}, \\phi = 0$"
+      ],
+      "correct_answer": "$A = 3, f = 3\\,\\text{Hz}, \\phi = 0$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Amplitude $A$ is always positive: $A = 3$. $\\omega = 6\\pi$ gives $f = 3\\,\\text{Hz}$, $\\phi = 0$.",
+      "feedback_incorrect": "Amplitude $A = |\\text{coefficient}| = 3$ (always positive). $\\omega = 6\\pi \\to f = 6\\pi/(2\\pi) = 3\\,\\text{Hz}$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Hard"
+    },
+    {
+      "type": "numerical",
+      "title": "Sine Wave Parameter Analysis",
+      "question_text": "For the sinusoidal function $v(t) = 0.5\\sin(8\\pi t)$, calculate the frequency $f$ in $\\text{Hz}$ using $f = \\omega/(2\\pi)$.",
+      "choices": [],
+      "correct_answer": "4",
+      "points": 3,
+      "tolerance": 0.1,
+      "feedback_correct": "Correct! $\\omega = 8\\pi\\,\\text{rad/s}$, so $f = 8\\pi/(2\\pi) = 4\\,\\text{Hz}$. Amplitude $A = 0.5$, phase $\\phi = 0$.",
+      "feedback_incorrect": "Extract angular frequency: $\\omega = 8\\pi$ from $8\\pi t$, then apply $f = \\omega/(2\\pi) = 8\\pi/(2\\pi) = 4\\,\\text{Hz}$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Complete Sine Wave Analysis",
+      "question_text": "For $v(t) = 0.5\\sin(8\\pi t)$, determine amplitude $A$, frequency $f$, and phase $\\phi$:",
+      "choices": [
+        "$A = 0.5, f = 8\\,\\text{Hz}, \\phi = \\pi/2$",
+        "$A = 8, f = 0.5\\,\\text{Hz}, \\phi = 0$",
+        "$A = 0.5, f = 4\\,\\text{Hz}, \\phi = 0$",
+        "$A = 0.5, f = 4\\,\\text{Hz}, \\phi = \\pi$"
+      ],
+      "correct_answer": "$A = 0.5, f = 4\\,\\text{Hz}, \\phi = 0$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! $A = 0.5$, $\\omega = 8\\pi$ gives $f = 4\\,\\text{Hz}$, no phase term means $\\phi = 0$.",
+      "feedback_incorrect": "Standard form: $A \\sin(\\omega t + \\phi)$. Here $A = 0.5$, $\\omega = 8\\pi \\to f = 4\\,\\text{Hz}$, $\\phi = 0$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Frequency from Period Analysis",
+      "question_text": "A sine wave completes one full cycle in $T = 1.0\\,\\text{s}$. Calculate its frequency $f$ using $f = 1/T$:",
+      "choices": [
+        "$0.5\\,\\text{Hz}$",
+        "$1.0\\,\\text{Hz}$",
+        "$2.0\\,\\text{Hz}$",
+        "$4.0\\,\\text{Hz}$"
+      ],
+      "correct_answer": "$1.0\\,\\text{Hz}$",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! $f = 1/T = 1/1.0\\,\\text{s} = 1.0\\,\\text{Hz}$. Frequency is the reciprocal of period.",
+      "feedback_incorrect": "Use the relationship $f = 1/T$ where $T$ is the period. $f = 1/1.0\\,\\text{s} = 1.0\\,\\text{Hz}$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "fill_in_blank",
+      "title": "Phase Shift Identification",
+      "question_text": "For a standard sine wave $y(t) = \\sin(\\omega t)$ with no horizontal displacement, the phase shift $\\phi = \\_\\_\\_\\_\\_$ radians.",
+      "choices": [],
+      "correct_answer": "0",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Standard sine function $\\sin(\\omega t)$ has $\\phi = 0$ (no phase shift).",
+      "feedback_incorrect": "A standard sine wave with no horizontal shift has phase $\\phi = 0$ radians.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "numerical",
+      "title": "Cosine Amplitude Measurement",
+      "question_text": "A cosine wave oscillates between $+2\\,\\text{V}$ and $-2\\,\\text{V}$. Calculate its amplitude $A$ in volts.",
+      "choices": [],
+      "correct_answer": "2",
+      "points": 2,
+      "tolerance": 0.1,
+      "feedback_correct": "Correct! Amplitude $A = (\\text{max} - \\text{min})/2 = (2\\,\\text{V} - (-2\\,\\text{V}))/2 = 2\\,\\text{V}$.",
+      "feedback_incorrect": "Amplitude is half the peak-to-peak value: $A = (V_{max} - V_{min})/2 = 4\\,\\text{V}/2 = 2\\,\\text{V}$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Phase-Shifted Cosine Analysis",
+      "question_text": "A cosine wave shows a phase shift of $\\phi = \\pi/4$ radians. This represents:",
+      "choices": [
+        "$0\\text{\\degree}$",
+        "$\\pi/4 = 45\\text{\\degree}$",
+        "$-\\pi/4 = -45\\text{\\degree}$",
+        "$\\pi/2 = 90\\text{\\degree}$"
+      ],
+      "correct_answer": "$\\pi/4 = 45\\text{\\degree}$",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! $\\phi = \\pi/4\\,\\text{rad} = 45\\text{\\degree}$ phase shift in degrees.",
+      "feedback_incorrect": "Convert radians to degrees: $\\phi = \\pi/4 \\times (180\\text{\\degree}/\\pi) = 45\\text{\\degree}$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Complex Sinusoidal Function",
+      "question_text": "For a sinusoidal function with $A = 2, f = 1\\,\\text{Hz}, \\phi = \\pi/2$, determine the complete parameters:",
+      "choices": [
+        "$A = 2, f = 2\\,\\text{Hz}, \\phi = \\pi/2$",
+        "$A = 2, f = 1\\,\\text{Hz}, \\phi = \\pi/2$",
+        "$A = 4, f = 2\\,\\text{Hz}, \\phi = 0$",
+        "$A = 4, f = 1\\,\\text{Hz}, \\phi = \\pi/4$"
+      ],
+      "correct_answer": "$A = 2, f = 1\\,\\text{Hz}, \\phi = \\pi/2$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! The parameters match: amplitude $A = 2$, frequency $f = 1\\,\\text{Hz}$, phase $\\phi = \\pi/2$.",
+      "feedback_incorrect": "Check each parameter: $A = 2$ (amplitude), $f = 1\\,\\text{Hz}$ (frequency), $\\phi = \\pi/2$ (phase).",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Trigonometric Identity Application",
+      "question_text": "The function $y = 2\\sin^2(x)$ can be rewritten using the identity $\\sin^2(x) = (1 - \\cos(2x))/2$ as:",
+      "choices": [
+        "$y = 2\\cos(2x)$",
+        "$y = \\cos(2x) + 1$",
+        "$y = 1 - \\cos(2x)$",
+        "$y = 2\\sin(x)\\cos(x)$"
+      ],
+      "correct_answer": "$y = 1 - \\cos(2x)$",
+      "points": 4,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! $y = 2\\sin^2(x) = 2 \\times (1 - \\cos(2x))/2 = 1 - \\cos(2x)$.",
+      "feedback_incorrect": "Apply identity: $y = 2\\sin^2(x) = 2 \\times (1 - \\cos(2x))/2 = 1 - \\cos(2x)$.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sinusoidal Functions",
+      "difficulty": "Hard"
+    },
+    {
+      "type": "numerical",
+      "title": "Sound Wave Frequency Analysis",
+      "question_text": "A sound wave representing musical note $A_4$ has frequency $f = 440\\,\\text{Hz}$. Calculate its period $T$ in milliseconds using $T = 1/f$.",
+      "choices": [],
+      "correct_answer": "2.27",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! $T = 1/f = 1/440\\,\\text{Hz} = 0.00227\\,\\text{s} = 2.27\\,\\text{ms}$ for $A_4$ pitch.",
+      "feedback_incorrect": "Period $T = 1/f = 1/440\\,\\text{Hz} = 0.00227\\,\\text{s} = 2.27\\,\\text{ms}$. Convert seconds to milliseconds.",
+      "image_file": [],
+      "topic": "Signals Time Domain",
+      "subtopic": "Sound Waves",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Frequency Domain Audio Processing",
+      "question_text": "Which application primarily utilizes frequency domain analysis for signal enhancement?",
+      "choices": [
+        "Measuring button press timing",
+        "Noise filtering in audio recordings",
+        "Counting digital pulses",
+        "Measuring instantaneous voltage"
+      ],
+      "correct_answer": "Noise filtering in audio recordings",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Audio filtering targets specific frequency bands to remove noise while preserving desired signals.",
+      "feedback_incorrect": "Frequency domain analysis is essential for filtering applications that manipulate specific frequency components.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "FM Radio Frequency Identification",
+      "question_text": "Why are FM radio stations identified by frequency (e.g., \"$95.5\\,\\text{FM}$\")?",
+      "choices": [
+        "Signal strength measured in $95.5$ units",
+        "Carrier frequency transmitted at $95.5\\,\\text{MHz}$",
+        "Audio quality score of $95.5/100$",
+        "Broadcast range of $95.5$ miles"
+      ],
+      "correct_answer": "Carrier frequency transmitted at $95.5\\,\\text{MHz}$",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! FM stations use frequency modulation at specific carrier frequencies: $95.5\\,\\text{MHz}$ in this example.",
+      "feedback_incorrect": "FM radio stations are identified by their carrier frequency in the VHF band ($88-108\\,\\text{MHz}$).",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "true_false",
+      "title": "Audio Equalizer Frequency Manipulation",
+      "question_text": "Audio equalizers adjust amplitude gains for different frequency bands, demonstrating practical frequency domain signal processing.",
+      "correct_answer": "True",
+      "choices": [
+        "True",
+        "False"
+      ],
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Equalizers implement frequency-selective gain control using band-pass filters and frequency domain principles.",
+      "feedback_incorrect": "Equalizers are classic examples of frequency domain applications, adjusting specific frequency ranges independently.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Low-Pass Filter Frequency Response",
+      "question_text": "How does a low-pass filter operate in the frequency domain?",
+      "choices": [
+        "Removes all signal components",
+        "Passes low frequencies, attenuates high frequencies",
+        "Amplifies all frequencies equally",
+        "Converts low to high frequencies"
+      ],
+      "correct_answer": "Passes low frequencies, attenuates high frequencies",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Low-pass filters: $H(\\omega) \\approx 1$ for $\\omega < \\omega_c$ and $H(\\omega) \\approx 0$ for $\\omega > \\omega_c$ (cutoff frequency).",
+      "feedback_incorrect": "Low-pass filters selectively pass frequencies below the cutoff frequency $\\omega_c$ while attenuating higher frequencies.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "true_false",
+      "title": "Cellular Communication Frequency Bands",
+      "question_text": "Cell phones utilize multiple frequency bands (e.g., $850\\,\\text{MHz}$, $1900\\,\\text{MHz}$, $2.4\\,\\text{GHz}$) for communication with base stations.",
+      "correct_answer": "True",
+      "choices": [
+        "True",
+        "False"
+      ],
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Cellular systems use frequency division multiple access (FDMA) across various bands for different services.",
+      "feedback_incorrect": "Modern cell phones operate across multiple frequency bands to support different protocols and coverage areas.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Band-Pass Filter Audio Application",
+      "question_text": "In audio processing, what function does a band-pass filter serve?",
+      "choices": [
+        "Blocks all frequencies",
+        "Passes only frequencies within range $[f_1, f_2]$",
+        "Shifts signal frequency spectrum",
+        "Amplifies all frequencies uniformly"
+      ],
+      "correct_answer": "Passes only frequencies within range $[f_1, f_2]$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Band-pass filters: $H(\\omega) \\neq 0$ for $\\omega_1 \\le \\omega \\le \\omega_2$, $H(\\omega) \\approx 0$ elsewhere.",
+      "feedback_incorrect": "Band-pass filters selectively pass frequencies within a defined bandwidth while rejecting frequencies outside this range.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "numerical",
+      "title": "WiFi Channel Frequency Calculation",
+      "question_text": "WiFi operates in $2.4\\,\\text{GHz}$ ISM band. If Channel 1 uses $2.412\\,\\text{GHz}$ and channels are spaced $5\\,\\text{MHz}$ apart, calculate Channel 6 frequency in $\\text{GHz}$.",
+      "choices": [],
+      "correct_answer": "2.437",
+      "points": 3,
+      "tolerance": 0.001,
+      "feedback_correct": "Correct! Channel 6 = $2.412\\,\\text{GHz} + (6-1) \\times 0.005\\,\\text{GHz} = 2.412 + 0.025 = 2.437\\,\\text{GHz}$.",
+      "feedback_incorrect": "Use frequency formula: $f_6 = f_1 + (\\text{channel_offset}) \\times \\text{spacing} = 2.412 + 5 \\times 0.005 = 2.437\\,\\text{GHz}$.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Hard"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Circuit Oscillation Analysis",
+      "question_text": "How would an engineer diagnose unwanted oscillations in an electronic circuit?",
+      "choices": [
+        "Single-point voltage measurement",
+        "Frequency spectrum analysis to identify problematic frequencies",
+        "Component replacement",
+        "Power supply voltage increase"
+      ],
+      "correct_answer": "Frequency spectrum analysis to identify problematic frequencies",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Spectrum analysis reveals oscillation frequencies, enabling targeted troubleshooting and filter design.",
+      "feedback_incorrect": "Frequency domain analysis using spectrum analyzers identifies oscillation frequencies for effective circuit debugging.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Practical Applications",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Pure Sine Wave Spectrum",
+      "question_text": "A pure sinusoid $x(t) = A \\sin(2\\pi f_0 t)$ at $f_0 = 100\\,\\text{Hz}$ produces what frequency spectrum?",
+      "choices": [
+        "Single impulse at $100\\,\\text{Hz}$",
+        "Multiple harmonics at regular intervals",
+        "Continuous spectrum across all frequencies",
+        "Two impulses at $0\\,\\text{Hz}$ and $100\\,\\text{Hz}$"
+      ],
+      "correct_answer": "Single impulse at $100\\,\\text{Hz}$",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Pure sinusoids have discrete spectra: $X(f) = (A/2j)[\\delta(f-f_0) - \\delta(f+f_0)]$.",
+      "feedback_incorrect": "A pure sine wave contains only one frequency component, appearing as a single spike in the frequency domain.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Frequency Spectrum Amplitude Interpretation",
+      "question_text": "In a frequency spectrum plot, the height of each spectral line represents:",
+      "choices": [
+        "Signal duration",
+        "Amplitude or energy of frequency component",
+        "Phase information",
+        "Time delay"
+      ],
+      "correct_answer": "Amplitude or energy of frequency component",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Spectral magnitude $|X(f)|$ indicates the amplitude/energy content at each frequency.",
+      "feedback_incorrect": "Frequency spectrum height represents the magnitude or energy content of each frequency component in the signal.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Dual-Tone Signal Spectrum",
+      "question_text": "The spectrum of $x(t) = A_1\\sin(2\\pi\\cdot 100t) + A_2\\sin(2\\pi\\cdot 200t)$ with $A_1 = A_2$ shows:",
+      "choices": [
+        "Single spike at $150\\,\\text{Hz}$ (average)",
+        "Two equal spikes at $100\\,\\text{Hz}$ and $200\\,\\text{Hz}$",
+        "Continuous band $100-200\\,\\text{Hz}$",
+        "Single spike at $300\\,\\text{Hz}$ (sum)"
+      ],
+      "correct_answer": "Two equal spikes at $100\\,\\text{Hz}$ and $200\\,\\text{Hz}$",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Linear superposition: each sinusoid contributes independently to the frequency spectrum.",
+      "feedback_incorrect": "Superposition principle: multiple sinusoids appear as separate spectral lines at their respective frequencies.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "true_false",
+      "title": "Silent Signal Spectrum Interpretation",
+      "question_text": "A frequency spectrum with no visible spikes necessarily indicates a completely silent signal (zero amplitude).",
+      "correct_answer": "False",
+      "choices": [
+        "True",
+        "False"
+      ],
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Low-amplitude signals or noise floors may not show visible spikes but still contain energy.",
+      "feedback_incorrect": "Signals may have low amplitude below display threshold or contain broadband noise not visible as discrete spikes.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Medium"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "DC Component Spectrum Identification",
+      "question_text": "A large spectral component at $f = 0\\,\\text{Hz}$ indicates the signal contains:",
+      "choices": [
+        "Zero-centered oscillation",
+        "DC offset (constant component)",
+        "Absent signal",
+        "Unmeasurable low frequency"
+      ],
+      "correct_answer": "DC offset (constant component)",
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! $X(0)$ represents the DC component: $\\int x(t)dt$, the signal's average value.",
+      "feedback_incorrect": "A spike at $0\\,\\text{Hz}$ (DC) indicates a constant offset or average value in the time-domain signal.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "numerical",
+      "title": "Zero-Mean Sine Wave Spectrum",
+      "question_text": "For $x(t) = 5\\sin(2\\pi\\cdot 10t)$ with zero DC offset, identify the number of spectral peaks in the magnitude spectrum.",
+      "choices": [],
+      "correct_answer": "1",
+      "points": 2,
+      "tolerance": 0,
+      "feedback_correct": "Correct! Zero-mean sinusoid produces one peak at $f = 10\\,\\text{Hz}$ (ignoring negative frequencies in magnitude spectrum).",
+      "feedback_incorrect": "A pure sinusoid with no DC offset creates a single spectral line at its fundamental frequency.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "true_false",
+      "title": "Signal Complexity Correlation",
+      "question_text": "Signals with many spectral components typically appear more complex in the time domain than signals with few frequency components.",
+      "correct_answer": "True",
+      "choices": [
+        "True",
+        "False"
+      ],
+      "points": 2,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! More frequency components create more complex time-domain waveforms through superposition.",
+      "feedback_incorrect": "Fourier theory: complex time signals result from superposition of multiple frequency components.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Easy"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Equal-Amplitude Multi-Tone Analysis",
+      "question_text": "A spectrum with equal-height spikes at $100\\,\\text{Hz}$, $200\\,\\text{Hz}$, $300\\,\\text{Hz}$, and $400\\,\\text{Hz}$ indicates:",
+      "choices": [
+        "Pure sine wave",
+        "Equal energy at these four frequencies",
+        "Square wave pattern",
+        "Random noise signal"
+      ],
+      "correct_answer": "Equal energy at these four frequencies",
+      "points": 3,
+      "tolerance": 0.05,
+      "feedback_correct": "Correct! Equal spectral magnitudes indicate equal energy distribution across these frequency components.",
+      "feedback_incorrect": "Spectral line heights represent energy distribution; equal heights mean equal energy at those frequencies.",
+      "image_file": [],
+      "topic": "Signals Frequency Domain",
+      "subtopic": "Visual Interpretation of Simple Signals",
+      "difficulty": "Medium"
+    }
+  ],
+  "metadata": {
+    "generated_by": "LLM Question Generator",
+    "generation_date": "2025-06-19",
+    "format_version": "Phase Four LaTeX-Native",
+    "total_questions": 26,
+    "subject": "Electrical Engineering"
+  }
+}
