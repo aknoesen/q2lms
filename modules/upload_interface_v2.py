@@ -331,7 +331,28 @@ class UploadInterfaceV2:
                             st.exception(e)
             
             with col2:
-                st.info("📋 Preview will show conflicts and merge options")
+                if st.button("🚀 Direct Merge", key="direct_merge_v2", type="secondary"):
+                    st.write("🚀 **Direct Merge**: Bypassing preview, going straight to merge!")
+                    with st.spinner("Executing direct merge..."):
+                        try:
+                            # Process the file first
+                            processing_result = self.file_processor.process_file(uploaded_file)
+                            if processing_result.valid:
+                                # Store processing results
+                                st.session_state.processing_results = {
+                                    'questions': getattr(processing_result, 'questions', []),
+                                    'format_detected': getattr(processing_result, 'format_detected', 'Unknown'),
+                                    'metadata': getattr(processing_result, 'metadata', {}),
+                                    'issues': getattr(processing_result, 'issues', []),
+                                    'valid': True
+                                }
+                                # Execute Plan B directly
+                                self.execute_merge_plan_b()
+                            else:
+                                st.error("File processing failed")
+                        except Exception as e:
+                            st.error(f"Direct merge failed: {e}")
+                            st.exception(e)
         else:
             st.info("📤 Please select a JSON file to append to your database")
             
@@ -577,7 +598,9 @@ class UploadInterfaceV2:
         col1, col2, col3 = st.columns([1, 1, 1])
         
         with col1:
-            if st.button("✅ Confirm Merge", type="primary", key="confirm_merge"):
+            if st.button("🔧 Plan B Merge", type="primary", key="plan_b_merge"):
+                self.execute_merge_plan_b()
+            if st.button("⚠️ Original Merge", key="original_merge"):
                 self.execute_confirmed_merge()
         
         with col2:
@@ -587,7 +610,109 @@ class UploadInterfaceV2:
         with col3:
             if st.button("❌ Cancel", key="cancel_merge"):
                 self.cancel_merge_operation()
-    
+
+    def execute_confirmed_merge(self):
+        """Execute merge using Phase 3C API"""
+        
+        try:
+            # Get merge parameters
+            preview_data = st.session_state.get('preview_data', {})
+            selected_strategy = st.session_state.get('merge_strategy_selection', 'skip_duplicates')
+            processing_result = st.session_state.get('processing_results', {})
+            
+            # Map string to enum
+            strategy_map = {
+                'append_all': MergeStrategy.APPEND_ALL,
+                'skip_duplicates': MergeStrategy.SKIP_DUPLICATES,
+                'replace_duplicates': MergeStrategy.REPLACE_DUPLICATES,
+                'rename_duplicates': MergeStrategy.RENAME_DUPLICATES
+            }
+            
+            strategy = strategy_map.get(selected_strategy, MergeStrategy.SKIP_DUPLICATES)
+            
+            # Execute merge
+            merge_result = execute_database_merge(
+                existing_df=st.session_state['df'],
+                processing_result=processing_result,
+                strategy=strategy,
+                auto_renumber=True  # Make sure auto-renumbering is enabled here too!
+            )
+            
+            if merge_result.success:
+                # Update session state using Phase 3C API
+                # update_session_state_after_merge(merge_result)
+                
+                # CRITICAL: Update the main DataFrame in session state
+                logger.info(f"🔧 BEFORE UPDATE: st.session_state['df'].shape = {st.session_state['df'].shape}")
+                logger.info(f"🔧 MERGE RESULT: merge_result.merged_df.shape = {merge_result.merged_df.shape}")
+                
+                st.session_state['df'] = merge_result.merged_df
+                
+                logger.info(f"🔧 AFTER UPDATE: st.session_state['df'].shape = {st.session_state['df'].shape}")
+                logger.info(f"🔧 VERIFY: len(st.session_state['df']) = {len(st.session_state['df'])}")
+                
+                # Success message
+                final_count = len(merge_result.merged_df)
+                st.session_state.success_message = f"Successfully merged! Database now has {final_count} questions."
+                
+                # Transition directly to database loaded state (skip SUCCESS_STATE)
+                transition_upload_state(UploadState.DATABASE_LOADED, "merge_completed")
+                
+                logger.info(f"🔧 FINAL CHECK: st.session_state['df'].shape = {st.session_state['df'].shape}")
+                
+            else:
+                # Handle merge failure
+                error_msg = getattr(merge_result, 'error', 'Unknown merge error')
+                self.handle_merge_failure(error_msg)
+            
+            st.rerun()
+            
+        except Exception as e:
+            self.handle_merge_error(e)
+
+# Add this NEW function to upload_interface_v2.py 
+# Place it right after execute_confirmed_merge()
+
+    def execute_merge_plan_b(self):
+        """Plan B: Simple, direct merge that bypasses problematic state management"""
+        
+        try:
+            st.info("🔧 **Plan B**: Executing direct merge...")
+            
+            # Get the data we need
+            existing_df = st.session_state.get('df')
+            processing_result = st.session_state.get('processing_results', {})
+            new_questions = processing_result.get('questions', [])
+            
+            st.write(f"📊 Starting with {len(existing_df)} existing questions")
+            st.write(f"📊 Adding {len(new_questions)} new questions")
+            
+            # Convert new questions to DataFrame
+            new_df = pd.DataFrame(new_questions)
+            
+            # Simple concatenation (Plan B approach)
+            merged_df = pd.concat([existing_df, new_df], ignore_index=True)
+            
+            st.write(f"📊 Result: {len(merged_df)} total questions")
+            
+            # DIRECT session state update
+            st.session_state['df'] = merged_df
+            st.session_state['current_filename'] = f"Merged_Database_{len(merged_df)}_questions.json"
+            
+            # Verify the update
+            verification_count = len(st.session_state['df'])
+            st.success(f"✅ **Plan B Success!** Session state updated to {verification_count} questions")
+            
+            # Clear temporary data
+            st.session_state['preview_data'] = {}
+            st.session_state['processing_results'] = {}
+            
+            # Force immediate rerun to update UI
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"Plan B failed: {e}")
+            st.exception(e)
     # ========================================
     # ERROR AND SUCCESS INTERFACES
     # ========================================

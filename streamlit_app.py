@@ -335,7 +335,23 @@ def main():
             st.markdown("---")
             create_summary_charts(df)
         
+
+
+
         with tab2:
+            # DEBUG INFO - Add this section
+            st.markdown("### 🔍 DEBUG INFO:")
+            st.write(f"**Session state df shape:** {st.session_state.get('df', pd.DataFrame()).shape}")
+            st.write(f"**Session state keys:** {list(st.session_state.keys())}")
+            st.write(f"**Has df:** {'df' in st.session_state}")
+            st.write(f"**DF is None:** {st.session_state.get('df') is None}")
+            if 'df' in st.session_state and st.session_state.df is not None:
+                st.write(f"**DF type:** {type(st.session_state.df)}")
+                st.write(f"**DF columns:** {st.session_state.df.columns.tolist()}")
+                st.write(f"**Filtered DF shape:** {filtered_df.shape}")
+            st.markdown("---")
+            
+            # Original browse code
             simple_browse_questions_tab(filtered_df)
         
         with tab3:
