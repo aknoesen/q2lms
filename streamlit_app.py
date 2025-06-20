@@ -69,7 +69,7 @@ def detect_phase3_modules():
     # Check Phase 3D (only if all others available)
     if all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
         try:
-            from modules.upload_interface_v2 import render_upload_interface_v2
+            from modules.upload_interface_v2 import UploadInterfaceV2
             phase3_status['phase3d'] = True
             st.sidebar.success("✅ Phase 3D: Upload Interface V2")
         except ImportError as e:
@@ -255,23 +255,22 @@ def render_upload_interface_smart():
         st.markdown('<div class="phase3d-container">', unsafe_allow_html=True)
         
         try:
-            from modules.upload_interface_v2 import render_upload_interface_v2
-            render_upload_interface_v2()
+            from modules.upload_interface_v2 import UploadInterfaceV2
+            upload_interface = UploadInterfaceV2()
+            upload_interface.render_complete_interface()
             
-            # Check database status using Phase 3D
-            try:
-                from modules.upload_state_manager import get_upload_state, UploadState
-                current_state = get_upload_state()
-                has_database = (current_state == UploadState.DATABASE_LOADED and 
-                              hasattr(st.session_state, 'df') and 
-                              st.session_state.df is not None)
-            except:
-                # Fallback to session state check
-                has_database = (hasattr(st.session_state, 'df') and 
-                              st.session_state.df is not None)
+            # SIMPLIFIED DETECTION: Check if we already have a DataFrame (the upload interface sets this)
+            if 'df' in st.session_state and st.session_state['df'] is not None and len(st.session_state['df']) > 0:
+                st.success("✅ Database successfully loaded from Phase 3D merge!")
+                has_database = True
+            else:
+                has_database = False
         
         except Exception as e:
             st.error(f"Phase 3D error: {e}")
+            st.error(f"Error details: {type(e).__name__}: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
             st.info("Falling back to legacy interface...")
             has_database = smart_upload_interface()
         

@@ -1,1466 +1,436 @@
-"""
-Upload Interface V2 - State-Driven UI Layer
-Phase 3D: Complete upload interface rebuild
-
-Integrates with:
-- Phase 3A: file_processor_module.py (File processing and validation)
-- Phase 3B: upload_state_manager.py (State management and transitions)  
-- Phase 3C: database_merger.py (Database merging and conflict resolution)
-
-Author: Phase 3D Implementation
-Created: Based on proven backend foundation
-"""
-
+# upload_interface_v2.py - Complete Clean Architecture
 import streamlit as st
+import json
 import pandas as pd
-from typing import List, Dict, Any, Optional
-import traceback
-from pathlib import Path
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
-# Import all proven backend modules
-try:
-    from modules.file_processor_module import FileProcessor
-    from modules.upload_state_manager import (
-        UploadState, 
-        get_upload_state, 
-        transition_upload_state,
-        get_upload_actions,
-        reset_upload
-    )
-    from modules.database_merger import (
-        create_merge_preview,
-        execute_database_merge, 
-        prepare_session_state_for_preview,
-        update_session_state_after_merge,
-        get_merge_strategy_description,
-        MergeStrategy
-    )
-except ImportError as e:
-    st.error(f"Backend module import failed: {e}")
-    st.stop()
-
+@dataclass
+class MergePreviewData:
+    """Clean data structure for merge preview"""
+    total_questions: int
+    conflicts: List[Dict]
+    conflict_count: int
+    renumbered_count: int
+    preview_questions: List[Dict]
+    merge_ready: bool
 
 class UploadInterfaceV2:
-    """
-    State-driven upload interface that adapts based on current upload state.
-    Provides clean, intuitive workflows for all database operations.
-    """
+    """Simplified upload interface with clear state management"""
     
     def __init__(self):
-        self.file_processor = FileProcessor()
-        self.setup_session_state()
+        self._initialize_session_state()
     
-    def setup_session_state(self):
-        """Initialize session state if needed (backward compatible)"""
-        
-        # Core state initialization
+    def _initialize_session_state(self):
+        """Initialize session state with clear defaults"""
+        # Only initialize if completely missing - don't reset existing state
         if 'upload_state' not in st.session_state:
-            st.session_state.upload_state = UploadState.NO_DATABASE
-        
-        # Processing state
-        if 'processing_results' not in st.session_state:
-            st.session_state.processing_results = {}
-        
-        if 'preview_data' not in st.session_state:
-            st.session_state.preview_data = {}
-        
-        # UI state
-        if 'error_message' not in st.session_state:
-            st.session_state.error_message = ''
-        
-        if 'success_message' not in st.session_state:
-            st.session_state.success_message = ''
-    
-    def render(self):
-        """Main render method - adapts interface based on current state"""
-        
-        try:
-            # Get current state
-            current_state = get_upload_state()
-            
-            # Always render status header
-            self.render_status_header(current_state)
-            
-            # Show messages if any
-            self.render_messages()
-            
-            # State-specific interface
-            interface_map = {
-                UploadState.NO_DATABASE: self.render_fresh_start_interface,
-                UploadState.DATABASE_LOADED: self.render_database_management_interface,
-                UploadState.PROCESSING_FILES: self.render_processing_interface,
-                UploadState.PREVIEW_MERGE: self.render_merge_preview_interface,
-                UploadState.ERROR_STATE: self.render_error_recovery_interface,
-                UploadState.SUCCESS_STATE: self.render_success_interface
+            st.session_state.upload_state = {
+                'files_uploaded': False,
+                'preview_generated': False,
+                'merge_completed': False,
+                'current_preview': None,
+                'error_message': None,
+                'final_database': None
             }
-            
-            interface_renderer = interface_map.get(current_state)
-            if interface_renderer:
-                interface_renderer()
-            else:
-                st.error(f"Unknown upload state: {current_state}")
-                
-        except Exception as e:
-            st.error("Interface rendering error occurred")
-            st.exception(e)
-    
-    # ========================================
-    # STATUS HEADER COMPONENT
-    # ========================================
-    
-    def render_status_header(self, current_state: UploadState):
-        """Always-visible status information"""
-        
-        st.markdown("---")
-        
-        col1, col2, col3, col4 = st.columns([1, 2, 1, 1])
-        
-        with col1:
-            # State indicator with emoji and color
-            state_info = {
-                UploadState.NO_DATABASE: ("🟡", "No Database"),
-                UploadState.DATABASE_LOADED: ("🟢", "Database Loaded"),
-                UploadState.PROCESSING_FILES: ("🔄", "Processing"),
-                UploadState.PREVIEW_MERGE: ("🔍", "Preview Merge"),
-                UploadState.ERROR_STATE: ("❌", "Error"),
-                UploadState.SUCCESS_STATE: ("✅", "Success")
-            }
-            emoji, label = state_info.get(current_state, ("❓", "Unknown"))
-            st.markdown(f"{emoji} **{label}**")
-        
-        with col2:
-            # Database summary
-            if hasattr(st.session_state, 'df') and st.session_state.df is not None:
-                count = len(st.session_state.df)
-                filename = st.session_state.get('current_filename', 'Unknown')
-                st.markdown(f"📊 **{count} questions** in `{filename}`")
-            else:
-                st.markdown("📊 No database loaded")
-        
-        with col3:
-            # Quick actions based on state
-            if current_state == UploadState.DATABASE_LOADED:
-                if st.button("📤 Export", key="quick_export", help="Export current database"):
-                    self.handle_export_action()
-        
-        with col4:
-            # Rollback option
-            if st.session_state.get('can_rollback', False):
-                if st.button("↩️ Rollback", key="quick_rollback", help="Undo last operation"):
-                    self.handle_rollback_action()
-        
-        st.markdown("---")
-    
-    def render_messages(self):
-        """Display success/error messages"""
-        
-        if st.session_state.get('error_message'):
-            st.error(st.session_state.error_message)
-            # Clear after display
-            st.session_state.error_message = ''
-        
-        if st.session_state.get('success_message'):
-            st.success(st.session_state.success_message)
-            # Clear after display  
-            st.session_state.success_message = ''
-    
-    # ========================================
-    # FRESH START INTERFACE (NO_DATABASE)
-    # ========================================
-    
-    def render_fresh_start_interface(self):
-        """Clean interface for first-time users"""
-        
-        st.markdown("### 📤 Upload Your First Question Database")
-        st.info("No database currently loaded. Upload a JSON file to begin working with questions.")
-        
-        # Create two columns for different upload options
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("#### 📄 Single File Upload")
-            st.markdown("Upload one JSON question database file")
-            
-            uploaded_file = st.file_uploader(
-                "Choose JSON file",
-                type=['json'],
-                key="fresh_single_upload",
-                help="Upload a single question database file (Phase 3, 4, or Legacy format)"
-            )
-            
-            if uploaded_file is not None:
-                if st.button("Process File", key="process_fresh_single", type="primary"):
-                    self.handle_fresh_upload(uploaded_file)
-        
-        with col2:
-            st.markdown("#### 📁 Multiple Files (Auto-Merge)")
-            st.markdown("Upload multiple JSON files to merge automatically")
-            
-            uploaded_files = st.file_uploader(
-                "Choose JSON files",
-                type=['json'],
-                accept_multiple_files=True,
-                key="fresh_multi_upload",
-                help="Upload multiple files - they will be merged with conflict detection"
-            )
-            
-            if uploaded_files:
-                st.info(f"Selected {len(uploaded_files)} files for merging")
-                if st.button("Process Files", key="process_fresh_multi", type="primary"):
-                    self.handle_fresh_multi_upload(uploaded_files)
-        
-        # Help section
-        with st.expander("ℹ️ Supported Formats & Help"):
-            st.markdown("""
-            **Supported Formats:**
-            - Phase 4 format (recommended)
-            - Phase 3 format 
-            - Legacy format (auto-detected)
-            
-            **File Requirements:**
-            - Valid JSON syntax
-            - Proper question structure
-            - LaTeX content supported
-            
-            **What happens next:**
-            - File validation and format detection
-            - Question extraction and processing
-            - Database loading (single file) or merge preview (multiple files)
-            """)
-    
-    # ========================================
-    # DATABASE MANAGEMENT INTERFACE (DATABASE_LOADED)
-    # ========================================
-    
-    def render_database_management_interface(self):
-        """Interface when database exists - append/replace operations"""
-        
-        st.markdown("### 🗃️ Database Operations")
-        
-        # Show current database summary
-        self.render_database_summary()
-        
-        # Operation tabs
-        tab1, tab2, tab3 = st.tabs(["📝 Append Questions", "🔄 Replace Database", "📁 Merge Multiple Files"])
-        
-        with tab1:
-            self.render_append_interface()
-        
-        with tab2:
-            self.render_replace_interface()
-        
-        with tab3:
-            self.render_multi_merge_interface()
-    
-    def render_database_summary(self):
-        """Show summary of current database"""
-        
-        if not hasattr(st.session_state, 'df') or st.session_state.df is None:
-            st.warning("No database loaded")
-            return
-        
-        df = st.session_state.df
-        
-        # Summary metrics
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Total Questions", len(df))
-        
-        with col2:
-            # Count question types
-            types = df.get('type', pd.Series()).value_counts()
-            most_common = types.index[0] if len(types) > 0 else "Unknown"
-            st.metric("Most Common Type", most_common)
-        
-        with col3:
-            # Count topics
-            topics = df.get('topic', pd.Series()).nunique()
-            st.metric("Topics", topics)
-        
-        with col4:
-            # File info
-            filename = st.session_state.get('current_filename', 'Unknown')
-            st.metric("Current File", filename)
-        
-        # Option to view details
-        if st.checkbox("Show database details", key="show_db_details"):
-            st.dataframe(df.head(10), use_container_width=True)
-            if len(df) > 10:
-                st.info(f"Showing first 10 of {len(df)} questions")
-    
-    def render_append_interface(self):
-        """Interface for appending questions to existing database"""
-        
-        st.markdown("Add new questions to your existing database with conflict detection.")
-        
-        # Debug: Show current state
-        st.write("🔍 **Debug**: Current upload state:", get_upload_state())
-        st.write("🔍 **Debug**: Has database:", hasattr(st.session_state, 'df') and st.session_state.df is not None)
-        
-        uploaded_file = st.file_uploader(
-            "Choose JSON file to append",
-            type=['json'],
-            key="append_upload_v2",  # Changed key to avoid conflicts
-            help="Upload questions to add to current database"
-        )
-        
-        # Debug: Show file upload status
-        st.write("🔍 **Debug**: File uploaded:", uploaded_file is not None)
-        if uploaded_file:
-            st.write("🔍 **Debug**: File name:", uploaded_file.name)
-            st.write("🔍 **Debug**: File size:", uploaded_file.size)
-        
-        if uploaded_file is not None:
-            st.success(f"✅ File selected: {uploaded_file.name}")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("🔍 Preview Merge", key="preview_append_v2", type="primary"):
-                    st.write("🔍 **Debug**: Preview button clicked!")
-                    with st.spinner("Processing file and detecting conflicts..."):
-                        try:
-                            self.handle_append_upload(uploaded_file)
-                            st.write("🔍 **Debug**: handle_append_upload completed")
-                        except Exception as e:
-                            st.error(f"🔍 **Debug**: Error in handle_append_upload: {e}")
-                            st.exception(e)
-            
-            with col2:
-                if st.button("🚀 Direct Merge", key="direct_merge_v2", type="secondary"):
-                    st.write("🚀 **Direct Merge**: Bypassing preview, going straight to merge!")
-                    with st.spinner("Executing direct merge..."):
-                        try:
-                            # Process the file first
-                            processing_result = self.file_processor.process_file(uploaded_file)
-                            if processing_result.valid:
-                                # Store processing results
-                                st.session_state.processing_results = {
-                                    'questions': getattr(processing_result, 'questions', []),
-                                    'format_detected': getattr(processing_result, 'format_detected', 'Unknown'),
-                                    'metadata': getattr(processing_result, 'metadata', {}),
-                                    'issues': getattr(processing_result, 'issues', []),
-                                    'valid': True
-                                }
-                                # Execute Plan B directly
-                                self.execute_merge_plan_b()
-                            else:
-                                st.error("File processing failed")
-                        except Exception as e:
-                            st.error(f"Direct merge failed: {e}")
-                            st.exception(e)
         else:
-            st.info("📤 Please select a JSON file to append to your database")
-            
-        # Debug: Show session state keys
-        st.write("🔍 **Debug**: Session state keys:", list(st.session_state.keys()))
+            # If upload_state exists but isn't a dict (could be an enum), force it to dict
+            if not isinstance(st.session_state.upload_state, dict):
+                st.session_state.upload_state = {
+                    'files_uploaded': False,
+                    'preview_generated': False,
+                    'merge_completed': False,
+                    'current_preview': None,
+                    'error_message': None,
+                    'final_database': None
+                }
     
-    def render_replace_interface(self):
-        """Interface for replacing entire database"""
-        
-        st.markdown("⚠️ **Replace entire database** - This will permanently replace your current database.")
-        
-        # Warning about destructive action
-        st.warning("This action will permanently replace your current database. Consider exporting first.")
-        
-        uploaded_file = st.file_uploader(
-            "Choose JSON file for replacement",
-            type=['json'],
-            key="replace_upload",
-            help="This file will completely replace your current database"
-        )
-        
-        if uploaded_file is not None:
-            st.error("**DESTRUCTIVE ACTION**: This will replace your entire database")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                confirm_replace = st.checkbox("I understand this will replace my database", key="confirm_replace")
-            
-            with col2:
-                if confirm_replace:
-                    if st.button("Replace Database", key="execute_replace", type="primary"):
-                        self.handle_replace_upload(uploaded_file)
-    
-    def render_multi_merge_interface(self):
-        """Interface for merging multiple files with existing database"""
-        
-        st.markdown("Merge multiple JSON files with your existing database.")
+    def render_upload_section(self):
+        """Render file upload with immediate processing"""
+        st.header("📁 Upload Question Database Files")
         
         uploaded_files = st.file_uploader(
-            "Choose JSON files to merge",
-            type=['json'],
+            "Select files to merge",
             accept_multiple_files=True,
-            key="multi_merge_upload",
-            help="Select multiple files to merge with current database"
+            type=['json', 'csv', 'xlsx'],
+            key="file_uploader"
         )
         
-        if uploaded_files:
-            st.info(f"Selected {len(uploaded_files)} files for merging with existing database")
+        if uploaded_files and len(uploaded_files) >= 2:
+            if st.button("Generate Merge Preview", type="primary"):
+                self._process_uploaded_files(uploaded_files)
+        
+        elif uploaded_files and len(uploaded_files) == 1:
+            st.warning("Please upload at least 2 files to merge")
+    
+    def _process_uploaded_files(self, files) -> None:
+        """Process uploaded files and generate preview data"""
+        try:
+            st.write("🔍 DEBUG: Starting file processing...")
+            st.write(f"📁 DEBUG: Processing {len(files)} files")
             
-            if st.button("Preview Multi-Merge", key="preview_multi_merge", type="primary"):
-                self.handle_multi_merge_upload(uploaded_files)
-    
-    # ========================================
-    # PROCESSING INTERFACE (PROCESSING_FILES)
-    # ========================================
-    
-    def render_processing_interface(self):
-        """Show processing status and results"""
-        
-        st.markdown("### 🔄 Processing Files")
-        
-        # Show processing progress/results
-        processing_results = st.session_state.get('processing_results', {})
-        
-        if processing_results:
-            self.render_processing_results(processing_results)
-        else:
-            st.info("Processing files...")
-    
-    def render_processing_results(self, results: Dict[str, Any]):
-        """Display file processing results"""
-        
-        st.markdown("#### Processing Results")
-        
-        # Overall status
-        valid = results.get('valid', False)
-        
-        if valid:
-            st.success("✅ File processing completed successfully")
-        else:
-            st.error("❌ File processing encountered issues")
-        
-        # Details
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**Format Detected:**")
-            st.code(results.get('format_detected', 'Unknown'))
+            with st.spinner("Processing files and generating preview..."):
+                # Step 1: Load and validate files
+                st.write("📂 DEBUG: Loading files...")
+                file_data = self._load_files(files)
+                st.write(f"✅ DEBUG: Loaded {len(file_data)} files successfully")
+                
+                # Step 2: Create merge preview with auto-renumbering
+                st.write("🔄 DEBUG: Creating merge preview...")
+                preview_data = self._create_clean_preview(file_data)
+                st.write(f"✅ DEBUG: Preview created - {preview_data.total_questions} questions")
+                
+                # Step 3: Store in session state (force it to be a dict)
+                st.write("📊 DEBUG: Forcing upload_state to be dictionary...")
+                
+                # Always create/overwrite as dictionary
+                st.session_state.upload_state = {
+                    'files_uploaded': True,
+                    'preview_generated': True,
+                    'current_preview': preview_data,
+                    'error_message': None,
+                    'merge_completed': False,
+                    'final_database': None
+                }
+                st.write("✅ DEBUG: Session state forced to dictionary")
+                
+                st.success(f"Preview generated: {preview_data.total_questions} questions, {preview_data.conflict_count} conflicts")
+                # Don't rerun immediately - let the user see the preview
+                # st.rerun()  # ← REMOVED: This was causing the reset loop
+                
+        except Exception as e:
+            st.error(f"❌ DEBUG: Exception in _process_uploaded_files: {str(e)}")
+            st.write(f"❌ DEBUG: Exception type: {type(e)}")
+            import traceback
+            st.code(traceback.format_exc())
             
-            st.markdown("**Questions Found:**")
-            questions = results.get('questions', [])
-            st.code(f"{len(questions)} questions")
-        
-        with col2:
-            st.markdown("**Metadata:**")
-            metadata = results.get('metadata', {})
-            for key, value in metadata.items():
-                st.text(f"{key}: {value}")
-        
-        # Issues (if any)
-        issues = results.get('issues', [])
-        if issues:
-            with st.expander(f"⚠️ Issues Found ({len(issues)})"):
-                for issue in issues:
-                    severity = issue.get('severity', 'info')
-                    message = issue.get('message', 'No message')
-                    st.markdown(f"**{severity.upper()}**: {message}")
+            upload_state = st.session_state.get('upload_state', {})
+            if isinstance(upload_state, dict):
+                upload_state['error_message'] = str(e)
+                st.session_state.upload_state = upload_state
+            st.error(f"Error processing files: {e}")
     
-    # ========================================
-    # MERGE PREVIEW INTERFACE (PREVIEW_MERGE)
-    # ========================================
+    def _load_files(self, files) -> List[Dict]:
+        """Load and parse uploaded files"""
+        file_data = []
+        for file in files:
+            data = self._parse_file(file)
+            file_data.append({
+                'name': file.name,
+                'questions': data,
+                'count': len(data)
+            })
+        return file_data
     
-    def render_merge_preview_interface(self):
-        """Complete merge preview with conflict resolution - Key new component"""
-        
-        st.markdown("### 🔍 Merge Preview & Conflict Resolution")
-        
-        preview_data = st.session_state.get('preview_data', {})
-        if not preview_data:
-            st.error("No preview data available")
-            return
-        
-        # Top-level statistics
-        self.render_merge_statistics(preview_data)
-        
-        # Strategy selection
-        self.render_strategy_selection(preview_data)
-        
-        # Conflict details (if any)
-        conflicts = preview_data.get('conflict_details', [])
-        if conflicts:
-            self.render_conflict_details_section(conflicts)
-        else:
-            st.success("🎉 No conflicts detected! Merge can proceed smoothly.")
-        
-        # Action buttons
-        self.render_merge_actions(preview_data)
+    def _parse_file(self, file):
+        """Parse uploaded file based on type"""
+        try:
+            if file.name.endswith('.json'):
+                content = file.read().decode('utf-8')
+                data = json.loads(content)
+                # Handle different JSON structures
+                if 'questions' in data:
+                    return data['questions']
+                elif isinstance(data, list):
+                    return data
+                else:
+                    return [data]
+            elif file.name.endswith('.csv'):
+                df = pd.read_csv(file)
+                return df.to_dict('records')
+            else:
+                raise ValueError(f"Unsupported file type: {file.name}")
+        except Exception as e:
+            st.error(f"Error parsing {file.name}: {e}")
+            return []
     
-    def render_merge_statistics(self, preview_data: Dict[str, Any]):
-        """Show merge statistics dashboard"""
+    def _create_clean_preview(self, file_data: List[Dict]) -> MergePreviewData:
+        """Create merge preview with clean data structure"""
+        # Simple merge logic - combine all questions and detect ID conflicts
+        all_questions = []
+        conflicts = []
+        seen_ids = set()
+        renumbered_count = 0
         
-        col1, col2, col3, col4 = st.columns(4)
+        for file_info in file_data:
+            for question in file_info['questions']:
+                q_id = question.get('id', question.get('ID', ''))
+                
+                # Check for ID conflicts and auto-renumber
+                if q_id in seen_ids:
+                    # Find new ID
+                    original_id = q_id
+                    counter = 1
+                    while f"{q_id}_{counter}" in seen_ids:
+                        counter += 1
+                    new_id = f"{q_id}_{counter}"
+                    question['id'] = new_id
+                    renumbered_count += 1
+                    conflicts.append({
+                        'id': original_id,
+                        'description': f"ID {original_id} renamed to {new_id}"
+                    })
+                
+                seen_ids.add(question.get('id', q_id))
+                all_questions.append(question)
         
-        with col1:
-            st.metric("Current Questions", preview_data.get('existing_count', 0))
-        
-        with col2:
-            st.metric("New Questions", preview_data.get('new_count', 0))
-        
-        with col3:
-            final_count = preview_data.get('final_count', 0)
-            existing_count = preview_data.get('existing_count', 0)
-            delta = final_count - existing_count
-            st.metric("Final Total", final_count, delta=f"+{delta}" if delta > 0 else str(delta))
-        
-        with col4:
-            conflicts = preview_data.get('total_conflicts', 0)
-            delta_text = f"{conflicts} to resolve" if conflicts > 0 else "None"
-            st.metric("Conflicts", conflicts, delta=delta_text)
-    
-    def render_strategy_selection(self, preview_data: Dict[str, Any]):
-        """Strategy selection with real-time preview updates"""
-        
-        st.markdown("#### Merge Strategy")
-        
-        current_strategy = preview_data.get('merge_strategy', 'skip_duplicates')
-        
-        strategy_options = {
-            'append_all': "**Append All** - Add all questions (including duplicates)",
-            'skip_duplicates': "**Skip Duplicates** - Skip questions similar to existing ones",
-            'replace_duplicates': "**Replace Duplicates** - Replace existing with new versions", 
-            'rename_duplicates': "**Rename Duplicates** - Rename conflicting questions"
-        }
-        
-        selected_strategy = st.radio(
-            "Choose how to handle conflicts:",
-            options=list(strategy_options.keys()),
-            format_func=lambda x: strategy_options[x],
-            index=list(strategy_options.keys()).index(current_strategy) if current_strategy in strategy_options else 0,
-            key="merge_strategy_selection"
+        # Store ALL questions in the preview object, not just first 10
+        preview_data = MergePreviewData(
+            total_questions=len(all_questions),
+            conflicts=conflicts,
+            conflict_count=len(conflicts),
+            renumbered_count=renumbered_count,
+            preview_questions=all_questions[:10],  # First 10 for display
+            merge_ready=True  # Always ready since we auto-resolve conflicts
         )
         
-        # Show strategy description
-        strategy_description = get_merge_strategy_description(selected_strategy)
-        st.info(f"📝 {strategy_description}")
+        # CRITICAL: Store ALL merged questions for later use
+        preview_data.all_merged_questions = all_questions  # Add this attribute
         
-        # Update preview if strategy changed
-        if selected_strategy != current_strategy:
-            if st.button("🔄 Update Preview", key="update_strategy"):
-                self.update_merge_preview_strategy(selected_strategy)
+        return preview_data
     
-    def render_conflict_details_section(self, conflicts: List[Dict[str, Any]]):
-        """Expandable conflict details"""
+    def render_preview_section(self):
+        """Render merge preview if data is available"""
+        upload_state = st.session_state.get('upload_state', {})
         
-        st.markdown("#### Conflict Details")
-        
-        # Group conflicts by severity
-        severity_groups = {}
-        for conflict in conflicts:
-            severity = conflict.get('severity', 'medium')
-            if severity not in severity_groups:
-                severity_groups[severity] = []
-            severity_groups[severity].append(conflict)
-        
-        # Show each severity group
-        severity_order = ['critical', 'high', 'medium', 'low']
-        severity_colors = {
-            'critical': '🔴',
-            'high': '🟠', 
-            'medium': '🟡',
-            'low': '🟢'
-        }
-        
-        for severity in severity_order:
-            if severity in severity_groups:
-                conflicts_group = severity_groups[severity]
-                emoji = severity_colors[severity]
-                
-                with st.expander(f"{emoji} {severity.title()} Severity ({len(conflicts_group)} conflicts)"):
-                    for i, conflict in enumerate(conflicts_group):
-                        st.markdown(f"**Conflict {i+1}**: {conflict.get('description', 'No description')}")
-                        st.markdown(f"*Suggestion*: {conflict.get('suggestion', 'No suggestion')}")
-                        
-                        if 'existing_question' in conflict and 'new_question' in conflict:
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.markdown("**Existing:**")
-                                existing_text = conflict['existing_question'].get('text', 'No text')
-                                st.code(existing_text[:100] + "..." if len(existing_text) > 100 else existing_text)
-                            with col2:
-                                st.markdown("**New:**")
-                                new_text = conflict['new_question'].get('text', 'No text')
-                                st.code(new_text[:100] + "..." if len(new_text) > 100 else new_text)
-                        
-                        st.markdown("---")
-    
-    def render_merge_actions(self, preview_data: Dict[str, Any]):
-        """Action buttons for merge confirmation"""
-        
-        st.markdown("---")
-        
-        col1, col2, col3 = st.columns([1, 1, 1])
-        
-        with col1:
-            if st.button("🔧 Plan B Merge", type="primary", key="plan_b_merge"):
-                self.execute_merge_plan_b()
-            if st.button("⚠️ Original Merge", key="original_merge"):
-                self.execute_confirmed_merge()
-        
-        with col2:
-            if st.button("🔄 Change Strategy", key="change_strategy"):
-                st.info("Use the strategy selection above to choose a different approach")
-        
-        with col3:
-            if st.button("❌ Cancel", key="cancel_merge"):
-                self.cancel_merge_operation()
-
-    def execute_confirmed_merge(self):
-        """Execute merge using Phase 3C API"""
-        
-        try:
-            # Get merge parameters
-            preview_data = st.session_state.get('preview_data', {})
-            selected_strategy = st.session_state.get('merge_strategy_selection', 'skip_duplicates')
-            processing_result = st.session_state.get('processing_results', {})
-            
-            # Map string to enum
-            strategy_map = {
-                'append_all': MergeStrategy.APPEND_ALL,
-                'skip_duplicates': MergeStrategy.SKIP_DUPLICATES,
-                'replace_duplicates': MergeStrategy.REPLACE_DUPLICATES,
-                'rename_duplicates': MergeStrategy.RENAME_DUPLICATES
-            }
-            
-            strategy = strategy_map.get(selected_strategy, MergeStrategy.SKIP_DUPLICATES)
-            
-            # Execute merge
-            merge_result = execute_database_merge(
-                existing_df=st.session_state['df'],
-                processing_result=processing_result,
-                strategy=strategy,
-                auto_renumber=True  # Make sure auto-renumbering is enabled here too!
-            )
-            
-            if merge_result.success:
-                # Update session state using Phase 3C API
-                # update_session_state_after_merge(merge_result)
-                
-                # CRITICAL: Update the main DataFrame in session state
-                logger.info(f"🔧 BEFORE UPDATE: st.session_state['df'].shape = {st.session_state['df'].shape}")
-                logger.info(f"🔧 MERGE RESULT: merge_result.merged_df.shape = {merge_result.merged_df.shape}")
-                
-                st.session_state['df'] = merge_result.merged_df
-                
-                logger.info(f"🔧 AFTER UPDATE: st.session_state['df'].shape = {st.session_state['df'].shape}")
-                logger.info(f"🔧 VERIFY: len(st.session_state['df']) = {len(st.session_state['df'])}")
-                
-                # Success message
-                final_count = len(merge_result.merged_df)
-                st.session_state.success_message = f"Successfully merged! Database now has {final_count} questions."
-                
-                # Transition directly to database loaded state (skip SUCCESS_STATE)
-                transition_upload_state(UploadState.DATABASE_LOADED, "merge_completed")
-                
-                logger.info(f"🔧 FINAL CHECK: st.session_state['df'].shape = {st.session_state['df'].shape}")
-                
-            else:
-                # Handle merge failure
-                error_msg = getattr(merge_result, 'error', 'Unknown merge error')
-                self.handle_merge_failure(error_msg)
-            
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_merge_error(e)
-
-# Add this NEW function to upload_interface_v2.py 
-# Place it right after execute_confirmed_merge()
-
-    def execute_merge_plan_b(self):
-        """Plan B: Simple, direct merge that bypasses problematic state management"""
-        
-        try:
-            st.info("🔧 **Plan B**: Executing direct merge...")
-            
-            # Get the data we need
-            existing_df = st.session_state.get('df')
-            processing_result = st.session_state.get('processing_results', {})
-            new_questions = processing_result.get('questions', [])
-            
-            st.write(f"📊 Starting with {len(existing_df)} existing questions")
-            st.write(f"📊 Adding {len(new_questions)} new questions")
-            
-            # Convert new questions to DataFrame
-            new_df = pd.DataFrame(new_questions)
-            
-            # Simple concatenation (Plan B approach)
-            merged_df = pd.concat([existing_df, new_df], ignore_index=True)
-            
-            st.write(f"📊 Result: {len(merged_df)} total questions")
-            
-            # DIRECT session state update
-            st.session_state['df'] = merged_df
-            st.session_state['current_filename'] = f"Merged_Database_{len(merged_df)}_questions.json"
-            
-            # Verify the update
-            verification_count = len(st.session_state['df'])
-            st.success(f"✅ **Plan B Success!** Session state updated to {verification_count} questions")
-            
-            # Clear temporary data
-            st.session_state['preview_data'] = {}
-            st.session_state['processing_results'] = {}
-            
-            # Force immediate rerun to update UI
-            st.rerun()
-            
-        except Exception as e:
-            st.error(f"Plan B failed: {e}")
-            st.exception(e)
-    # ========================================
-    # ERROR AND SUCCESS INTERFACES
-    # ========================================
-    
-    def render_error_recovery_interface(self):
-        """Interface for error state with recovery options"""
-        
-        st.markdown("### ❌ Error Recovery")
-        
-        error_msg = st.session_state.get('error_message', 'Unknown error occurred')
-        st.error(f"Error: {error_msg}")
-        
-        st.markdown("#### Recovery Options:")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔄 Try Again", key="retry_operation"):
-                self.handle_retry_operation()
-        
-        with col2:
-            if st.button("↩️ Return to Previous", key="return_previous"):
-                self.handle_return_to_previous()
-        
-        # Clear error and reset
-        if st.button("🧹 Clear Error & Reset", key="clear_error"):
-            self.handle_clear_error()
-    
-    def render_success_interface(self):
-        """Interface for success state"""
-        
-        st.markdown("### ✅ Operation Successful")
-        
-        success_msg = st.session_state.get('success_message', 'Operation completed successfully')
-        st.success(success_msg)
-        
-        # Transition back to appropriate state
-        if st.button("Continue", key="continue_after_success"):
-            self.handle_continue_after_success()
-    
-    # ========================================
-    # FILE UPLOAD HANDLERS
-    # ========================================
-    
-    def handle_fresh_upload(self, uploaded_file):
-        """Handle fresh database upload (Phase 3A integration)"""
-        
-        try:
-            # Transition to processing state
-            transition_upload_state(UploadState.PROCESSING_FILES, "fresh_upload_started")
-            
-            # Process file using Phase 3A
-            processing_result = self.file_processor.process_file(uploaded_file)
-            
-            # Check if processing was successful - try different attribute names
-            is_valid = False
-            if hasattr(processing_result, 'valid'):
-                is_valid = processing_result.valid
-            elif hasattr(processing_result, 'is_valid'):
-                is_valid = processing_result.is_valid
-            elif hasattr(processing_result, 'success'):
-                is_valid = processing_result.success
-            else:
-                # If no clear validity attribute, check if we have questions
-                is_valid = hasattr(processing_result, 'questions') and len(getattr(processing_result, 'questions', [])) > 0
-            
-            if is_valid:
-                # Store processing results
-                st.session_state.processing_results = {
-                    'questions': getattr(processing_result, 'questions', []),
-                    'format_detected': getattr(processing_result, 'format_detected', 'Unknown'),
-                    'metadata': getattr(processing_result, 'metadata', {}),
-                    'issues': getattr(processing_result, 'issues', []),
-                    'valid': is_valid
-                }
-                
-                # Apply fresh database directly (no merge needed)
-                self.apply_fresh_database(processing_result, uploaded_file.name)
-                
-                # Success - but stay in DATABASE_LOADED state
-                questions_count = len(getattr(processing_result, 'questions', []))
-                st.session_state.success_message = f"Successfully loaded {questions_count} questions!"
-                # Don't transition to SUCCESS_STATE - already in DATABASE_LOADED
-                
-            else:
-                # Handle processing errors
-                issues = getattr(processing_result, 'issues', [])
-                if issues:
-                    self.handle_processing_errors(issues)
-                else:
-                    st.session_state.error_message = "File processing failed - no valid questions found"
-                    transition_upload_state(UploadState.ERROR_STATE, "processing_failed")
-                
-            # Trigger rerun to update UI
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_upload_error(e, "fresh upload")
-    
-    def handle_fresh_multi_upload(self, uploaded_files):
-        """Handle multiple file upload for fresh start"""
-        
-        try:
-            # Transition to processing state
-            transition_upload_state(UploadState.PROCESSING_FILES, "multi_upload_started")
-            
-            # Process all files
-            all_questions = []
-            all_issues = []
-            
-            for uploaded_file in uploaded_files:
-                processing_result = self.file_processor.process_file(uploaded_file)
-                
-                if processing_result.valid:
-                    all_questions.extend(processing_result.questions)
-                else:
-                    all_issues.extend(processing_result.issues)
-            
-            if all_questions and not all_issues:
-                # No conflicts in fresh start - merge everything
-                self.apply_fresh_multi_database(all_questions, uploaded_files)
-                
-                st.session_state.success_message = f"Successfully merged {len(uploaded_files)} files into {len(all_questions)} questions!"
-                transition_upload_state(UploadState.SUCCESS_STATE, "multi_upload_complete")
-                
-            else:
-                # Handle errors
-                if all_issues:
-                    self.handle_processing_errors(all_issues)
-                else:
-                    st.session_state.error_message = "No valid questions found in uploaded files"
-                    transition_upload_state(UploadState.ERROR_STATE, "no_valid_questions")
-            
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_upload_error(e, "multi-file upload")
-    
-    def handle_append_upload(self, uploaded_file):
-        """Handle append operation (Phase 3C integration)"""
-        
-        try:
-            # Process file first using Phase 3A
-            processing_result = self.file_processor.process_file(uploaded_file)
-            
-            # Check if processing was successful - try different attribute names
-            is_valid = False
-            if hasattr(processing_result, 'valid'):
-                is_valid = processing_result.valid
-            elif hasattr(processing_result, 'is_valid'):
-                is_valid = processing_result.is_valid
-            elif hasattr(processing_result, 'success'):
-                is_valid = processing_result.success
-            else:
-                # If no clear validity attribute, check if we have questions
-                is_valid = hasattr(processing_result, 'questions') and len(getattr(processing_result, 'questions', [])) > 0
-            
-            if is_valid:
-                # Store processing results with safe attribute access
-                st.session_state.processing_results = {
-                    'questions': getattr(processing_result, 'questions', []),
-                    'format_detected': getattr(processing_result, 'format_detected', 'Unknown'),
-                    'metadata': getattr(processing_result, 'metadata', {}),
-                    'issues': getattr(processing_result, 'issues', []),
-                    'valid': is_valid
-                }
-                
-                # Create merge preview using Phase 3C
-                self.prepare_merge_preview(processing_result)
-                
-            else:
-                # Handle processing errors
-                issues = getattr(processing_result, 'issues', [])
-                if issues:
-                    self.handle_processing_errors(issues)
-                else:
-                    st.session_state.error_message = "File processing failed - no valid questions found"
-                    transition_upload_state(UploadState.ERROR_STATE, "processing_failed")
-            
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_upload_error(e, "append upload")
-    
-    def handle_replace_upload(self, uploaded_file):
-        """Handle database replacement"""
-        
-        try:
-            # Process file
-            processing_result = self.file_processor.process_file(uploaded_file)
-            
-            if processing_result.valid:
-                # Replace directly (no merge needed)
-                self.apply_fresh_database(processing_result, uploaded_file.name)
-                
-                st.session_state.success_message = f"Successfully replaced database with {len(processing_result.questions)} questions!"
-                transition_upload_state(UploadState.SUCCESS_STATE, "replace_complete")
-                
-            else:
-                self.handle_processing_errors(processing_result.issues)
-            
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_upload_error(e, "replace upload")
-    
-    def handle_multi_merge_upload(self, uploaded_files):
-        """Handle multiple file merge with existing database"""
-        
-        # Implementation will be added in Phase 3D-C
-        st.info("Multi-merge functionality will be implemented in next phase")
-    
-    # ========================================
-    # DATABASE OPERATIONS
-    # ========================================
-    
-    def apply_fresh_database(self, processing_result, filename: str):
-        """Apply fresh database from processing result"""
-        
-        # Extract questions using safe attribute access
-        questions = getattr(processing_result, 'questions', [])
-        
-        if not questions:
-            st.session_state.error_message = "No questions found in processed file"
-            transition_upload_state(UploadState.ERROR_STATE, "no_questions_found")
+        # Check if it's a dictionary and has the data we need
+        if not isinstance(upload_state, dict):
+            st.info("Upload files above to see merge preview")
             return
         
-        # Convert questions to DataFrame
-        df = pd.DataFrame(questions)
+        if upload_state.get('error_message'):
+            st.error(upload_state['error_message'])
+            return
         
-        # Debug: Show original columns
-        st.write("🔍 **Debug - Original columns:**", df.columns.tolist())
+        if not upload_state.get('preview_generated') or not upload_state.get('current_preview'):
+            st.info("Upload files above to see merge preview")
+            return
         
-        # Map common question field variations to standard column names
-        column_mappings = {
-            'question_text': 'Question_Text',
-            'text': 'Question_Text',
-            'question': 'Question_Text',
-            'title': 'Title',
-            'question_title': 'Title',
-            'type': 'Type',
-            'question_type': 'Type',
-            'difficulty': 'Difficulty',
-            'topic': 'Topic',
-            'subtopic': 'Subtopic',
-            'points': 'Points',
-            'correct_answer': 'Correct_Answer',
-            'choices': 'Choices',
-            'options': 'Choices',
-            'feedback_correct': 'Correct_Feedback',
-            'feedback_incorrect': 'Incorrect_Feedback',
-            'explanation': 'Explanation'
-        }
+        preview = upload_state.get('current_preview')
+        if not preview:
+            st.info("Upload files above to see merge preview")
+            return
         
-        # Apply column mappings
-        for old_name, new_name in column_mappings.items():
-            if old_name in df.columns and new_name not in df.columns:
-                df[new_name] = df[old_name]
-                st.write(f"✅ Mapped {old_name} → {new_name}")
+        # Display preview summary
+        st.header("🔍 Merge Preview")
         
-        # Handle choices array -> individual choice columns
-        if 'Choices' in df.columns or 'choices' in df.columns:
-            choices_col = 'Choices' if 'Choices' in df.columns else 'choices'
-            
-            # Create individual choice columns from choices array
-            for i, choice_letter in enumerate(['A', 'B', 'C', 'D']):
-                choice_col = f'Choice_{choice_letter}'
-                if choice_col not in df.columns:
-                    df[choice_col] = df[choices_col].apply(
-                        lambda x: x[i] if isinstance(x, list) and len(x) > i else f'Option {choice_letter}'
-                    )
-                    st.write(f"✅ Created {choice_col}")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Questions", preview.total_questions)
+        with col2:
+            st.metric("Conflicts", preview.conflict_count)
+        with col3:
+            st.metric("Auto-Renumbered", preview.renumbered_count)
         
-        # Ensure required columns exist for UI compatibility
-        required_columns = {
-            'Topic': 'General',
-            'Subtopic': 'General',
-            'Difficulty': 'Medium',
-            'Type': 'multiple_choice',
-            'Points': 1,
-            'Question_Text': 'Sample question text',
-            'Title': 'Sample Question',
-            'Correct_Answer': 'A',
-            'Choices': ['Option A', 'Option B', 'Option C', 'Option D'],
-            'Choice_A': 'Option A',
-            'Choice_B': 'Option B', 
-            'Choice_C': 'Option C',
-            'Choice_D': 'Option D',
-            'Correct_Feedback': 'Correct!',
-            'Incorrect_Feedback': 'Please try again.',
-            'Explanation': 'This is the explanation.',
-            'Tolerance': 0.05,  # For numerical questions
-            'Units': '',        # For numerical questions
-            'Format': 'decimal' # For numerical questions
-        }
+        # Show conflicts if any
+        if preview.conflicts:
+            st.warning("⚠️ Conflicts detected and resolved:")
+            for conflict in preview.conflicts:
+                st.write(f"- {conflict['description']}")
+        else:
+            st.success("✅ No conflicts detected - ready to merge!")
         
-        st.write("🔍 **Debug - Adding required columns:**")
-        for col, default_value in required_columns.items():
-            if col not in df.columns:
-                df[col] = default_value
-                st.write(f"✅ Added missing column: {col}")
-            else:
-                st.write(f"⚠️ Column {col} already exists")
+        # Preview questions
+        with st.expander("Preview First 10 Questions"):
+            for i, q in enumerate(preview.preview_questions, 1):
+                question_text = q.get('question_text', q.get('question', q.get('Question', 'No question text')))
+                question_id = q.get('id', q.get('ID', 'N/A'))
+                st.write(f"{i}. ID {question_id}: {question_text[:100]}...")
         
-        # Final debug - show all columns
-        st.write("🔍 **Debug - Final columns:**", df.columns.tolist())
-        st.write("🔍 **Debug - DataFrame shape:**", df.shape)
-        
-        # Show first row to verify data
-        if len(df) > 0:
-            st.write("🔍 **Debug - First row data:**")
-            st.dataframe(df.head(1))
-        
-        # Store in session state
-        st.session_state.df = df
-        st.session_state.original_questions = questions.copy()
-        st.session_state.metadata = getattr(processing_result, 'metadata', {})
-        st.session_state.current_filename = filename
-        
-        # Update state
-        transition_upload_state(UploadState.DATABASE_LOADED, "database_applied")
+        # Merge action
+        if preview.merge_ready:
+            if st.button("Complete Merge", type="primary", key="complete_merge"):
+                self._execute_merge(preview)
     
-    def apply_fresh_multi_database(self, all_questions: List[Dict], uploaded_files):
-        """Apply fresh database from multiple files"""
-        
-        # Convert to DataFrame
-        df = pd.DataFrame(all_questions)
-        
-        # Store in session state
-        st.session_state.df = df
-        st.session_state.original_questions = all_questions.copy()
-        st.session_state.metadata = {'source': f'Merged from {len(uploaded_files)} files'}
-        st.session_state.current_filename = f"Merged_Database_{len(uploaded_files)}_files.json"
-        
-        # Update state
-        transition_upload_state(UploadState.DATABASE_LOADED, "multi_database_applied")
-    
-    def prepare_merge_preview(self, processing_result):
-        """Create merge preview using Phase 3C API"""
-        
+    def _execute_merge(self, preview: MergePreviewData):
+        """Execute the final merge operation"""
         try:
-            # Get current database
-            existing_df = st.session_state.get('df')
-            new_questions = getattr(processing_result, 'questions', [])
+            with st.spinner("Completing merge..."):
+                st.write("🔄 DEBUG: Starting merge execution...")
+                
+                # Get the current upload state
+                upload_state = st.session_state.get('upload_state', {})
+                st.write(f"📊 DEBUG: Current upload_state: {upload_state}")
+                
+                if isinstance(upload_state, dict) and 'current_preview' in upload_state:
+                    # Get the preview object which contains our merged questions
+                    preview_obj = upload_state['current_preview']
+                    
+                    # Use ALL merged questions, not just the preview
+                    if hasattr(preview_obj, 'all_merged_questions'):
+                        all_merged_questions = preview_obj.all_merged_questions
+                        st.write(f"✅ DEBUG: Found ALL {len(all_merged_questions)} merged questions")
+                    else:
+                        # Fallback to preview questions if all_merged_questions not available
+                        all_merged_questions = preview_obj.preview_questions
+                        st.write(f"⚠️ DEBUG: Using preview questions only: {len(all_merged_questions)} questions")
+                    
+                    # FORCE UPDATE - completely replace the upload_state
+                    new_upload_state = {
+                        'files_uploaded': True,
+                        'preview_generated': True,
+                        'merge_completed': True,  # ← CRITICAL: Set this to True
+                        'current_preview': preview_obj,
+                        'final_database': all_merged_questions,  # ← CRITICAL: Set the final data
+                        'error_message': None
+                    }
+                    
+                    st.session_state.upload_state = new_upload_state
+                    st.write("✅ DEBUG: Upload state forcefully updated")
+                    st.write(f"📊 DEBUG: New upload_state: {st.session_state.upload_state}")
+                    
+                    # CRITICAL: Transfer to main app session state immediately
+                    st.write("🔄 DEBUG: Transferring to main app session state...")
+                    
+                    # Convert to DataFrame format expected by main app
+                    df_data = []
+                    for q in all_merged_questions:
+                        # Handle choices - convert array to individual choice columns
+                      # Handle choices - convert array to individual choice columns
+                        choices = q.get('choices', q.get('Choices', []))
+                        choice_a = choices[0] if len(choices) > 0 else ''
+                        choice_b = choices[1] if len(choices) > 1 else ''
+                        choice_c = choices[2] if len(choices) > 2 else ''
+                        choice_d = choices[3] if len(choices) > 3 else ''
+                        choice_e = choices[4] if len(choices) > 4 else ''
+                        
+                        # Handle image_file array
+                        image_files = q.get('image_file', [])
+                        image_file_str = ', '.join(image_files) if image_files else ''
+                        
+                        df_data.append({
+                            # Basic question info
+                            'ID': q.get('id', ''),
+                            'Title': q.get('title', ''),
+                            'Type': q.get('type', 'multiple_choice'),
+                            'Question_Text': q.get('question_text', ''),
+                            'Topic': q.get('topic', ''),
+                            'Subtopic': q.get('subtopic', ''),
+                            'Difficulty': q.get('difficulty', 'Medium'),
+                            'Points': q.get('points', 1),
+                            
+                            # Answer and tolerance
+                            'Correct_Answer': q.get('correct_answer', 'A'),
+                            'Tolerance': q.get('tolerance', 0.05),
+                            
+                            # Individual choice columns (what your editor expects)
+                            'Choice_A': choice_a,
+                            'Choice_B': choice_b,
+                            'Choice_C': choice_c,
+                            'Choice_D': choice_d,
+                            'Choice_E': choice_e,
+                            
+                            # Feedback columns (multiple naming conventions)
+                            'Correct_Feedback': q.get('feedback_correct', ''),
+                            'Incorrect_Feedback': q.get('feedback_incorrect', ''),
+                            'Feedback_Correct': q.get('feedback_correct', ''),
+                            'Feedback_Incorrect': q.get('feedback_incorrect', ''),
+                            
+                            # Image handling
+                            'Image_File': image_file_str,
+                            'Image_Files': image_files,
+                            
+                            # Keep original structure for compatibility
+                            'Choices': choices,
+                            
+                            # Additional common column names that might be expected
+                            'Question': q.get('question_text', ''),  # Alternative name
+                            'Answer': q.get('correct_answer', 'A'),   # Alternative name
+                            'Explanation': q.get('feedback_correct', ''),  # Some systems use this
+                            'Category': q.get('topic', ''),           # Alternative name
+                            'Level': q.get('difficulty', 'Medium'),  # Alternative name
+                        })  
+                    
+                    # Set main app session state
+                    st.session_state['df'] = pd.DataFrame(df_data)
+                    st.session_state['original_questions'] = all_merged_questions
+                    st.session_state['metadata'] = {
+                        'source': 'merged_database',
+                        'total_questions': len(all_merged_questions),
+                        'conflicts_resolved': preview.conflict_count
+                    }
+                    
+                    st.write("✅ DEBUG: Main app session state updated!")
+                    st.write(f"📊 DEBUG: DataFrame shape: {st.session_state['df'].shape}")
+                    st.write(f"📋 DEBUG: Main session keys: {list(st.session_state.keys())}")
+                
+                st.success(f"✅ Merge completed! {preview.total_questions} questions in final database")
+                st.success("🚀 Database is now available in the main application!")
+                st.balloons()
+                
+                # Force a rerun to trigger the main app detection
+                st.rerun()
+                
+        except Exception as e:
+            st.error(f"❌ DEBUG: Error in _execute_merge: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
+            st.error(f"Error completing merge: {e}")
+    
+    def render_results_section(self):
+        """Render final results if merge is completed"""
+        upload_state = st.session_state.get('upload_state', {})
+        
+        if isinstance(upload_state, dict) and upload_state.get('merge_completed'):
+            st.header("✅ Merge Complete")
+            st.success("Your question database has been successfully merged!")
             
-            if not new_questions:
-                st.session_state.error_message = "No questions found in uploaded file"
-                transition_upload_state(UploadState.ERROR_STATE, "no_questions_for_merge")
-                return
-            logger.info("=== PREPARING TO CALL create_merge_preview ===")
-            logger.info(f"Existing DF shape: {existing_df.shape if existing_df is not None else 'None'}")
-            logger.info(f"New questions count: {len(new_questions)}")
-            logger.info(f"About to call with auto_renumber=True")
-
-
-            # Create preview with default strategy
-            # Create preview with default strategy
-            try:
-                preview = create_merge_preview(
-                    existing_df=existing_df,
-                    new_questions=new_questions,
-                    strategy=MergeStrategy.SKIP_DUPLICATES,
-                    auto_renumber=True
+            # Download button for merged database
+            if 'final_database' in upload_state:
+                st.download_button(
+                    label="Download Merged Database",
+                    data=self._serialize_database(upload_state['final_database']),
+                    file_name="merged_questions.json",
+                    mime="application/json"
                 )
-                
-                logger.info(f"Auto-renumbered flag: {preview.merge_summary.get('auto_renumbered', 'MISSING')}")
-                logger.info(f"Total conflicts: {len(preview.conflicts) if hasattr(preview, 'conflicts') else 'MISSING'}")
-                logger.info(f"Renumbering info: {preview.merge_summary.get('renumbering_info', 'MISSING')}")
-                
-            except Exception as e:
-                logger.error(f"❌ EXCEPTION in create_merge_preview: {e}")
-                logger.error(f"❌ Exception type: {type(e)}")
-                import traceback
-                logger.error(f"❌ Full traceback:\n{traceback.format_exc()}")
-                raise e
             
-
-
-
-
-            # Prepare UI-friendly data using safe attribute access
-            processing_results_dict = {
-                'questions': new_questions,
-                'format_detected': getattr(processing_result, 'format_detected', 'Unknown'),
-                'metadata': getattr(processing_result, 'metadata', {}),
-                'issues': getattr(processing_result, 'issues', [])
+            # Reset button
+            if st.button("Start New Merge"):
+                self._reset_state()
+                st.rerun()
+    
+    def _serialize_database(self, database):
+        """Convert database to downloadable JSON format"""
+        return json.dumps({
+            "questions": database,
+            "metadata": {
+                "source": "merged_database",
+                "total_questions": len(database),
+                "format_version": "Phase Four"
             }
-            
-            preview_data = prepare_session_state_for_preview(preview, processing_results_dict)
-            st.session_state.preview_data = preview_data
-            
-            # Transition to preview state
-            transition_upload_state(UploadState.PREVIEW_MERGE, "preview_prepared")
-            
-        except Exception as e:
-            self.handle_merge_error(e)
+        }, indent=2)
     
-    def update_merge_preview_strategy(self, selected_strategy: str):
-        """Update merge preview with new strategy"""
-        
-        try:
-            # Get processing result and existing database
-            processing_result = st.session_state.get('processing_results', {})
-            existing_df = st.session_state.get('df')
-            
-            if not processing_result or existing_df is None:
-                st.error("Missing data for preview update")
-                return
-            
-            # Map string to enum
-            strategy_map = {
-                'append_all': MergeStrategy.APPEND_ALL,
-                'skip_duplicates': MergeStrategy.SKIP_DUPLICATES,
-                'replace_duplicates': MergeStrategy.REPLACE_DUPLICATES,
-                'rename_duplicates': MergeStrategy.RENAME_DUPLICATES
-            }
-            
-            strategy = strategy_map.get(selected_strategy, MergeStrategy.SKIP_DUPLICATES)
-            
-            # Create new preview
-            preview = create_merge_preview(
-                existing_df=existing_df,
-                new_questions=processing_result['questions'],
-                strategy=strategy
-            )
-            
-            # Update preview data
-            preview_data = prepare_session_state_for_preview(preview, processing_result)
-            st.session_state.preview_data = preview_data
-            
-        except Exception as e:
-            self.handle_merge_error(e)
+    def _reset_state(self):
+        """Reset all session state for new merge"""
+        st.session_state.upload_state = {
+            'files_uploaded': False,
+            'preview_generated': False,
+            'merge_completed': False,
+            'current_preview': None,
+            'error_message': None,
+            'final_database': None
+        }
     
-    def execute_confirmed_merge(self):
-        """Execute merge using Phase 3C API"""
+    def render_complete_interface(self):
+        """Render the complete upload interface"""
+        st.title("Question Database Merger")
         
-        try:
-            # Get merge parameters
-            preview_data = st.session_state.get('preview_data', {})
-            selected_strategy = st.session_state.get('merge_strategy_selection', 'skip_duplicates')
-            processing_result = st.session_state.get('processing_results', {})
-            
-            # Map string to enum
-            strategy_map = {
-                'append_all': MergeStrategy.APPEND_ALL,
-                'skip_duplicates': MergeStrategy.SKIP_DUPLICATES,
-                'replace_duplicates': MergeStrategy.REPLACE_DUPLICATES,
-                'rename_duplicates': MergeStrategy.RENAME_DUPLICATES
-            }
-            
-            strategy = strategy_map.get(selected_strategy, MergeStrategy.SKIP_DUPLICATES)
-            
-            # Execute merge
-            merge_result = execute_database_merge(
-                existing_df=st.session_state['df'],
-                processing_result=processing_result,
-                strategy=strategy
-            )
-            
-            if merge_result.success:
-                # Update session state using Phase 3C API
-                update_session_state_after_merge(merge_result)
-                
-                # Success message
-                final_count = len(merge_result.merged_df)
-                st.session_state.success_message = f"Successfully merged! Database now has {final_count} questions."
-                
-                # Transition to success state
-                transition_upload_state(UploadState.SUCCESS_STATE, "merge_completed")
-                
-            else:
-                # Handle merge failure
-                error_msg = getattr(merge_result, 'error', 'Unknown merge error')
-                self.handle_merge_failure(error_msg)
-            
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_merge_error(e)
-    
-    def cancel_merge_operation(self):
-        """Cancel merge and return to database loaded state"""
+        # Main workflow sections
+        self.render_upload_section()
+        st.divider()
+        self.render_preview_section()
+        st.divider()
+        self.render_results_section()
         
-        try:
-            # Clear preview data
-            st.session_state.preview_data = {}
-            st.session_state.processing_results = {}
-            
-            # Return to database loaded state
-            transition_upload_state(UploadState.DATABASE_LOADED, "merge_cancelled")
-            
-            st.info("Merge operation cancelled")
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_upload_error(e, "cancel merge")
-    
-    # ========================================
-    # ACTION HANDLERS
-    # ========================================
-    
-    def handle_export_action(self):
-        """Handle export action"""
-        
-        # This will integrate with existing export functionality
-        st.info("Export functionality - integrate with existing export module")
-    
-    def handle_rollback_action(self):
-        """Handle rollback action using Phase 3B API"""
-        
-        try:
-            # Use Phase 3B rollback functionality
-            from modules.upload_state_manager import rollback_to_previous_state
-            
-            success = rollback_to_previous_state()
-            
-            if success:
-                st.session_state.success_message = "Successfully rolled back to previous state"
-            else:
-                st.session_state.error_message = "Unable to rollback - no previous state available"
-            
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_upload_error(e, "rollback")
-    
-    def handle_retry_operation(self):
-        """Retry the last failed operation"""
-        
-        # Clear error state and return to previous
-        st.session_state.error_message = ''
-        
-        # Determine appropriate state to return to
-        if hasattr(st.session_state, 'df') and st.session_state.df is not None:
-            transition_upload_state(UploadState.DATABASE_LOADED, "retry_from_error")
-        else:
-            transition_upload_state(UploadState.NO_DATABASE, "retry_from_error")
-        
-        st.rerun()
-    
-    def handle_return_to_previous(self):
-        """Return to previous state"""
-        
-        # Use Phase 3B state management
-        try:
-            from modules.upload_state_manager import get_previous_state
-            
-            previous_state = get_previous_state()
-            if previous_state:
-                transition_upload_state(previous_state, "return_to_previous")
-            else:
-                # Default fallback
-                if hasattr(st.session_state, 'df') and st.session_state.df is not None:
-                    transition_upload_state(UploadState.DATABASE_LOADED, "fallback_to_loaded")
-                else:
-                    transition_upload_state(UploadState.NO_DATABASE, "fallback_to_no_db")
-            
-            st.rerun()
-            
-        except Exception as e:
-            self.handle_upload_error(e, "return to previous")
-    
-    def handle_clear_error(self):
-        """Clear error state and reset"""
-        
-        # Clear all error-related session state
-        st.session_state.error_message = ''
-        st.session_state.processing_results = {}
-        st.session_state.preview_data = {}
-        
-        # Reset to appropriate state
-        reset_upload()
-        
-        st.rerun()
-    
-    def handle_continue_after_success(self):
-        """Continue after successful operation"""
-        
-        # Clear success message
-        st.session_state.success_message = ''
-        
-        # Transition to database loaded state
-        transition_upload_state(UploadState.DATABASE_LOADED, "continue_after_success")
-        
-        st.rerun()
-    
-    # ========================================
-    # ERROR HANDLERS
-    # ========================================
-    
-    def handle_upload_error(self, error: Exception, operation: str):
-        """Handle upload-related errors"""
-        
-        error_msg = f"Error during {operation}: {str(error)}"
-        st.session_state.error_message = error_msg
-        
-        # Log the full traceback for debugging
-        st.error(f"Upload error in {operation}")
-        st.exception(error)
-        
-        # Transition to error state
-        transition_upload_state(UploadState.ERROR_STATE, f"error_in_{operation}")
-        
-        st.rerun()
-    
-    def handle_processing_errors(self, issues: List[Dict]):
-        """Handle file processing errors"""
-        
-        # Format issues for display
-        error_messages = []
-        for issue in issues:
-            severity = issue.get('severity', 'error')
-            message = issue.get('message', 'Unknown issue')
-            error_messages.append(f"{severity.upper()}: {message}")
-        
-        full_error = "File processing failed:\n" + "\n".join(error_messages)
-        st.session_state.error_message = full_error
-        
-        # Transition to error state
-        transition_upload_state(UploadState.ERROR_STATE, "processing_errors")
-        
-        st.rerun()
-    
-    def handle_merge_error(self, error: Exception):
-        """Handle merge-related errors"""
-        
-        error_msg = f"Merge operation failed: {str(error)}"
-        st.session_state.error_message = error_msg
-        
-        # Log for debugging
-        st.error("Merge error occurred")
-        st.exception(error)
-        
-        # Transition to error state
-        transition_upload_state(UploadState.ERROR_STATE, "merge_error")
-        
-        st.rerun()
-    
-    def handle_merge_failure(self, error_msg: str):
-        """Handle merge operation failure"""
-        
-        st.session_state.error_message = f"Merge failed: {error_msg}"
-        
-        # Transition to error state
-        transition_upload_state(UploadState.ERROR_STATE, "merge_failed")
-        
-        st.rerun()
+        # Debug section (optional)
+        if st.checkbox("Show Debug Info"):
+            upload_state = st.session_state.get('upload_state', {})
+            st.json(upload_state if isinstance(upload_state, dict) else str(upload_state))
 
-
-# ========================================
-# MAIN INTEGRATION FUNCTIONS
-# ========================================
-
-def render_upload_interface_v2():
-    """
-    Main function to render the complete upload interface.
-    
-    This replaces the old upload_handler functionality with a clean,
-    state-driven interface that integrates with all Phase 3A/3B/3C modules.
-    """
-    
-    try:
-        # Create and render interface
-        interface = UploadInterfaceV2()
-        interface.render()
-        
-    except Exception as e:
-        st.error("Critical error in upload interface")
-        st.exception(e)
-        
-        # Emergency fallback
-        st.markdown("### Emergency Upload")
-        st.file_uploader(
-            "Emergency file upload", 
-            type=['json'], 
-            key="emergency_upload",
-            help="Use this if the main interface fails"
-        )
-
-
-# ========================================
-# UTILITY FUNCTIONS
-# ========================================
-
-def get_upload_interface_status():
-    """Get current status of upload interface for debugging"""
-    
-    return {
-        'current_state': get_current_upload_state(),
-        'has_database': hasattr(st.session_state, 'df') and st.session_state.df is not None,
-        'database_size': len(st.session_state.df) if hasattr(st.session_state, 'df') and st.session_state.df is not None else 0,
-        'has_preview_data': bool(st.session_state.get('preview_data')),
-        'has_processing_results': bool(st.session_state.get('processing_results')),
-        'can_rollback': st.session_state.get('can_rollback', False)
-    }
-
-
-def clear_upload_interface_state():
-    """Clear all upload interface state - useful for testing"""
-    
-    keys_to_clear = [
-        'processing_results',
-        'preview_data', 
-        'error_message',
-        'success_message',
-        'merge_strategy_selection'
-    ]
-    
-    for key in keys_to_clear:
-        if key in st.session_state:
-            del st.session_state[key]
-    
-    # Reset upload state
-    reset_upload_state()
-
-
-# ========================================
-# TESTING SUPPORT
-# ========================================
-
-def test_upload_interface_v2():
-    """Test function for upload interface - for development use"""
-    
-    st.markdown("### Upload Interface V2 Test")
-    
-    # Show current status
-    status = get_upload_interface_status()
-    st.json(status)
-    
-    # Test controls
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("Clear State", key="test_clear_state"):
-            clear_upload_interface_state()
-            st.rerun()
-    
-    with col2:
-        if st.button("Force Error State", key="test_error_state"):
-            transition_upload_state(UploadState.ERROR_STATE, "test_error")
-            st.session_state.error_message = "Test error message"
-            st.rerun()
-    
-    # Render main interface
-    st.markdown("---")
-    render_upload_interface_v2()
-
+# Usage in your main app
+def main():
+    interface = UploadInterfaceV2()
+    interface.render_complete_interface()
 
 if __name__ == "__main__":
-    # For testing when run directly
-    test_upload_interface_v2()
+    main()

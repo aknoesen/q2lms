@@ -49,7 +49,7 @@ def clear_session_state():
 
 def get_database_summary() -> Optional[Dict[str, Any]]:
     """Get summary of current database for display"""
-    if 'df' not in st.session_state or st.session_state['df'] is None:
+    if 'df' not in st.session_state:
         return None
     
     df = st.session_state['df']
@@ -65,7 +65,7 @@ def get_database_summary() -> Optional[Dict[str, Any]]:
 
 def save_database_to_history():
     """Save current database to history before replacing"""
-    if 'df' not in st.session_state or st.session_state['df'] is None:
+    if 'df' not in st.session_state:
         return False
     
     try:
@@ -153,7 +153,7 @@ def display_database_history():
 
 def display_current_database_status() -> bool:
     """Display current database status and management options"""
-    if 'df' in st.session_state and st.session_state['df'] is not None:
+    if 'df' in st.session_state:
         df = st.session_state['df']
         filename = st.session_state.get('filename', 'Unknown')
         loaded_at = st.session_state.get('loaded_at', 'Unknown')
@@ -196,7 +196,7 @@ def display_enhanced_database_status() -> bool:
     """Enhanced database status with history management"""
     initialize_session_state()
     
-    if 'df' in st.session_state and st.session_state['df'] is not None:
+    if 'df' in st.session_state:
         df = st.session_state['df']
         filename = st.session_state.get('filename', 'Unknown')
         loaded_at = st.session_state.get('loaded_at', 'Unknown')

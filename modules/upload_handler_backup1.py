@@ -320,8 +320,7 @@ def handle_append_upload():
     # Show current database info
     current_df = st.session_state['df']
     current_filename = st.session_state.get('filename', 'Unknown')
-    current_count = len(current_df) if current_df is not None else 0
-    st.info(f"📊 Current database: **{current_filename}** with {current_count} questions")
+    st.info(f"📊 Current database: **{current_filename}** with {len(current_df)} questions")
     
     uploaded_file = st.file_uploader(
         "📄 Upload Additional Questions (JSON)",
