@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Question Database Manager - Main Streamlit Application (Safe Phase 3D Integration)
-This version safely handles missing Phase 3 modules and falls back gracefully
+Question Database Manager - Main Streamlit Application
+Clean production version with Phase 3D integration
 """
 
 import streamlit as st
@@ -29,11 +29,11 @@ if modules_path not in sys.path:
     sys.path.insert(0, modules_path)
 
 # ========================================
-# SAFE PHASE 3D DETECTION AND IMPORT
+# PHASE 3D DETECTION (SILENT)
 # ========================================
 
 def detect_phase3_modules():
-    """Detect which Phase 3 modules are available"""
+    """Detect which Phase 3 modules are available (silent detection)"""
     
     phase3_status = {
         'phase3a': False,
@@ -42,40 +42,34 @@ def detect_phase3_modules():
         'phase3d': False
     }
     
-    # Check Phase 3A
+    # Check Phase 3A (silent)
     try:
         from modules.file_processor_module import FileProcessor
         phase3_status['phase3a'] = True
-        st.sidebar.success("✅ Phase 3A: File Processor")
-    except ImportError as e:
-        st.sidebar.warning("⚠️ Phase 3A: Not available")
+    except ImportError:
+        pass
     
-    # Check Phase 3B
+    # Check Phase 3B (silent)
     try:
         from modules.upload_state_manager import UploadState, get_upload_state
         phase3_status['phase3b'] = True
-        st.sidebar.success("✅ Phase 3B: State Manager")
-    except ImportError as e:
-        st.sidebar.warning("⚠️ Phase 3B: Not available")
+    except ImportError:
+        pass
     
-    # Check Phase 3C
+    # Check Phase 3C (silent)
     try:
         from modules.database_merger import MergeStrategy
         phase3_status['phase3c'] = True
-        st.sidebar.success("✅ Phase 3C: Database Merger")
-    except ImportError as e:
-        st.sidebar.warning("⚠️ Phase 3C: Not available")
+    except ImportError:
+        pass
     
     # Check Phase 3D (only if all others available)
     if all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
         try:
             from modules.upload_interface_v2 import UploadInterfaceV2
             phase3_status['phase3d'] = True
-            st.sidebar.success("✅ Phase 3D: Upload Interface V2")
-        except ImportError as e:
-            st.sidebar.warning(f"⚠️ Phase 3D: {e}")
-    else:
-        st.sidebar.info("ℹ️ Phase 3D: Requires 3A+3B+3C")
+        except ImportError:
+            pass
     
     return phase3_status
 
@@ -98,7 +92,7 @@ except ImportError as e:
 try:
     from modules.latex_processor import LaTeXProcessor, clean_text
     LATEX_PROCESSOR_AVAILABLE = True
-except ImportError as e:
+except ImportError:
     LATEX_PROCESSOR_AVAILABLE = False
 
 # Import existing backend modules
@@ -117,36 +111,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ========================================
-# DETECT PHASE 3 STATUS
-# ========================================
-with st.sidebar:
-    st.markdown("### 🔍 Phase 3 Module Status")
-    phase3_status = detect_phase3_modules()
-    
-    # Show overall status
-    if phase3_status['phase3d']:
-        st.success("🚀 Phase 3D Ready!")
-    elif all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
-        st.info("⚙️ Phase 3A+3B+3C Ready (3D available)")
-    else:
-        st.info("📦 Using Legacy Interface")
+# Detect phase status (keep for logic, don't display in sidebar)
+phase3_status = detect_phase3_modules()
 
-# Show module status
-if SESSION_MANAGER_AVAILABLE:
-    st.success("✅ Modular session management ready!")
-else:
+# Show essential module status only
+if not SESSION_MANAGER_AVAILABLE:
     st.error("❌ Session management modules not available")
 
-if LATEX_PROCESSOR_AVAILABLE:
-    st.success("✅ LaTeX Processor ready!")
-else:
-    st.error("❌ LaTeX Processor not available")
+if not LATEX_PROCESSOR_AVAILABLE:
+    st.warning("⚠️ LaTeX Processor not available")
 
 if not BACKEND_AVAILABLE:
-    st.error("⚠️ Backend modules not found. Please ensure database_transformer.py and simple_qti.py are in the 'modules' folder.")
+    st.warning("⚠️ Backend modules not found. Some export features may not work.")
 
-# Custom CSS (unchanged from original)
+# Custom CSS
 st.markdown("""
 <style>
     .main-header {
@@ -185,21 +163,13 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     
-    /* Phase 3D container styling */
-    .phase3d-container {
+    /* Upload interface container styling */
+    .upload-container {
         background: linear-gradient(135deg, #e3f2fd, #f0f8ff);
         padding: 2rem;
         border-radius: 1rem;
         margin: 1rem 0;
         border: 2px solid #2196f3;
-    }
-    
-    .legacy-container {
-        background-color: #f5f5f5;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-        border: 1px solid #ddd;
     }
     
     /* Make tabs more prominent */
@@ -251,26 +221,22 @@ def render_upload_interface_smart():
     
     if phase3_status['phase3d']:
         # Use Phase 3D Upload Interface V2
-        st.markdown("### 🚀 Phase 3D Upload Interface")
-        st.markdown('<div class="phase3d-container">', unsafe_allow_html=True)
+        st.markdown("### 📁 Upload Question Database Files")
+        st.markdown('<div class="upload-container">', unsafe_allow_html=True)
         
         try:
             from modules.upload_interface_v2 import UploadInterfaceV2
             upload_interface = UploadInterfaceV2()
             upload_interface.render_complete_interface()
             
-            # SIMPLIFIED DETECTION: Check if we already have a DataFrame (the upload interface sets this)
+            # Check if we have a DataFrame loaded
             if 'df' in st.session_state and st.session_state['df'] is not None and len(st.session_state['df']) > 0:
-                st.success("✅ Database successfully loaded from Phase 3D merge!")
                 has_database = True
             else:
                 has_database = False
         
         except Exception as e:
-            st.error(f"Phase 3D error: {e}")
-            st.error(f"Error details: {type(e).__name__}: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
+            st.error(f"Upload interface error: {e}")
             st.info("Falling back to legacy interface...")
             has_database = smart_upload_interface()
         
@@ -279,14 +245,12 @@ def render_upload_interface_smart():
     else:
         # Use legacy interface
         st.markdown("### 📤 Upload Interface")
-        st.markdown('<div class="legacy-container">', unsafe_allow_html=True)
         has_database = smart_upload_interface()
-        st.markdown('</div>', unsafe_allow_html=True)
     
     return has_database
 
 def main():
-    """Main Streamlit application with smart Phase 3D integration"""
+    """Main Streamlit application"""
     if SESSION_MANAGER_AVAILABLE:
         initialize_session_state()
     
@@ -295,18 +259,10 @@ def main():
     **Web-based interface for managing educational question databases and generating Canvas-ready QTI packages**
     """)
     
-    # Show Phase status
-    if phase3_status['phase3d']:
-        st.markdown("🚀 **Phase 3D Active**: State-driven upload interface with conflict resolution")
-    elif all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
-        st.markdown("⚙️ **Phase 3 Backend Ready**: Upload Interface V2 can be activated")
-    else:
-        st.markdown("📦 **Legacy Mode**: Using original upload interface")
-    
     st.markdown("---")
     
     # ========================================
-    # SMART UPLOAD INTERFACE
+    # UPLOAD INTERFACE
     # ========================================
     if SESSION_MANAGER_AVAILABLE:
         has_database = render_upload_interface_smart()
@@ -315,7 +271,7 @@ def main():
         has_database = False
     
     # ========================================
-    # MAIN APPLICATION TABS (UNCHANGED)
+    # MAIN APPLICATION TABS
     # ========================================
     if has_database and 'df' in st.session_state:
         df = st.session_state['df']
@@ -324,8 +280,7 @@ def main():
         filtered_df = apply_filters(df)
         
         # Show success message
-        interface_type = "Phase 3D" if phase3_status['phase3d'] else "Legacy"
-        st.success(f"✅ Database loaded successfully via {interface_type} interface! {len(df)} questions ready.")
+        st.success(f"✅ Database loaded successfully! {len(df)} questions ready.")
         
         tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📋 Browse Questions", "📝 Browse & Edit", "📥 Export"])
         
@@ -334,23 +289,7 @@ def main():
             st.markdown("---")
             create_summary_charts(df)
         
-
-
-
         with tab2:
-            # DEBUG INFO - Add this section
-            st.markdown("### 🔍 DEBUG INFO:")
-            st.write(f"**Session state df shape:** {st.session_state.get('df', pd.DataFrame()).shape}")
-            st.write(f"**Session state keys:** {list(st.session_state.keys())}")
-            st.write(f"**Has df:** {'df' in st.session_state}")
-            st.write(f"**DF is None:** {st.session_state.get('df') is None}")
-            if 'df' in st.session_state and st.session_state.df is not None:
-                st.write(f"**DF type:** {type(st.session_state.df)}")
-                st.write(f"**DF columns:** {st.session_state.df.columns.tolist()}")
-                st.write(f"**Filtered DF shape:** {filtered_df.shape}")
-            st.markdown("---")
-            
-            # Original browse code
             simple_browse_questions_tab(filtered_df)
         
         with tab3:
@@ -405,23 +344,13 @@ def main():
             st.markdown("""
             ### 📋 What You Can Do:
             
-            1. **📤 Upload** JSON question databases
+            1. **📤 Upload** JSON question databases (single or multiple files)
             2. **📝 Browse** questions with live LaTeX preview
             3. **🎯 Filter** by topic, difficulty, and type
             4. **📦 Export** to Canvas-ready QTI packages
             5. **📊 Analyze** question distributions and statistics
+            6. **🔧 Edit** questions with real-time preview
             """)
-            
-            if phase3_status['phase3d']:
-                st.markdown("""
-                ### 🚀 Phase 3D Features:
-                
-                - **Smart Conflict Detection** when merging files
-                - **Multiple Merge Strategies** (append, skip, replace, rename)  
-                - **Real-time Preview** of merge operations
-                - **State-driven Interface** with clear workflow
-                - **Rollback Support** for safe operations
-                """)
         
         with col2:
             st.markdown("""
@@ -429,29 +358,11 @@ def main():
             
             - **Course Planning** with mathematical notation
             - **LaTeX Support** for engineering formulas
-            - **Multiple Question Types** (MC, numerical, T/F)
+            - **Multiple Question Types** (MC, numerical, T/F, fill-in-blank)
             - **Topic Organization** with subtopics
             - **Canvas Integration** via QTI export
+            - **Conflict Resolution** when merging multiple files
             """)
-            
-            # Phase status info
-            if phase3_status['phase3d']:
-                st.markdown("""
-                ### 🔄 Available Workflows:
-                
-                - **Fresh Start**: Upload your first database
-                - **Append Questions**: Add to existing database
-                - **Replace Database**: Complete replacement
-                - **Multi-file Merge**: Combine multiple files
-                """)
-            else:
-                st.markdown("""
-                ### 📦 Current Mode:
-                
-                - **Single File Upload**: Basic upload functionality
-                - **Replace Mode**: Upload new database
-                - **Legacy Interface**: Proven reliable workflow
-                """)
         
         # Show sample file format
         with st.expander("📄 Sample JSON Format", expanded=False):

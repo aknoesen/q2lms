@@ -1,4 +1,4 @@
-# upload_interface_v2.py - Complete Clean Architecture
+# upload_interface_v2.py - Clean Production Version
 import streamlit as st
 import json
 import pandas as pd
@@ -50,40 +50,32 @@ class UploadInterfaceV2:
         st.header("📁 Upload Question Database Files")
         
         uploaded_files = st.file_uploader(
-            "Select files to merge",
+            "Select files to merge (1 or more files)",
             accept_multiple_files=True,
             type=['json', 'csv', 'xlsx'],
             key="file_uploader"
         )
         
-        if uploaded_files and len(uploaded_files) >= 2:
-            if st.button("Generate Merge Preview", type="primary"):
+        if uploaded_files and len(uploaded_files) >= 1:
+            if len(uploaded_files) == 1:
+                st.info("📄 Single file selected - will load directly without merging")
+            else:
+                st.info(f"📁 {len(uploaded_files)} files selected - will merge with conflict resolution")
+            
+            if st.button("Process Files", type="primary"):
                 self._process_uploaded_files(uploaded_files)
-        
-        elif uploaded_files and len(uploaded_files) == 1:
-            st.warning("Please upload at least 2 files to merge")
     
     def _process_uploaded_files(self, files) -> None:
         """Process uploaded files and generate preview data"""
         try:
-            st.write("🔍 DEBUG: Starting file processing...")
-            st.write(f"📁 DEBUG: Processing {len(files)} files")
-            
             with st.spinner("Processing files and generating preview..."):
                 # Step 1: Load and validate files
-                st.write("📂 DEBUG: Loading files...")
                 file_data = self._load_files(files)
-                st.write(f"✅ DEBUG: Loaded {len(file_data)} files successfully")
                 
                 # Step 2: Create merge preview with auto-renumbering
-                st.write("🔄 DEBUG: Creating merge preview...")
                 preview_data = self._create_clean_preview(file_data)
-                st.write(f"✅ DEBUG: Preview created - {preview_data.total_questions} questions")
                 
-                # Step 3: Store in session state (force it to be a dict)
-                st.write("📊 DEBUG: Forcing upload_state to be dictionary...")
-                
-                # Always create/overwrite as dictionary
+                # Step 3: Store in session state
                 st.session_state.upload_state = {
                     'files_uploaded': True,
                     'preview_generated': True,
@@ -92,18 +84,10 @@ class UploadInterfaceV2:
                     'merge_completed': False,
                     'final_database': None
                 }
-                st.write("✅ DEBUG: Session state forced to dictionary")
                 
                 st.success(f"Preview generated: {preview_data.total_questions} questions, {preview_data.conflict_count} conflicts")
-                # Don't rerun immediately - let the user see the preview
-                # st.rerun()  # ← REMOVED: This was causing the reset loop
                 
         except Exception as e:
-            st.error(f"❌ DEBUG: Exception in _process_uploaded_files: {str(e)}")
-            st.write(f"❌ DEBUG: Exception type: {type(e)}")
-            import traceback
-            st.code(traceback.format_exc())
-            
             upload_state = st.session_state.get('upload_state', {})
             if isinstance(upload_state, dict):
                 upload_state['error_message'] = str(e)
@@ -146,46 +130,53 @@ class UploadInterfaceV2:
     
     def _create_clean_preview(self, file_data: List[Dict]) -> MergePreviewData:
         """Create merge preview with clean data structure"""
-        # Simple merge logic - combine all questions and detect ID conflicts
         all_questions = []
         conflicts = []
         seen_ids = set()
         renumbered_count = 0
         
-        for file_info in file_data:
-            for question in file_info['questions']:
-                q_id = question.get('id', question.get('ID', ''))
-                
-                # Check for ID conflicts and auto-renumber
-                if q_id in seen_ids:
-                    # Find new ID
-                    original_id = q_id
-                    counter = 1
-                    while f"{q_id}_{counter}" in seen_ids:
-                        counter += 1
-                    new_id = f"{q_id}_{counter}"
-                    question['id'] = new_id
-                    renumbered_count += 1
-                    conflicts.append({
-                        'id': original_id,
-                        'description': f"ID {original_id} renamed to {new_id}"
-                    })
-                
-                seen_ids.add(question.get('id', q_id))
-                all_questions.append(question)
+        # Handle single file vs multiple files
+        if len(file_data) == 1:
+            # Single file - just load questions without conflict checking
+            all_questions = file_data[0]['questions']
+            conflicts = []
+            renumbered_count = 0
+        else:
+            # Multiple files - merge with conflict resolution
+            for file_info in file_data:
+                for question in file_info['questions']:
+                    q_id = question.get('id', question.get('ID', ''))
+                    
+                    # Check for ID conflicts and auto-renumber
+                    if q_id in seen_ids:
+                        # Find new ID
+                        original_id = q_id
+                        counter = 1
+                        while f"{q_id}_{counter}" in seen_ids:
+                            counter += 1
+                        new_id = f"{q_id}_{counter}"
+                        question['id'] = new_id
+                        renumbered_count += 1
+                        conflicts.append({
+                            'id': original_id,
+                            'description': f"ID {original_id} renamed to {new_id}"
+                        })
+                    
+                    seen_ids.add(question.get('id', q_id))
+                    all_questions.append(question)
         
-        # Store ALL questions in the preview object, not just first 10
+        # Store ALL questions in the preview object
         preview_data = MergePreviewData(
             total_questions=len(all_questions),
             conflicts=conflicts,
             conflict_count=len(conflicts),
             renumbered_count=renumbered_count,
             preview_questions=all_questions[:10],  # First 10 for display
-            merge_ready=True  # Always ready since we auto-resolve conflicts
+            merge_ready=True  # Always ready
         )
         
-        # CRITICAL: Store ALL merged questions for later use
-        preview_data.all_merged_questions = all_questions  # Add this attribute
+        # Store ALL merged questions for later use
+        preview_data.all_merged_questions = all_questions
         
         return preview_data
     
@@ -195,7 +186,7 @@ class UploadInterfaceV2:
         
         # Check if it's a dictionary and has the data we need
         if not isinstance(upload_state, dict):
-            st.info("Upload files above to see merge preview")
+            st.info("Upload files above to see results")
             return
         
         if upload_state.get('error_message'):
@@ -203,16 +194,16 @@ class UploadInterfaceV2:
             return
         
         if not upload_state.get('preview_generated') or not upload_state.get('current_preview'):
-            st.info("Upload files above to see merge preview")
+            st.info("Upload files above to see results")
             return
         
         preview = upload_state.get('current_preview')
         if not preview:
-            st.info("Upload files above to see merge preview")
+            st.info("Upload files above to see results")
             return
         
         # Display preview summary
-        st.header("🔍 Merge Preview")
+        st.header("🔍 File Processing Results")
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -222,8 +213,10 @@ class UploadInterfaceV2:
         with col3:
             st.metric("Auto-Renumbered", preview.renumbered_count)
         
-        # Show conflicts if any
-        if preview.conflicts:
+        # Show conflicts if any, or single file message
+        if preview.conflict_count == 0 and preview.renumbered_count == 0:
+            st.success("✅ File processed successfully - ready to load!")
+        elif preview.conflicts:
             st.warning("⚠️ Conflicts detected and resolved:")
             for conflict in preview.conflicts:
                 st.write(f"- {conflict['description']}")
@@ -237,56 +230,45 @@ class UploadInterfaceV2:
                 question_id = q.get('id', q.get('ID', 'N/A'))
                 st.write(f"{i}. ID {question_id}: {question_text[:100]}...")
         
-        # Merge action
+        # Load/Merge action
         if preview.merge_ready:
-            if st.button("Complete Merge", type="primary", key="complete_merge"):
+            button_text = "Load Database" if preview.conflict_count == 0 else "Complete Merge"
+            if st.button(button_text, type="primary", key="complete_merge"):
                 self._execute_merge(preview)
     
     def _execute_merge(self, preview: MergePreviewData):
         """Execute the final merge operation"""
         try:
             with st.spinner("Completing merge..."):
-                st.write("🔄 DEBUG: Starting merge execution...")
-                
-                # Get the current upload state
                 upload_state = st.session_state.get('upload_state', {})
-                st.write(f"📊 DEBUG: Current upload_state: {upload_state}")
                 
                 if isinstance(upload_state, dict) and 'current_preview' in upload_state:
                     # Get the preview object which contains our merged questions
                     preview_obj = upload_state['current_preview']
                     
-                    # Use ALL merged questions, not just the preview
+                    # Use ALL merged questions
                     if hasattr(preview_obj, 'all_merged_questions'):
                         all_merged_questions = preview_obj.all_merged_questions
-                        st.write(f"✅ DEBUG: Found ALL {len(all_merged_questions)} merged questions")
                     else:
                         # Fallback to preview questions if all_merged_questions not available
                         all_merged_questions = preview_obj.preview_questions
-                        st.write(f"⚠️ DEBUG: Using preview questions only: {len(all_merged_questions)} questions")
                     
-                    # FORCE UPDATE - completely replace the upload_state
+                    # Update upload state
                     new_upload_state = {
                         'files_uploaded': True,
                         'preview_generated': True,
-                        'merge_completed': True,  # ← CRITICAL: Set this to True
+                        'merge_completed': True,
                         'current_preview': preview_obj,
-                        'final_database': all_merged_questions,  # ← CRITICAL: Set the final data
+                        'final_database': all_merged_questions,
                         'error_message': None
                     }
                     
                     st.session_state.upload_state = new_upload_state
-                    st.write("✅ DEBUG: Upload state forcefully updated")
-                    st.write(f"📊 DEBUG: New upload_state: {st.session_state.upload_state}")
                     
-                    # CRITICAL: Transfer to main app session state immediately
-                    st.write("🔄 DEBUG: Transferring to main app session state...")
-                    
-                    # Convert to DataFrame format expected by main app
+                    # Transfer to main app session state
                     df_data = []
                     for q in all_merged_questions:
                         # Handle choices - convert array to individual choice columns
-                      # Handle choices - convert array to individual choice columns
                         choices = q.get('choices', q.get('Choices', []))
                         choice_a = choices[0] if len(choices) > 0 else ''
                         choice_b = choices[1] if len(choices) > 1 else ''
@@ -339,7 +321,7 @@ class UploadInterfaceV2:
                             'Explanation': q.get('feedback_correct', ''),  # Some systems use this
                             'Category': q.get('topic', ''),           # Alternative name
                             'Level': q.get('difficulty', 'Medium'),  # Alternative name
-                        })  
+                        })
                     
                     # Set main app session state
                     st.session_state['df'] = pd.DataFrame(df_data)
@@ -349,10 +331,6 @@ class UploadInterfaceV2:
                         'total_questions': len(all_merged_questions),
                         'conflicts_resolved': preview.conflict_count
                     }
-                    
-                    st.write("✅ DEBUG: Main app session state updated!")
-                    st.write(f"📊 DEBUG: DataFrame shape: {st.session_state['df'].shape}")
-                    st.write(f"📋 DEBUG: Main session keys: {list(st.session_state.keys())}")
                 
                 st.success(f"✅ Merge completed! {preview.total_questions} questions in final database")
                 st.success("🚀 Database is now available in the main application!")
@@ -362,9 +340,6 @@ class UploadInterfaceV2:
                 st.rerun()
                 
         except Exception as e:
-            st.error(f"❌ DEBUG: Error in _execute_merge: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
             st.error(f"Error completing merge: {e}")
     
     def render_results_section(self):
