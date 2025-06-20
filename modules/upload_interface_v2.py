@@ -939,7 +939,8 @@ class UploadInterfaceV2:
             preview = create_merge_preview(
                 existing_df=existing_df,
                 new_questions=new_questions,
-                strategy=MergeStrategy.SKIP_DUPLICATES
+                strategy=MergeStrategy.SKIP_DUPLICATES,
+                auto_renumber=True
             )
             
             # Prepare UI-friendly data using safe attribute access

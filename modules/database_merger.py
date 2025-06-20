@@ -478,68 +478,75 @@ class DatabaseMerger:
             return renumbered_questions
 
     def detect_sequential_id_conflicts(self, existing_df: pd.DataFrame, new_questions: List[Dict]) -> bool:
-            """
-            Detect if conflicts are just sequential numbering (0,1,2,3...) vs meaningful conflicts.
-            
-            Returns:
-                True if conflicts appear to be just sequential numbering
-            """
-            if existing_df is None or len(existing_df) == 0:
-                return False
-            
-            # Get IDs from both datasets
-            existing_ids = set()
-            new_ids = set()
-            
-            # Extract existing IDs
-            id_columns = ['id', 'question_id', 'ID', 'Question_ID']
-            id_column = None
-            
-            for col in id_columns:
-                if col in existing_df.columns:
-                    id_column = col
-                    break
-            
-            if id_column:
-                for idx, row in existing_df.iterrows():
+        """
+        Detect if conflicts are just sequential numbering (0,1,2,3...) vs meaningful conflicts.
+        
+        Returns:
+            True if new questions appear to be just sequential numbering that conflicts with existing
+        """
+        if existing_df is None or len(existing_df) == 0 or len(new_questions) == 0:
+            return False
+        
+        # Get IDs from both datasets
+        existing_ids = set()
+        new_ids = []
+        
+        # Extract existing IDs
+        id_columns = ['id', 'question_id', 'ID', 'Question_ID']
+        id_column = None
+        
+        for col in id_columns:
+            if col in existing_df.columns:
+                id_column = col
+                break
+        
+        if id_column:
+            for idx, row in existing_df.iterrows():
+                try:
+                    existing_id = str(row[id_column])
+                    if existing_id.isdigit():
+                        existing_ids.add(int(existing_id))
+                except:
+                    continue
+        
+        # Extract new IDs (preserve order)
+        for question in new_questions:
+            for id_field in ['id', 'question_id', 'ID', 'Question_ID']:
+                if id_field in question:
                     try:
-                        existing_id = str(row[id_column])
-                        if existing_id.isdigit():
-                            existing_ids.add(int(existing_id))
+                        new_id = str(question[id_field])
+                        if new_id.isdigit():
+                            new_ids.append(int(new_id))
+                        break
                     except:
                         continue
-            
-            # Extract new IDs
-            for question in new_questions:
-                for id_field in ['id', 'question_id', 'ID', 'Question_ID']:
-                    if id_field in question:
-                        try:
-                            new_id = str(question[id_field])
-                            if new_id.isdigit():
-                                new_ids.add(int(new_id))
-                            break
-                        except:
-                            continue
-            
-            if not existing_ids or not new_ids:
-                return False
-            
-            # Check if both sets start from 0 and are sequential
-            existing_list = sorted(list(existing_ids))
-            new_list = sorted(list(new_ids))
-            
-            # Check if existing IDs are sequential starting from 0
-            existing_sequential = (existing_list == list(range(len(existing_list))))
-            
-            # Check if new IDs are sequential starting from 0  
-            new_sequential = (new_list == list(range(len(new_list))))
-            
-            # If both are sequential and overlap, it's likely just numbering conflict
-            if existing_sequential and new_sequential:
-                overlap = existing_ids.intersection(new_ids)
-                return len(overlap) > 0
-            
+        
+        if not existing_ids or not new_ids:
             return False
+        
+        # Check if new IDs are sequential starting from 0
+        new_ids_sorted = sorted(new_ids)
+        expected_sequence = list(range(len(new_ids_sorted)))
+        is_new_sequential = (new_ids_sorted == expected_sequence)
+        
+        logger.info(f"Sequential detection: new_ids={new_ids_sorted}, expected={expected_sequence}, is_sequential={is_new_sequential}")
+        
+        if not is_new_sequential:
+            return False
+        
+        # Check if any new IDs conflict with existing IDs
+        conflicts = existing_ids.intersection(set(new_ids))
+        has_conflicts = len(conflicts) > 0
+        
+        logger.info(f"ID conflicts: existing_ids={sorted(list(existing_ids))}, new_ids={new_ids_sorted}, conflicts={sorted(list(conflicts))}")
+        
+        # If new IDs are sequential starting from 0 AND there are conflicts, 
+        # this is likely a sequential numbering issue
+        result = is_new_sequential and has_conflicts
+        
+        logger.info(f"Sequential conflict detection result: {result} (sequential={is_new_sequential}, conflicts={len(conflicts)})")
+        
+        return result
 
     def get_next_available_id(self, existing_df: pd.DataFrame) -> int:
             """Get the next available ID number."""
@@ -561,7 +568,7 @@ class DatabaseMerger:
                     break
         
     
-    return max(existing_ids) + 1 if existing_ids else 0
+            return max(existing_ids) + 1 if existing_ids else 0
     def generate_preview(self, existing_df: pd.DataFrame, 
                         new_questions: List[Dict[str, Any]],
                         strategy: Optional[MergeStrategy] = None) -> MergePreview:
@@ -1306,55 +1313,7 @@ def analyze_conflicts_for_ui(conflicts: List[Conflict]) -> Dict[str, Any]:
     return analysis
 
 
-def get_merge_strategy_description(strategy: MergeStrategy) -> Dict[str, str]:
-    """
-    Get user-friendly description of merge strategies.
-    
-    Args:
-        strategy: MergeStrategy enum value
-        
-    Returns:
-        Dictionary with title, description, and use_case
-    """
-    
-    descriptions = {
-        MergeStrategy.APPEND_ALL: {
-            'title': 'Append All Questions',
-            'description': 'Add all new questions to the database, including duplicates',
-            'use_case': 'Use when you want to preserve all questions, even if they are duplicates',
-            'pros': ['Simple and fast', 'No data loss', 'Preserves all information'],
-            'cons': ['May create duplicate questions', 'Can lead to confusion', 'Larger database size']
-        },
-        MergeStrategy.SKIP_DUPLICATES: {
-            'title': 'Skip Duplicate Questions',
-            'description': 'Skip questions that are similar to existing ones',
-            'use_case': 'Use when you want to avoid duplicate content in your database',
-            'pros': ['Prevents duplicates', 'Cleaner database', 'Automatic conflict resolution'],
-            'cons': ['May skip updated versions', 'Could miss important changes', 'Conservative approach']
-        },
-        MergeStrategy.REPLACE_DUPLICATES: {
-            'title': 'Replace Duplicate Questions',
-            'description': 'Replace existing questions with new versions when conflicts are detected',
-            'use_case': 'Use when new questions are updated versions of existing ones',
-            'pros': ['Updates existing content', 'Maintains database size', 'Keeps latest versions'],
-            'cons': ['May lose original data', 'More complex operation', 'Risk of unintended changes']
-        },
-        MergeStrategy.RENAME_DUPLICATES: {
-            'title': 'Rename Conflicting Questions',
-            'description': 'Rename conflicting questions to avoid ID collisions',
-            'use_case': 'Use when you want to keep both versions of similar questions',
-            'pros': ['Preserves all data', 'Avoids ID conflicts', 'Allows manual review later'],
-            'cons': ['Creates renamed questions', 'May need manual cleanup', 'Larger database']
-        }
-    }
-    
-    return descriptions.get(strategy, {
-        'title': 'Unknown Strategy',
-        'description': 'Unknown merge strategy',
-        'use_case': 'Not recommended',
-        'pros': [],
-        'cons': ['Unknown behavior']
-    })
+
 
 
 # Global instance for easy access (similar to Phase 3B pattern)
@@ -1455,5 +1414,191 @@ def test_merge_compatibility(existing_df: pd.DataFrame,
         if new_columns and not (new_columns & existing_columns):
             report['warnings'].append("No common columns between existing and new data")
             report['recommendations'].append("Review data structure compatibility")
+ 
+def update_session_state_after_merge(merge_result: Dict[str, Any]):
+    """
+    Update session state after successful merge with auto-renumbering info.
+    This function integrates with Streamlit session state management.
     
+    Args:
+        merge_result: Dictionary containing merge operation results
+    """
+    import streamlit as st
+    
+    try:
+        if merge_result.get('success', False):
+            # Update main database
+            merged_df = merge_result.get('merged_df')
+            if merged_df is not None:
+                st.session_state['df'] = merged_df
+            
+            # Update metadata
+            st.session_state['last_operation'] = 'database_merge'
+            st.session_state['questions_added'] = merge_result.get('questions_added', 0)
+            st.session_state['total_questions'] = len(merged_df) if merged_df is not None else 0
+            
+            # Handle auto-renumbering info for user feedback
+            renumbering_summary = merge_result.get('renumbering_summary', {})
+            merge_metadata = merge_result.get('merge_metadata', {})
+            
+            # Create success message with auto-renumbering info
+            success_messages = []
+            
+            # Basic merge success
+            questions_added = merge_result.get('questions_added', 0)
+            total_questions = merge_result.get('total_questions', len(merged_df) if merged_df is not None else 0)
+            success_messages.append(f"Successfully merged {questions_added} questions!")
+            
+            # Auto-renumbering info
+            if renumbering_summary.get('auto_renumbered', False):
+                renumber_msg = renumbering_summary.get('message', 'Questions were auto-renumbered to avoid conflicts')
+                success_messages.append(f"✨ {renumber_msg}")
+            
+            # Check merge metadata for auto-renumbering info (alternative format)
+            elif merge_metadata.get('auto_renumbered', False):
+                renumber_info = merge_metadata.get('renumbering_info', {})
+                questions_renumbered = renumber_info.get('questions_renumbered', 0)
+                if questions_renumbered > 0:
+                    success_messages.append(f"✨ Auto-renumbered {questions_renumbered} questions to avoid ID conflicts")
+            
+            # Final database info
+            success_messages.append(f"Database now contains {total_questions} questions total.")
+            
+            # Store combined success message
+            st.session_state['success_message'] = " ".join(success_messages)
+            
+            # Store operation details for potential rollback
+            st.session_state['last_merge_result'] = {
+                'timestamp': merge_metadata.get('merge_timestamp', 'unknown'),
+                'strategy': merge_metadata.get('merge_strategy', 'unknown'),
+                'questions_added': questions_added,
+                'auto_renumbered': renumbering_summary.get('auto_renumbered', False) or merge_metadata.get('auto_renumbered', False)
+            }
+            
+            # Enable rollback if rollback data is available
+            rollback_data = merge_result.get('rollback_data')
+            if rollback_data:
+                st.session_state['can_rollback'] = True
+                st.session_state['rollback_data'] = rollback_data
+            
+            # Clear temporary data
+            temp_keys = ['preview_data', 'processing_results', 'uploaded_files', 'error_message']
+            for key in temp_keys:
+                if key in st.session_state:
+                    del st.session_state[key]
+                    
+            # Update current filename if available
+            if 'current_filename' not in st.session_state:
+                st.session_state['current_filename'] = 'merged_database.json'
+            
+            logger.info(f"Session state updated after successful merge: {questions_added} questions added, {total_questions} total")
+            
+        else:
+            # Handle failed merge
+            error_message = merge_result.get('error_message', 'Unknown error occurred during merge')
+            st.session_state['error_message'] = f"Merge failed: {error_message}"
+            
+            # Clear success message if any
+            if 'success_message' in st.session_state:
+                del st.session_state['success_message']
+            
+            logger.error(f"Merge failed, session state updated with error: {error_message}")
+            
+    except Exception as e:
+        # Handle any errors in session state update
+        error_msg = f"Failed to update session state after merge: {str(e)}"
+        st.session_state['error_message'] = error_msg
+        logger.error(error_msg)
+
+
+def get_session_state_summary() -> Dict[str, Any]:
+    """
+    Get a summary of current session state for debugging.
+    Useful for troubleshooting upload and merge operations.
+    
+    Returns:
+        Dictionary with session state summary
+    """
+    import streamlit as st
+    
+    summary = {
+        'has_database': 'df' in st.session_state and st.session_state.df is not None,
+        'database_size': len(st.session_state.df) if 'df' in st.session_state and st.session_state.df is not None else 0,
+        'current_filename': st.session_state.get('current_filename', 'Unknown'),
+        'last_operation': st.session_state.get('last_operation', 'None'),
+        'can_rollback': st.session_state.get('can_rollback', False),
+        'has_preview_data': 'preview_data' in st.session_state,
+        'has_processing_results': 'processing_results' in st.session_state,
+        'has_success_message': 'success_message' in st.session_state,
+        'has_error_message': 'error_message' in st.session_state,
+        'session_keys': list(st.session_state.keys()) if hasattr(st, 'session_state') else []
+    }
+    
+    return summary
+
+
+def clear_merge_session_data():
+    """
+    Clear merge-related session data.
+    Useful for resetting upload state after errors.
+    """
+    import streamlit as st
+    
+    keys_to_clear = [
+        'preview_data',
+        'processing_results', 
+        'uploaded_files',
+        'error_message',
+        'success_message',
+        'last_merge_result'
+    ]
+    
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+    
+    logger.info("Cleared merge session data")
+
+
+def rollback_last_merge():
+    """
+    Rollback the last merge operation if rollback data is available.
+    
+    Returns:
+        Boolean indicating if rollback was successful
+    """
+    import streamlit as st
+    
+    try:
+        if not st.session_state.get('can_rollback', False):
+            st.session_state['error_message'] = "No rollback data available"
+            return False
+        
+        rollback_data = st.session_state.get('rollback_data')
+        if not rollback_data:
+            st.session_state['error_message'] = "Rollback data is missing"
+            return False
+        
+        # Restore previous database state
+        previous_df = rollback_data.get('df')
+        if previous_df is not None:
+            st.session_state['df'] = previous_df
+            st.session_state['success_message'] = "Successfully rolled back to previous database state"
+            
+            # Clear rollback data
+            st.session_state['can_rollback'] = False
+            if 'rollback_data' in st.session_state:
+                del st.session_state['rollback_data']
+            
+            logger.info("Rollback completed successfully")
+            return True
+        else:
+            st.session_state['error_message'] = "Rollback data is corrupted"
+            return False
+            
+    except Exception as e:
+        error_msg = f"Rollback failed: {str(e)}"
+        st.session_state['error_message'] = error_msg
+        logger.error(error_msg)
+        return False
     return report
