@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Ultra Clean Exporter Module - No Validation, No Syntax Errors
-Replace your modules/exporter.py with this bulletproof version
+Clean Exporter Module Part 1 - Core Functions
 """
 
 import streamlit as st
@@ -306,6 +305,27 @@ def sanitize_filename(filename):
 class CanvasLaTeXQTIGenerator:
     """Canvas-compatible QTI Generator with LaTeX preservation"""
     
+    def _canvas_safe_html_escape(self, text):
+        """
+        HTML escape that's compatible with Canvas QTI import
+        Avoids problematic HTML entities that Canvas doesn't like
+        """
+        
+        if not text:
+            return ""
+        
+        # Convert to string first
+        text = str(text)
+        
+        # Use Python's html.escape but with safer quote handling
+        escaped = html.escape(text, quote=False)  # Don't escape quotes initially
+        
+        # Manually handle quotes in a Canvas-friendly way
+        escaped = escaped.replace('"', '&quot;')
+        escaped = escaped.replace("'", "'")  # Keep apostrophes as-is, don't convert to &#x27;
+        
+        return escaped
+    
     def create_qti_package(self, questions, package_name):
         """Create complete Canvas-compatible QTI package"""
         try:
@@ -352,6 +372,45 @@ class CanvasLaTeXQTIGenerator:
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ", encoding='utf-8').decode('utf-8')
     
+    def _convert_latex_for_canvas(self, text):
+        """Convert LaTeX delimiters for Canvas MathJax compatibility"""
+        
+        if not text:
+            return ""
+        
+        latex_expressions = []
+        placeholder_template = "LATEX_PLACEHOLDER_{}"
+        
+        def replace_latex_match(match):
+            expr = match.group(0)
+            
+            # Canvas conversion logic
+            if expr.startswith('$$') and expr.endswith('$$'):
+                canvas_expr = expr  # Keep block math as-is
+            elif expr.startswith('$') and expr.endswith('$'):
+                inner_content = expr[1:-1]
+                canvas_expr = f'\\({inner_content}\\)'  # Convert inline math
+            else:
+                canvas_expr = expr
+            
+            placeholder = placeholder_template.format(len(latex_expressions))
+            latex_expressions.append(canvas_expr)
+            return placeholder
+        
+        # Process LaTeX expressions
+        pattern = r'\$\$[^$]+\$\$|\$[^$]+\$'
+        text_with_placeholders = re.sub(pattern, replace_latex_match, str(text))
+        
+        # Use Canvas-safe HTML escaping
+        escaped_text = self._canvas_safe_html_escape(text_with_placeholders)
+        
+        # Restore LaTeX
+        for i, canvas_expr in enumerate(latex_expressions):
+            placeholder = placeholder_template.format(i)
+            escaped_text = escaped_text.replace(placeholder, canvas_expr)
+        
+        return f'<div class="question-text">{escaped_text}</div>'
+    
     def _add_question_item(self, section, question, question_num):
         """Add question with Canvas LaTeX conversion"""
         
@@ -383,46 +442,7 @@ class CanvasLaTeXQTIGenerator:
             self._add_true_false_response(item, presentation, question, question_num)
         elif qtype == 'fill_in_blank':
             self._add_fill_in_blank_response(item, presentation, question, question_num)
-    
-    def _convert_latex_for_canvas(self, text):
-        """Convert LaTeX delimiters for Canvas MathJax compatibility"""
-        
-        if not text:
-            return ""
-        
-        latex_expressions = []
-        placeholder_template = "LATEX_PLACEHOLDER_{}"
-        
-        def replace_latex_match(match):
-            expr = match.group(0)
-            
-            # Canvas conversion logic
-            if expr.startswith('$$') and expr.endswith('$$'):
-                canvas_expr = expr  # Keep block math as-is
-            elif expr.startswith('$') and expr.endswith('$'):
-                inner_content = expr[1:-1]
-                canvas_expr = f'\\({inner_content}\\)'  # Convert inline math
-            else:
-                canvas_expr = expr
-            
-            placeholder = placeholder_template.format(len(latex_expressions))
-            latex_expressions.append(canvas_expr)
-            return placeholder
-        
-        # Process LaTeX expressions
-        pattern = r'\$\$[^$]+\$\$|\$[^$]+\$'
-        text_with_placeholders = re.sub(pattern, replace_latex_match, str(text))
-        
-        # Escape HTML
-        escaped_text = html.escape(text_with_placeholders)
-        
-        # Restore LaTeX
-        for i, canvas_expr in enumerate(latex_expressions):
-            placeholder = placeholder_template.format(i)
-            escaped_text = escaped_text.replace(placeholder, canvas_expr)
-        
-        return f'<div class="question-text">{escaped_text}</div>'
-    
+
     def _add_multiple_choice_response(self, item, presentation, question, question_num):
         """Add multiple choice response"""
         
@@ -564,7 +584,7 @@ class CanvasLaTeXQTIGenerator:
             mattext = ET.SubElement(material, "mattext")
             mattext.set("texttype", "text/html")
             mattext.text = self._convert_latex_for_canvas(incorrect_feedback)
-    
+
     def _normalize_correct_answer(self, correct_answer, choices):
         """Convert correct answer to choice letter"""
         
@@ -635,6 +655,7 @@ class CanvasLaTeXQTIGenerator:
         
         rough_string = ET.tostring(manifest, encoding='unicode')
         reparsed = minidom.parseString(rough_string)
+        
         return reparsed.toprettyxml(indent="  ", encoding='utf-8').decode('utf-8')
     
     def _generate_metadata_xml(self, package_name, question_count):
@@ -657,6 +678,10 @@ class CanvasLaTeXQTIGenerator:
         rough_string = ET.tostring(metadata, encoding='unicode')
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ", encoding='utf-8').decode('utf-8')
+
+
+
+
 
 # Backward compatibility
 def create_qti_package_legacy(df, original_questions, quiz_title, transform_json_to_csv, csv_to_qti):
