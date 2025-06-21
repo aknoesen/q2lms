@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Refactored Exporter Module - Main Interface
+Question Export Module - Main Interface
 Clean, modular approach to question export functionality
 """
 
@@ -14,56 +14,28 @@ from datetime import datetime
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Import our new modular components with error handling
+# Import our modular components
 try:
     from .export.data_processor import ExportDataManager
-    DATA_PROCESSOR_AVAILABLE = True
-except ImportError as e:
-    DATA_PROCESSOR_AVAILABLE = False
-    logger.warning(f"Data processor not available: {e}")
-
-try:
     from .export.latex_converter import LaTeXAnalyzer
-    LATEX_CONVERTER_AVAILABLE = True
-except ImportError as e:
-    LATEX_CONVERTER_AVAILABLE = False
-    logger.warning(f"LaTeX converter not available: {e}")
-
-try:
     from .export.canvas_adapter import CanvasQTIAdapter
-    CANVAS_ADAPTER_AVAILABLE = True
-except ImportError as e:
-    CANVAS_ADAPTER_AVAILABLE = False
-    logger.warning(f"Canvas adapter not available: {e}")
-
-try:
     from .export.filename_utils import ExportNamingManager
-    FILENAME_UTILS_AVAILABLE = True
+    EXPORT_SYSTEM_AVAILABLE = True
 except ImportError as e:
-    FILENAME_UTILS_AVAILABLE = False
-    logger.warning(f"Filename utils not available: {e}")
-
-# Check if we have all components for the full system
-FULL_SYSTEM_AVAILABLE = all([
-    DATA_PROCESSOR_AVAILABLE,
-    LATEX_CONVERTER_AVAILABLE, 
-    CANVAS_ADAPTER_AVAILABLE,
-    FILENAME_UTILS_AVAILABLE
-])
+    EXPORT_SYSTEM_AVAILABLE = False
+    logger.error(f"Export components not available: {e}")
 
 
 class QuestionExporter:
     """Main class for handling question exports"""
     
     def __init__(self):
-        if FULL_SYSTEM_AVAILABLE:
+        if EXPORT_SYSTEM_AVAILABLE:
             self.data_manager = ExportDataManager()
             self.latex_analyzer = LaTeXAnalyzer()
             self.naming_manager = ExportNamingManager()
         else:
-            self.data_manager = None
-            self.latex_analyzer = None
-            self.naming_manager = None
+            raise ImportError("Export system components not available")
     
     def render_export_interface(self, 
                                df: pd.DataFrame, 
@@ -76,37 +48,29 @@ class QuestionExporter:
             original_questions: Original question data with LaTeX preserved
         """
         try:
-            if FULL_SYSTEM_AVAILABLE:
-                self._render_full_export_interface(df, original_questions)
+            st.markdown("### 📥 Export System")
+            st.success("✅ Export system ready with custom filename support!")
+            
+            # Export type selection
+            export_type = st.radio(
+                "Choose Export Format:",
+                ["📊 CSV Export", "📦 QTI Package for Canvas"],
+                key="export_type_selection"
+            )
+            
+            if export_type == "📊 CSV Export":
+                self._render_csv_export(df)
             else:
-                self._render_basic_export_interface(df, original_questions)
+                self._render_qti_export(df, original_questions)
             
         except Exception as e:
             logger.exception("Error rendering export interface")
             st.error(f"❌ Error loading export interface: {str(e)}")
     
-    def _render_full_export_interface(self, df: pd.DataFrame, original_questions: List[Dict[str, Any]]):
-        """Render the full enhanced export interface"""
+    def _render_csv_export(self, df: pd.DataFrame):
+        """Render CSV export interface"""
         
-        st.markdown("### 📥 Enhanced Export System")
-        st.success("✅ Full modular export system loaded with custom filename support!")
-        
-        # Export type selection
-        export_type = st.radio(
-            "Choose Export Format:",
-            ["📊 Enhanced CSV Export", "📦 Enhanced QTI Package for Canvas"],
-            key="export_type_selection"
-        )
-        
-        if export_type == "📊 Enhanced CSV Export":
-            self._render_enhanced_csv_export(df)
-        else:
-            self._render_enhanced_qti_export(df, original_questions)
-    
-    def _render_enhanced_csv_export(self, df: pd.DataFrame):
-        """Render enhanced CSV export interface"""
-        
-        st.subheader("📊 Enhanced CSV Export")
+        st.subheader("📊 CSV Export")
         
         col1, col2 = st.columns([2, 1])
         
@@ -122,7 +86,7 @@ class QuestionExporter:
             )
             
             # Validate filename
-            if filename_input and self.naming_manager:
+            if filename_input:
                 is_valid, message = self.naming_manager.validate_user_input(filename_input)
                 if is_valid:
                     st.success(f"✅ {message}")
@@ -144,21 +108,17 @@ class QuestionExporter:
             st.caption(f"Showing first 3 of {len(df)} questions")
         
         # Export button
-        if st.button("📥 Download Enhanced CSV", type="primary", key="csv_export_btn"):
-            if filename_input and self.naming_manager:
-                csv_filename = self.naming_manager.get_csv_filename(filename_input)
-            else:
-                csv_filename = f"{suggested_name}.csv"
-            
+        if st.button("📥 Download CSV", type="primary", key="csv_export_btn"):
+            csv_filename = self.naming_manager.get_csv_filename(filename_input) if filename_input else f"{suggested_name}.csv"
             self._export_csv(df, csv_filename)
     
-    def _render_enhanced_qti_export(self, df: pd.DataFrame, original_questions: List[Dict[str, Any]]):
-        """Render enhanced QTI export interface with better UX"""
+    def _render_qti_export(self, df: pd.DataFrame, original_questions: List[Dict[str, Any]]):
+        """Render QTI export interface"""
         
-        st.subheader("📦 Enhanced QTI Package Export")
+        st.subheader("📦 QTI Package Export")
         
         # Analyze LaTeX usage
-        if self.latex_analyzer and original_questions:
+        if original_questions:
             latex_analysis = self.latex_analyzer.analyze_questions(original_questions)
             if latex_analysis['questions_with_latex'] > 0:
                 st.info(f"""
@@ -178,7 +138,7 @@ class QuestionExporter:
             # Quiz title input with helpful default
             quiz_title = st.text_input(
                 "🎯 Quiz/Assessment Title:",
-                value=default_quiz_title,  # Provide a smart default
+                value=default_quiz_title,
                 help="This will be the title of your quiz in Canvas. Feel free to customize!",
                 key="qti_quiz_title"
             )
@@ -188,12 +148,7 @@ class QuestionExporter:
             
             # Filename input with smart default based on title
             if quiz_title and quiz_title.strip():
-                if self.naming_manager:
-                    suggested_name = self.naming_manager.suggest_name(quiz_title, len(df))
-                else:
-                    # Simple fallback if naming manager not available
-                    clean_title = quiz_title.replace(' ', '_').replace('(', '').replace(')', '')
-                    suggested_name = f"{clean_title}_{len(df)}Q"
+                suggested_name = self.naming_manager.suggest_name(quiz_title, len(df))
             else:
                 suggested_name = f"Assessment_{len(df)}Q_{datetime.now().strftime('%Y%m%d')}"
             
@@ -205,7 +160,7 @@ class QuestionExporter:
             )
             
             # Validate filename with helpful feedback
-            if package_filename and self.naming_manager:
+            if package_filename:
                 is_valid, message = self.naming_manager.validate_user_input(package_filename)
                 if is_valid:
                     st.success(f"✅ {message}")
@@ -240,7 +195,7 @@ class QuestionExporter:
         export_enabled = (
             quiz_title and quiz_title.strip() and
             package_filename and package_filename.strip() and
-            (not self.naming_manager or self.naming_manager.validate_user_input(package_filename)[0])
+            self.naming_manager.validate_user_input(package_filename)[0]
         )
         
         # Show clear status
@@ -250,14 +205,14 @@ class QuestionExporter:
                 missing_items.append("Quiz title")
             if not (package_filename and package_filename.strip()):
                 missing_items.append("Package filename")
-            if self.naming_manager and package_filename and not self.naming_manager.validate_user_input(package_filename)[0]:
+            if package_filename and not self.naming_manager.validate_user_input(package_filename)[0]:
                 missing_items.append("Valid filename (fix special characters)")
             
             if missing_items:
                 st.warning(f"⚠️ **Almost ready!** Please check: {', '.join(missing_items)}")
         
         # Always show the button, but with helpful state
-        button_text = "📦 Create Enhanced QTI Package" if export_enabled else "📦 Create QTI Package (Complete fields above)"
+        button_text = "📦 Create QTI Package" if export_enabled else "📦 Create QTI Package (Complete fields above)"
         
         if st.button(
             button_text,
@@ -267,32 +222,10 @@ class QuestionExporter:
             help="Creates a Canvas-compatible QTI package ready for import" if export_enabled else "Complete the required fields above to enable export"
         ):
             final_quiz_title = quiz_title if quiz_title else default_quiz_title
-            if package_filename and self.naming_manager:
-                final_filename = self.naming_manager.get_qti_filename(package_filename)
-            else:
-                final_filename = f"{suggested_name}.zip"
+            final_filename = self.naming_manager.get_qti_filename(package_filename) if package_filename else f"{suggested_name}.zip"
             
             # Call the export function
             self._handle_qti_export(df, original_questions, final_quiz_title, final_filename)
-    
-    def _render_basic_export_interface(self, df: pd.DataFrame, original_questions: List[Dict[str, Any]]):
-        """Render basic export interface when full system not available"""
-        
-        st.markdown("### 📥 Basic Export System")
-        st.warning("⚠️ Enhanced modules not fully available. Using basic export functionality.")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**📊 CSV Export**")
-            if st.button("📥 Export CSV", key="basic_csv_btn"):
-                self._export_csv(df, f"questions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-        
-        with col2:
-            st.markdown("**📦 QTI Package**")
-            quiz_title = st.text_input("Quiz Title:", "Question Package", key="basic_qti_title")
-            if st.button("📦 Create QTI", key="basic_qti_btn"):
-                st.info("Basic QTI export - enhanced features not available")
     
     def _handle_qti_export(self, 
                           df: pd.DataFrame, 
@@ -302,72 +235,64 @@ class QuestionExporter:
         """Handle QTI package export"""
         
         try:
-            with st.spinner("🔄 Creating enhanced QTI package..."):
+            with st.spinner("🔄 Creating QTI package..."):
                 
                 # Step 1: Process data
                 st.info("📊 Processing question data...")
-                if self.data_manager:
-                    processed_questions, report = self.data_manager.prepare_questions_for_export(
-                        df, original_questions
-                    )
-                    
-                    if not report["success"]:
-                        st.error(f"❌ Data processing failed: {report['errors']}")
-                        return
-                    
-                    if report.get("warnings"):
-                        st.warning("⚠️ " + "; ".join(report["warnings"]))
-                else:
-                    processed_questions = original_questions
+                processed_questions, report = self.data_manager.prepare_questions_for_export(
+                    df, original_questions
+                )
+                
+                if not report["success"]:
+                    st.error(f"❌ Data processing failed: {report['errors']}")
+                    return
+                
+                if report.get("warnings"):
+                    st.warning("⚠️ " + "; ".join(report["warnings"]))
                 
                 # Step 2: Create QTI package
                 st.info("📦 Generating Canvas-compatible QTI package...")
-                if CANVAS_ADAPTER_AVAILABLE:
-                    qti_builder = CanvasQTIAdapter()
-                    package_data = qti_builder.create_package(
-                        processed_questions, 
-                        quiz_title,
-                        filename.replace('.zip', '')
+                qti_builder = CanvasQTIAdapter()
+                package_data = qti_builder.create_package(
+                    processed_questions, 
+                    quiz_title,
+                    filename.replace('.zip', '')
+                )
+                
+                if package_data:
+                    # Provide download
+                    st.download_button(
+                        label="📦 Download QTI Package",
+                        data=package_data,
+                        file_name=filename,
+                        mime="application/zip",
+                        key=f"qti_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                     )
                     
-                    if package_data:
-                        # Provide download
-                        st.download_button(
-                            label="📦 Download Enhanced QTI Package",
-                            data=package_data,
-                            file_name=filename,
-                            mime="application/zip",
-                            key=f"qti_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                        )
-                        
-                        # Show success details
-                        total_points = sum(q.get('points', 1) for q in processed_questions)
-                        latex_count = 0
-                        if self.latex_analyzer:
-                            latex_analysis = self.latex_analyzer.analyze_questions(processed_questions)
-                            latex_count = latex_analysis['questions_with_latex']
-                        
-                        st.success(f"""
-                        ✅ **Enhanced QTI Package Created Successfully!**
-                        
-                        📁 **Filename:** `{filename}`
-                        🎯 **Quiz Title:** {quiz_title}
-                        📊 **Questions:** {len(processed_questions)}
-                        🎯 **Total Points:** {total_points}
-                        🔢 **LaTeX Questions:** {latex_count}
-                        
-                        **Canvas Compatibility:** ✅ Optimized for Canvas MathJax
-                        
-                        **Next Steps:**
-                        1. Download the package above
-                        2. Go to Canvas → Quizzes → Import QTI Package
-                        3. Upload your downloaded file
-                        4. Verify questions import correctly
-                        """)
-                    else:
-                        st.error("❌ Failed to create QTI package")
+                    # Show success details
+                    total_points = sum(q.get('points', 1) for q in processed_questions)
+                    latex_analysis = self.latex_analyzer.analyze_questions(processed_questions)
+                    latex_count = latex_analysis['questions_with_latex']
+                    
+                    st.success(f"""
+                    ✅ **QTI Package Created Successfully!**
+                    
+                    📁 **Filename:** `{filename}`
+                    🎯 **Quiz Title:** {quiz_title}
+                    📊 **Questions:** {len(processed_questions)}
+                    🎯 **Total Points:** {total_points}
+                    🔢 **LaTeX Questions:** {latex_count}
+                    
+                    **Canvas Compatibility:** ✅ Optimized for Canvas MathJax
+                    
+                    **Next Steps:**
+                    1. Download the package above
+                    2. Go to Canvas → Quizzes → Import QTI Package
+                    3. Upload your downloaded file
+                    4. Verify questions import correctly
+                    """)
                 else:
-                    st.error("❌ QTI export not available - Canvas adapter missing")
+                    st.error("❌ Failed to create QTI package")
                 
         except Exception as e:
             logger.exception("Error in QTI export")
@@ -384,14 +309,14 @@ class QuestionExporter:
             csv_data = csv_buffer.getvalue()
             
             st.download_button(
-                label="📥 Download Enhanced CSV File",
+                label="📥 Download CSV File",
                 data=csv_data,
                 file_name=filename,
                 mime="text/csv",
                 key=f"csv_download_{datetime.now().strftime('%H%M%S')}"
             )
             
-            st.success(f"✅ Enhanced CSV export ready: `{filename}`")
+            st.success(f"✅ CSV export ready: `{filename}`")
             
         except Exception as e:
             st.error(f"❌ Error creating CSV export: {str(e)}")
@@ -421,34 +346,38 @@ def integrate_with_existing_ui(df: pd.DataFrame,
     st.info(f"""
     📊 **Current Database:** {len(df)} questions loaded
     
-    🚀 Enhanced export system active with custom filename support, LaTeX optimization, and improved Canvas compatibility.
+    🚀 Export system ready with custom filename support, LaTeX optimization, and Canvas compatibility.
     """)
     
     # Create and use the exporter
-    exporter = QuestionExporter()
-    exporter.render_export_interface(df, original_questions)
+    if EXPORT_SYSTEM_AVAILABLE:
+        exporter = QuestionExporter()
+        exporter.render_export_interface(df, original_questions)
+    else:
+        st.error("❌ Export system components not available")
+        st.info("Please ensure all export modules are properly installed.")
 
 
-# Legacy compatibility functions
+# Legacy compatibility functions (simplified)
 def export_to_csv(df: pd.DataFrame, filename: str = "filtered_questions.csv") -> None:
     """Legacy CSV export function for backward compatibility"""
-    exporter = QuestionExporter()
-    exporter._export_csv(df, filename)
+    if EXPORT_SYSTEM_AVAILABLE:
+        exporter = QuestionExporter()
+        exporter._export_csv(df, filename)
+    else:
+        st.error("❌ Export system not available")
 
 
 def create_qti_package(df: pd.DataFrame, 
                       original_questions: List[Dict[str, Any]], 
                       quiz_title: str,
-                      transform_json_to_csv=None,  # Legacy parameter
-                      csv_to_qti=None) -> None:  # Legacy parameter
+                      *args) -> None:  # Accept any legacy parameters
     """Legacy QTI export function for backward compatibility"""
     
-    # Generate filename automatically for legacy calls
-    if FILENAME_UTILS_AVAILABLE:
+    if EXPORT_SYSTEM_AVAILABLE:
+        exporter = QuestionExporter()
         naming_manager = ExportNamingManager()
         filename = naming_manager.get_qti_filename(quiz_title)
+        exporter._handle_qti_export(df, original_questions, quiz_title, filename)
     else:
-        filename = f"{quiz_title.replace(' ', '_')}.zip"
-    
-    exporter = QuestionExporter()
-    exporter._handle_qti_export(df, original_questions, quiz_title, filename)
+        st.error("❌ Export system not available")

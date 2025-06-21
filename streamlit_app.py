@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Question Database Manager - Main Streamlit Application
-Clean production version with Phase 3D integration and Refactored Export System
+Clean production version with integrated upload and export systems
 """
 
 import streamlit as st
@@ -17,7 +17,6 @@ import io
 import base64
 from datetime import datetime
 import re
-from modules.question_editor import side_by_side_question_editor
 
 # Import modules
 import sys
@@ -29,107 +28,70 @@ if modules_path not in sys.path:
     sys.path.insert(0, modules_path)
 
 # ========================================
-# PHASE 3D DETECTION (SILENT)
+# IMPORT CORE COMPONENTS
 # ========================================
 
-def detect_phase3_modules():
-    """Detect which Phase 3 modules are available (silent detection)"""
-    
-    phase3_status = {
-        'phase3a': False,
-        'phase3b': False, 
-        'phase3c': False,
-        'phase3d': False
-    }
-    
-    # Check Phase 3A (silent)
-    try:
-        from modules.file_processor_module import FileProcessor
-        phase3_status['phase3a'] = True
-    except ImportError:
-        pass
-    
-    # Check Phase 3B (silent)
-    try:
-        from modules.upload_state_manager import UploadState, get_upload_state
-        phase3_status['phase3b'] = True
-    except ImportError:
-        pass
-    
-    # Check Phase 3C (silent)
-    try:
-        from modules.database_merger import MergeStrategy
-        phase3_status['phase3c'] = True
-    except ImportError:
-        pass
-    
-    # Check Phase 3D (only if all others available)
-    if all([phase3_status['phase3a'], phase3_status['phase3b'], phase3_status['phase3c']]):
-        try:
-            from modules.upload_interface_v2 import UploadInterfaceV2
-            phase3_status['phase3d'] = True
-        except ImportError:
-            pass
-    
-    return phase3_status
-
-# Import our modular components with safe error handling
+# Import session management
 try:
     from modules.session_manager import (
         initialize_session_state, clear_session_state, 
         display_enhanced_database_status, has_active_database
     )
-    from modules.upload_handler import smart_upload_interface
     from modules.database_processor import (
         save_question_changes, delete_question, validate_single_question
     )
     SESSION_MANAGER_AVAILABLE = True
 except ImportError as e:
-    st.error(f"❌ Module import error: {e}")
+    st.error(f"❌ Session management modules not available: {e}")
     SESSION_MANAGER_AVAILABLE = False
 
-# Test LaTeX processor integration
+# Import upload system
+try:
+    from modules.upload_interface_v2 import UploadInterfaceV2
+    UPLOAD_SYSTEM_AVAILABLE = True
+except ImportError as e:
+    # Fallback to basic upload
+    try:
+        from modules.upload_handler import smart_upload_interface
+        UPLOAD_SYSTEM_AVAILABLE = False
+        BASIC_UPLOAD_AVAILABLE = True
+    except ImportError:
+        st.error(f"❌ Upload system not available: {e}")
+        UPLOAD_SYSTEM_AVAILABLE = False
+        BASIC_UPLOAD_AVAILABLE = False
+
+# Import question editor
+try:
+    from modules.question_editor import side_by_side_question_editor
+    QUESTION_EDITOR_AVAILABLE = True
+except ImportError as e:
+    st.error(f"❌ Question editor not available: {e}")
+    QUESTION_EDITOR_AVAILABLE = False
+
+# Import LaTeX processor
 try:
     from modules.latex_processor import LaTeXProcessor, clean_text
     LATEX_PROCESSOR_AVAILABLE = True
 except ImportError:
     LATEX_PROCESSOR_AVAILABLE = False
 
-# Import existing backend modules (keeping for legacy compatibility)
-try:
-    from utilities.database_transformer import transform_json_to_csv
-    from utilities.simple_qti import csv_to_qti
-    BACKEND_AVAILABLE = True
-except ImportError:
-    BACKEND_AVAILABLE = False
-
-# ========================================
-# NEW REFACTORED EXPORT SYSTEM
-# ========================================
-
-# Import the new refactored export system
+# Import export system
 try:
     from modules.exporter import integrate_with_existing_ui
-    NEW_EXPORT_SYSTEM_AVAILABLE = True
-    
-    # Also import legacy functions for fallback
-    try:
-        from modules.exporter import export_to_csv, create_qti_package
-        LEGACY_EXPORT_AVAILABLE = True
-    except ImportError:
-        LEGACY_EXPORT_AVAILABLE = False
-        
+    EXPORT_SYSTEM_AVAILABLE = True
 except ImportError as e:
-    NEW_EXPORT_SYSTEM_AVAILABLE = False
-    LEGACY_EXPORT_AVAILABLE = False
-    
-    # Fall back to old exporter if new system not available
-    try:
-        from modules.exporter import export_to_csv, create_qti_package
-        LEGACY_EXPORT_AVAILABLE = True
-    except ImportError:
-        LEGACY_EXPORT_AVAILABLE = False
-        st.warning(f"⚠️ Export system not available: {e}")
+    EXPORT_SYSTEM_AVAILABLE = False
+    st.error(f"❌ Export system not available: {e}")
+
+# Import UI components
+try:
+    from modules.utils import render_latex_in_text, determine_correct_answer_letter
+    from modules.ui_components import display_database_summary, create_summary_charts, apply_filters
+    from modules.simple_browse import simple_browse_questions_tab
+    UI_COMPONENTS_AVAILABLE = True
+except ImportError as e:
+    st.error(f"❌ UI components not available: {e}")
+    UI_COMPONENTS_AVAILABLE = False
 
 # Page configuration
 st.set_page_config(
@@ -139,34 +101,37 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Detect phase status (keep for logic, don't display in sidebar)
-phase3_status = detect_phase3_modules()
-
-# Show essential module status only
-if not SESSION_MANAGER_AVAILABLE:
-    st.error("❌ Session management modules not available")
-
-if not LATEX_PROCESSOR_AVAILABLE:
-    st.warning("⚠️ LaTeX Processor not available")
-
-if not BACKEND_AVAILABLE:
-    st.warning("⚠️ Backend modules not found. Some legacy export features may not work.")
-
-# Show export system status
-if NEW_EXPORT_SYSTEM_AVAILABLE:
-    # New system available - show success message in sidebar
-    with st.sidebar:
-        st.success("✅ Enhanced Export System Active")
-        st.caption("• Custom filename support\n• Improved error handling\n• Better Canvas compatibility")
-elif LEGACY_EXPORT_AVAILABLE:
-    # Only legacy system available
-    with st.sidebar:
-        st.info("📦 Legacy Export System Active")
-        st.caption("• Basic export functionality\n• Consider updating to enhanced system")
-else:
-    # No export system available
-    with st.sidebar:
-        st.error("❌ Export System Unavailable")
+# Show system status in sidebar
+with st.sidebar:
+    st.markdown("### 🔧 System Status")
+    
+    if SESSION_MANAGER_AVAILABLE:
+        st.success("✅ Session Management")
+    else:
+        st.error("❌ Session Management")
+    
+    if UPLOAD_SYSTEM_AVAILABLE:
+        st.success("✅ Advanced Upload System")
+    elif BASIC_UPLOAD_AVAILABLE:
+        st.info("📤 Basic Upload System")
+    else:
+        st.error("❌ Upload System")
+    
+    if EXPORT_SYSTEM_AVAILABLE:
+        st.success("✅ Export System")
+        st.caption("• Custom filenames\n• Canvas compatibility\n• LaTeX optimization")
+    else:
+        st.error("❌ Export System")
+    
+    if QUESTION_EDITOR_AVAILABLE:
+        st.success("✅ Question Editor")
+    else:
+        st.error("❌ Question Editor")
+    
+    if LATEX_PROCESSOR_AVAILABLE:
+        st.success("✅ LaTeX Processor")
+    else:
+        st.warning("⚠️ LaTeX Processor")
 
 # Custom CSS
 st.markdown("""
@@ -216,7 +181,7 @@ st.markdown("""
         border: 2px solid #2196f3;
     }
     
-    /* Enhanced export section styling */
+    /* Export section styling */
     .export-container {
         background: linear-gradient(135deg, #f0f8ff, #e8f5e8);
         padding: 2rem;
@@ -225,7 +190,7 @@ st.markdown("""
         border: 2px solid #28a745;
     }
     
-    .export-enhanced-badge {
+    .export-badge {
         background: linear-gradient(135deg, #28a745, #20c997);
         color: white;
         padding: 0.5rem 1rem;
@@ -275,110 +240,77 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-from modules.utils import render_latex_in_text, determine_correct_answer_letter
-from modules.ui_components import display_database_summary, create_summary_charts, apply_filters
-from modules.simple_browse import simple_browse_questions_tab
-
-def render_upload_interface_smart():
-    """Smart upload interface that uses Phase 3D if available, legacy otherwise"""
+def render_upload_interface():
+    """Render the upload interface"""
     
-    if phase3_status['phase3d']:
-        # Use Phase 3D Upload Interface V2
-        st.markdown("### 📁 Upload Question Database Files")
-        st.markdown('<div class="upload-container">', unsafe_allow_html=True)
-        
+    st.markdown("### 📁 Upload Question Database Files")
+    st.markdown('<div class="upload-container">', unsafe_allow_html=True)
+    
+    if UPLOAD_SYSTEM_AVAILABLE:
+        # Use advanced upload system
         try:
-            from modules.upload_interface_v2 import UploadInterfaceV2
             upload_interface = UploadInterfaceV2()
             upload_interface.render_complete_interface()
             
             # Check if we have a DataFrame loaded
-            if 'df' in st.session_state and st.session_state['df'] is not None and len(st.session_state['df']) > 0:
-                has_database = True
-            else:
-                has_database = False
+            has_database = (
+                'df' in st.session_state and 
+                st.session_state['df'] is not None and 
+                len(st.session_state['df']) > 0
+            )
         
         except Exception as e:
             st.error(f"Upload interface error: {e}")
-            st.info("Falling back to legacy interface...")
-            has_database = smart_upload_interface()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-    else:
-        # Use legacy interface
-        st.markdown("### 📤 Upload Interface")
-        has_database = smart_upload_interface()
+            has_database = False
     
+    elif BASIC_UPLOAD_AVAILABLE:
+        # Use basic upload system
+        try:
+            has_database = smart_upload_interface()
+        except Exception as e:
+            st.error(f"Basic upload error: {e}")
+            has_database = False
+    
+    else:
+        # No upload system available
+        st.error("❌ Upload functionality not available")
+        st.info("Please ensure upload modules are properly installed.")
+        has_database = False
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     return has_database
 
-def render_export_tab_enhanced(filtered_df, original_questions):
-    """Render the enhanced export tab with new refactored system"""
+def render_export_tab(filtered_df, original_questions):
+    """Render the export tab"""
     
     st.markdown('<div class="export-container">', unsafe_allow_html=True)
     
-    if NEW_EXPORT_SYSTEM_AVAILABLE:
-        # Show enhanced export badge
-        st.markdown('<div class="export-enhanced-badge">🚀 Enhanced Export System</div>', unsafe_allow_html=True)
+    if EXPORT_SYSTEM_AVAILABLE:
+        # Show export badge
+        st.markdown('<div class="export-badge">🚀 Export System</div>', unsafe_allow_html=True)
         
-        # Use the new integrated export interface
+        # Use the modern export interface
         integrate_with_existing_ui(filtered_df, original_questions)
         
     else:
-        # Fall back to legacy export interface
-        st.warning("⚠️ Using legacy export system. For enhanced features, please update your export modules.")
-        render_export_tab_legacy(filtered_df, original_questions)
+        # Export system not available
+        st.error("❌ Export functionality not available")
+        st.info("""
+        **Export system is not properly installed.**
+        
+        Please ensure all required modules are available:
+        - modules/export/ package
+        - All export module dependencies
+        
+        Check the error messages above for specific missing components.
+        """)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-def render_export_tab_legacy(filtered_df, original_questions):
-    """Legacy export tab interface"""
-    
-    st.markdown("### 📥 Export Options")
-    
-    if not LEGACY_EXPORT_AVAILABLE:
-        st.error("❌ Export functionality not available. Please check your module installation.")
-        return
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**📊 CSV Export**")
-        st.markdown("Export filtered questions as CSV file for further analysis or backup.")
-        if len(filtered_df) > 0:
-            export_to_csv(filtered_df, f"filtered_questions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-        else:
-            st.warning("No questions to export")
-    
-    with col2:
-        st.markdown("**📦 QTI Package**")
-        st.markdown("Create Canvas-ready QTI package for direct import into your LMS.")
-        if len(filtered_df) > 0:
-            qti_title = st.text_input("QTI Package Name", "Question_Package")
-            if st.button("🚀 Generate QTI Package"):
-                if BACKEND_AVAILABLE:
-                    create_qti_package(filtered_df, original_questions, qti_title, transform_json_to_csv, csv_to_qti)
-                else:
-                    create_qti_package(filtered_df, original_questions, qti_title)
-        else:
-            st.warning("No questions to export")
-    
-    # Show export summary
-    st.markdown("---")
-    st.markdown("### 📋 Export Summary")
-    if len(filtered_df) > 0:
-        difficulty_counts = filtered_df['Difficulty'].value_counts()
-        type_counts = filtered_df['Type'].value_counts()
-        topic_counts = filtered_df['Topic'].value_counts()
-        total_points = filtered_df['Points'].sum()
-        avg_points = filtered_df['Points'].mean()
-        
-        st.info(f"""**Current Selection:**\n- **Questions:** {len(filtered_df)}\n- **Total Points:** {total_points:.0f}\n- **Average Points:** {avg_points:.1f}\n\n**Difficulty Distribution:**\n{chr(10).join([f"- {diff}: {count}" for diff, count in difficulty_counts.items()])}\n\n**Question Types:**\n{chr(10).join([f"- {qtype}: {count}" for qtype, count in type_counts.items()])}\n\n**Topics Covered:**\n{chr(10).join([f"- {topic}: {count}" for topic, count in topic_counts.items()])}""")
-    else:
-        st.warning("No questions selected for export")
-
 def main():
     """Main Streamlit application"""
+    
+    # Initialize session state
     if SESSION_MANAGER_AVAILABLE:
         initialize_session_state()
     
@@ -387,13 +319,16 @@ def main():
     **Web-based interface for managing educational question databases and generating Canvas-ready QTI packages**
     """)
     
-    # Show system status in main interface if there are issues
-    if NEW_EXPORT_SYSTEM_AVAILABLE:
-        st.success("✅ Enhanced export system loaded - Custom filenames, improved Canvas compatibility, and better error handling available!")
-    elif LEGACY_EXPORT_AVAILABLE:
-        st.info("📦 Legacy export system active - Basic functionality available. Consider upgrading for enhanced features.")
-    elif not LEGACY_EXPORT_AVAILABLE and not NEW_EXPORT_SYSTEM_AVAILABLE:
-        st.error("❌ No export system available - Export functionality will be limited.")
+    # Show overall system status
+    critical_systems = [SESSION_MANAGER_AVAILABLE, UI_COMPONENTS_AVAILABLE]
+    essential_systems = [UPLOAD_SYSTEM_AVAILABLE or BASIC_UPLOAD_AVAILABLE, EXPORT_SYSTEM_AVAILABLE]
+    
+    if all(critical_systems) and all(essential_systems):
+        st.success("✅ All systems operational - Full functionality available!")
+    elif all(critical_systems):
+        st.warning("⚠️ Core systems operational - Some features may be limited")
+    else:
+        st.error("❌ Critical systems offline - Functionality severely limited")
     
     st.markdown("---")
     
@@ -401,15 +336,15 @@ def main():
     # UPLOAD INTERFACE
     # ========================================
     if SESSION_MANAGER_AVAILABLE:
-        has_database = render_upload_interface_smart()
+        has_database = render_upload_interface()
     else:
-        st.error("❌ Session management not available. Please check module imports.")
+        st.error("❌ Cannot load upload interface - session management unavailable")
         has_database = False
     
     # ========================================
     # MAIN APPLICATION TABS
     # ========================================
-    if has_database and 'df' in st.session_state:
+    if has_database and 'df' in st.session_state and UI_COMPONENTS_AVAILABLE:
         df = st.session_state['df']
         metadata = st.session_state['metadata']
         original_questions = st.session_state['original_questions']
@@ -429,14 +364,18 @@ def main():
             simple_browse_questions_tab(filtered_df)
         
         with tab3:
-            if SESSION_MANAGER_AVAILABLE:
+            if QUESTION_EDITOR_AVAILABLE:
                 side_by_side_question_editor(filtered_df)
             else:
-                st.error("❌ Question editor not available. Please check module imports.")
+                st.error("❌ Question editor not available")
+                st.info("You can still browse questions in the other tabs.")
         
         with tab4:
-            # Use the enhanced export tab
-            render_export_tab_enhanced(filtered_df, original_questions)
+            render_export_tab(filtered_df, original_questions)
+    
+    elif has_database and not UI_COMPONENTS_AVAILABLE:
+        st.error("❌ Database loaded but UI components not available")
+        st.info("Please check that all required modules are installed.")
     
     else:
         # No database loaded - show getting started
@@ -457,15 +396,15 @@ def main():
             6. **🔧 Edit** questions with real-time preview
             """)
             
-            # Show enhanced features if available
-            if NEW_EXPORT_SYSTEM_AVAILABLE:
+            # Show export features if available
+            if EXPORT_SYSTEM_AVAILABLE:
                 st.markdown("""
-                ### 🚀 Enhanced Export Features:
+                ### 🚀 Export Features:
                 
                 - **🏷️ Custom Filenames** with validation
                 - **📋 Export Preview** before creating files
                 - **🔢 LaTeX Analysis** and conversion
-                - **⚠️ Better Error Handling** with clear messages
+                - **⚠️ Clear Error Handling** with helpful messages
                 - **🎯 Canvas Optimization** for seamless import
                 """)
         
