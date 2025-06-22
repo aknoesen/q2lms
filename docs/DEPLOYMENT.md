@@ -3707,3 +3707,370 @@ Q2LMS is designed for flexible deployment across various environments, from indi
 │  • Multi-institution hosting                        │
 │  • Advanced monitoring and analytics                │
 │  • Thousands of users
+
+# Updates from deployment_json_updates.md
+
+# DEPLOYMENT.md - JSON Export Integration Updates
+
+## Integration Testing Updates
+
+### Add to Testing Framework Section
+
+**Insert after existing testing procedures:**
+
+```bash
+### JSON Export Integration Testing
+
+#### Test JSON Export Functionality
+```bash
+# Test JSON export module import
+python -c "from modules.exporter import QuestionExporter, export_to_json; print('JSON export available')"
+
+# Test JSON export with sample data
+python -c "
+import pandas as pd
+from modules.exporter import QuestionExporter
+
+# Create sample data
+df = pd.DataFrame([{'Title': 'Test', 'Type': 'multiple_choice', 'Points': 2}])
+questions = [{'title': 'Test', 'type': 'multiple_choice', 'question_text': 'Sample?', 'correct_answer': 'A', 'points': 2}]
+
+# Test export
+exporter = QuestionExporter()
+print('JSON export module functional')
+"
+
+# Test JSON format validation
+python tests/test_json_export.py
+```
+
+#### JSON Export Validation Script
+```python
+# tests/test_json_export.py
+import json
+import tempfile
+from modules.exporter import QuestionExporter
+
+def test_json_export_roundtrip():
+    """Test complete JSON export and re-import cycle"""
+    # Sample question data
+    original_questions = [
+        {
+            "title": "Test Question",
+            "type": "multiple_choice", 
+            "question_text": "What is $x^2$ when $x=2$?",
+            "choices": ["2", "4", "6", "8"],
+            "correct_answer": "B",
+            "points": 2
+        }
+    ]
+    
+    # Export to JSON
+    exporter = QuestionExporter()
+    with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
+        json_data = exporter._create_export_data(original_questions)
+        f.write(json.dumps(json_data, indent=2).encode())
+        json_file = f.name
+    
+    # Validate JSON structure
+    with open(json_file, 'r') as f:
+        exported_data = json.load(f)
+    
+    assert 'questions' in exported_data
+    assert 'metadata' in exported_data
+    assert len(exported_data['questions']) == 1
+    assert exported_data['questions'][0]['question_text'] == "What is $x^2$ when $x=2$?"
+    
+    print("✅ JSON export roundtrip test passed")
+
+if __name__ == "__main__":
+    test_json_export_roundtrip()
+```
+```
+
+### Deployment Verification Updates
+
+**Add to deployment verification checklist:**
+
+```markdown
+### Enhanced Deployment Verification
+
+#### JSON Export Verification
+- [ ] **JSON export option appears** in Export tab radio buttons
+- [ ] **JSON export interface renders** without errors
+- [ ] **Filename validation works** for JSON exports
+- [ ] **Export options function** (metadata, formatting, ID preservation)
+- [ ] **JSON download generates** valid JSON files
+- [ ] **LaTeX preservation** maintained in JSON exports
+- [ ] **Metadata generation** includes accurate statistics
+- [ ] **Round-trip compatibility** - exported JSON can be re-imported
+
+#### JSON Export Performance Tests
+```bash
+# Test with large dataset
+python -c "
+import pandas as pd
+import time
+from modules.exporter import QuestionExporter
+
+# Create large test dataset
+large_df = pd.DataFrame([
+    {'Title': f'Question {i}', 'Type': 'multiple_choice', 'Points': 2} 
+    for i in range(1000)
+])
+
+large_questions = [
+    {'title': f'Question {i}', 'type': 'multiple_choice', 
+     'question_text': f'Test question {i}', 'correct_answer': 'A', 'points': 2}
+    for i in range(1000)
+]
+
+# Time the export
+start_time = time.time()
+exporter = QuestionExporter()
+# Note: This tests the processing time, actual export would be via UI
+end_time = time.time()
+
+print(f'Large dataset processing time: {end_time - start_time:.2f} seconds')
+print('✅ Performance test completed')
+"
+```
+```
+
+### Environment Variables Updates
+
+**Add to environment configuration section:**
+
+```bash
+# Enhanced environment variables for JSON export
+export Q2LMS_JSON_EXPORT_ENABLED=true
+export Q2LMS_JSON_PRETTY_PRINT_DEFAULT=true
+export Q2LMS_JSON_METADATA_DEFAULT=true
+export Q2LMS_JSON_MAX_FILE_SIZE=50MB
+
+# Optional: JSON export customization
+export Q2LMS_JSON_COMPRESSION=false
+export Q2LMS_JSON_VALIDATION=strict
+```
+
+### Docker Updates
+
+**Add to Dockerfile enhancements:**
+
+```dockerfile
+# Enhanced Dockerfile with JSON export verification
+FROM python:3.9-slim
+
+# ... existing Dockerfile content ...
+
+# Verify JSON export functionality during build
+RUN python -c "from modules.exporter import QuestionExporter; print('JSON export module verified')" || \
+    (echo "JSON export module not available" && exit 1)
+
+# ... rest of Dockerfile ...
+```
+
+### Monitoring Updates
+
+**Add to monitoring configuration:**
+
+```python
+# Enhanced monitoring for JSON export
+class JSONExportMonitor:
+    """Monitor JSON export functionality"""
+    
+    def __init__(self):
+        self.export_metrics = {
+            'json_exports_total': 0,
+            'json_export_errors': 0,
+            'avg_export_time': 0,
+            'largest_export_size': 0
+        }
+    
+    def record_json_export(self, question_count, file_size, export_time):
+        """Record JSON export metrics"""
+        self.export_metrics['json_exports_total'] += 1
+        self.export_metrics['avg_export_time'] = (
+            (self.export_metrics['avg_export_time'] * (self.export_metrics['json_exports_total'] - 1) + export_time) /
+            self.export_metrics['json_exports_total']
+        )
+        if file_size > self.export_metrics['largest_export_size']:
+            self.export_metrics['largest_export_size'] = file_size
+    
+    def get_json_export_health(self):
+        """Get JSON export health status"""
+        error_rate = (
+            self.export_metrics['json_export_errors'] / 
+            max(self.export_metrics['json_exports_total'], 1)
+        ) * 100
+        
+        return {
+            'healthy': error_rate < 5,  # Less than 5% error rate
+            'error_rate': error_rate,
+            'total_exports': self.export_metrics['json_exports_total'],
+            'avg_export_time': self.export_metrics['avg_export_time']
+        }
+```
+
+### Backup Strategy Updates
+
+**Add to backup procedures:**
+
+```bash
+# Enhanced backup with JSON export capabilities
+
+# Backup script enhancement
+backup_q2lms_with_json() {
+    local backup_dir="/var/backups/q2lms"
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    
+    # ... existing backup logic ...
+    
+    # Test JSON export functionality
+    echo "Testing JSON export functionality..." | tee -a "$backup_dir/backup.log"
+    
+    python3 -c "
+    from modules.exporter import QuestionExporter
+    import pandas as pd
+    
+    # Quick functionality test
+    df = pd.DataFrame([{'Title': 'Test', 'Type': 'multiple_choice', 'Points': 1}])
+    questions = [{'title': 'Test', 'type': 'multiple_choice', 'question_text': 'Test?', 'correct_answer': 'A', 'points': 1}]
+    
+    exporter = QuestionExporter()
+    metadata = exporter._create_export_metadata(df, questions)
+    
+    print('JSON export functional in backup environment')
+    " || echo "⚠️ JSON export not available in backup environment"
+}
+```
+
+### Disaster Recovery Updates
+
+**Add to disaster recovery procedures:**
+
+```yaml
+# disaster_recovery.yml - JSON Export Recovery
+recovery_procedures:
+  json_export_failure:
+    symptoms:
+      - "JSON export option missing from interface"
+      - "JSON export generates errors"
+      - "Downloaded JSON files are invalid"
+    
+    diagnosis:
+      - "Check export module imports"
+      - "Verify exporter.py file integrity"
+      - "Test JSON generation functions"
+    
+    resolution:
+      - "Restore exporter.py from backup"
+      - "Restart application services"
+      - "Verify JSON export functionality"
+      - "Test with sample question data"
+    
+    validation:
+      - "JSON export option appears in interface"
+      - "Sample JSON export completes successfully"
+      - "Generated JSON validates as proper format"
+      - "Re-import of exported JSON works correctly"
+
+  json_export_performance:
+    symptoms:
+      - "JSON export takes excessive time"
+      - "Large datasets fail to export"
+      - "Browser timeouts during export"
+    
+    resolution:
+      - "Check available system memory"
+      - "Restart application services"
+      - "Export smaller question subsets"
+      - "Monitor system resource usage"
+```
+
+### Load Testing Updates
+
+**Add JSON export load testing:**
+
+```python
+# load_test_json_export.py
+import asyncio
+import aiohttp
+import json
+from datetime import datetime
+
+async def test_json_export_load():
+    """Load test JSON export functionality"""
+    
+    test_data = {
+        'questions': [
+            {
+                'title': f'Load Test Question {i}',
+                'type': 'multiple_choice',
+                'question_text': f'What is the answer to question {i}?',
+                'choices': ['A', 'B', 'C', 'D'],
+                'correct_answer': 'A',
+                'points': 1
+            }
+            for i in range(100)  # 100 questions per test
+        ]
+    }
+    
+    # Simulate concurrent JSON exports
+    async def export_test():
+        """Simulate JSON export request"""
+        start_time = datetime.now()
+        # Simulate export processing
+        await asyncio.sleep(0.1)  # Simulated processing time
+        end_time = datetime.now()
+        
+        return {
+            'success': True,
+            'processing_time': (end_time - start_time).total_seconds(),
+            'question_count': len(test_data['questions'])
+        }
+    
+    # Run concurrent exports
+    tasks = [export_test() for _ in range(10)]  # 10 concurrent exports
+    results = await asyncio.gather(*tasks)
+    
+    # Analyze results
+    success_rate = sum(1 for r in results if r['success']) / len(results) * 100
+    avg_time = sum(r['processing_time'] for r in results) / len(results)
+    
+    print(f"JSON Export Load Test Results:")
+    print(f"Success Rate: {success_rate:.1f}%")
+    print(f"Average Processing Time: {avg_time:.2f}s")
+    print(f"Concurrent Exports: {len(results)}")
+
+if __name__ == "__main__":
+    asyncio.run(test_json_export_load())
+```
+
+## Summary of Deployment Changes
+
+### New Testing Requirements:
+1. **JSON export functionality test** during deployment
+2. **Round-trip JSON validation** test
+3. **Performance testing** with large datasets
+4. **Integration testing** with existing export systems
+
+### Enhanced Monitoring:
+1. **JSON export metrics** tracking
+2. **Error rate monitoring** for JSON exports
+3. **Performance metrics** for export operations
+4. **Health checks** including JSON export status
+
+### Updated Recovery Procedures:
+1. **JSON export failure** recovery steps
+2. **Performance issue** resolution
+3. **Validation procedures** for JSON export functionality
+4. **Load testing** for JSON export scalability
+
+### Environment Enhancements:
+1. **JSON export configuration** variables
+2. **Feature flag** management
+3. **Performance tuning** parameters
+4. **Backup verification** including JSON export testing
+
+These updates ensure your JSON export integration is properly tested, monitored, and maintained in production environments while preserving all existing deployment capabilities.

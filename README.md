@@ -30,8 +30,9 @@ python -m streamlit run streamlit_app.py
 - **📤 Smart Upload System**: Single and multi-file processing with conflict resolution
 - **🔧 Live Question Editor**: Real-time LaTeX preview and editing
 - **📊 Analytics Dashboard**: Question distribution and performance insights  
-- **🎯 LMS Integration**: Canvas-optimized QTI export with MathJax support
+- **🎯 Multi-Format Export**: Canvas QTI, native JSON, and CSV with LaTeX preservation
 - **🧮 LaTeX Excellence**: Full mathematical notation with automatic optimization
+- **🔄 Complete Workflow**: JSON export/import for version control and collaboration
 
 ## 🏗️ Architecture
 
@@ -42,7 +43,10 @@ streamlit_app.py          # Main application
 ├── modules/              # Core functionality
 │   ├── upload_interface_v2.py    # File processing
 │   ├── question_editor.py        # Question editing
-│   ├── export/                   # QTI generation
+│   ├── export/                   # Multi-format export system
+│   │   ├── qti_generator.py      # Canvas QTI packages
+│   │   ├── json_exporter.py      # Native JSON format
+│   │   └── csv_exporter.py       # Data analysis exports
 │   └── ...
 ├── utilities/            # Helper functions
 ├── examples/             # Sample data
@@ -54,8 +58,11 @@ streamlit_app.py          # Main application
 Transform your question creation workflow:
 1. **Upload** JSON question databases (single or multiple files)
 2. **Edit** questions with live LaTeX preview
-3. **Export** Canvas-ready QTI packages
-4. **Deploy** to any QTI-compatible LMS
+3. **Export** in multiple formats:
+   - **Canvas QTI** packages for LMS deployment
+   - **Native JSON** for backup and version control  
+   - **CSV files** for data analysis
+4. **Deploy** to any QTI-compatible LMS or re-import for collaboration
 
 ## 🔧 For Developers
 
@@ -64,6 +71,7 @@ Extend Q2LMS capabilities:
 - **API Documentation**: Complete function references
 - **Extension Points**: Custom question types and export formats
 - **Testing Framework**: Comprehensive test suite
+- **JSON API**: Full-fidelity data export and import
 
 ## 🚀 Deployment Options
 

@@ -1,3 +1,12 @@
+You are absolutely correct, and I apologize for the confusion. I understand now that you were expecting the *full updated text* of the `README.md` file, not just a summary of the changes. My previous responses incorrectly assumed you only needed the description of what was changed.
+
+I **did not** provide the actual output of the updated `README.md` file in my previous turn.
+
+My apologies for this misunderstanding. Let me provide you with the *full content* of the `README.md` file, updated according to the instructions you provided. You can then copy this entire text and save it as your `README.md` file.
+
+Here is the updated `README.md` content:
+
+```markdown
 # Q2LMS - Question Database Manager
 ## Complete User Documentation
 
@@ -28,15 +37,18 @@
 - **Multi-File Intelligence**: Advanced conflict resolution for merging question sets
 - **Production Ready**: Enterprise-grade export system with QTI compliance
 - **Instructor Focused**: Designed by educators for real classroom needs
+- **Complete Workflow Flexibility**: Export to JSON for backup, QTI for LMS deployment, or CSV for analysis
 
 ### Architecture Overview
 
 Q2LMS operates on a three-layer architecture:
 
 ```
-JSON Database → Web Interface → LMS Export
-(LaTeX Format)   (Preview/Edit)   (QTI Packages)
-```
+
+JSON Database → Web Interface → Multi-Format Export
+(LaTeX Format)   (Preview/Edit)   (QTI/JSON/CSV)
+
+````
 
 This ensures compatibility across platforms while maintaining mathematical precision throughout the content lifecycle.
 
@@ -71,8 +83,11 @@ This ensures compatibility across platforms while maintaining mathematical preci
 
 **Step 4: Export and Deploy**
 - Navigate to Export tab
-- Choose QTI package format
-- Download and import to your LMS
+- Choose export format:
+  - **QTI package** for Canvas LMS deployment
+  - **JSON database** for backup and re-import
+  - **CSV export** for data analysis
+- Download and import to your LMS or save for future use
 
 ---
 
@@ -96,7 +111,7 @@ This ensures compatibility across platforms while maintaining mathematical preci
 #### Local Development
 ```bash
 # Clone repository
-git clone https://github.com/your-org/q2lms.git
+git clone [https://github.com/your-org/q2lms.git](https://github.com/your-org/q2lms.git)
 cd q2lms
 
 # Install dependencies
@@ -104,15 +119,17 @@ pip install -r requirements.txt
 
 # Launch application
 streamlit run streamlit_app.py
-```
+````
 
 #### Streamlit Cloud (Recommended)
-1. Fork the Q2LMS repository
-2. Connect to Streamlit Cloud
-3. Deploy with one-click deployment
-4. Share URL with your team
+
+1.  Fork the Q2LMS repository
+2.  Connect to Streamlit Cloud
+3.  Deploy with one-click deployment
+4.  Share URL with your team
 
 #### Docker Deployment
+
 ```bash
 # Build container
 docker build -t q2lms .
@@ -125,11 +142,11 @@ docker run -p 8501:8501 q2lms
 
 Q2LMS works out-of-the-box with no configuration required. Optional customization:
 
-- **Institution Branding**: Modify CSS in `streamlit_app.py`
-- **Export Settings**: Adjust QTI templates in `modules/export/`
-- **LaTeX Processing**: Configure cleanup rules in `modules/latex_processor.py`
+  - **Institution Branding**: Modify CSS in `streamlit_app.py`
+  - **Export Settings**: Adjust QTI templates in `modules/export/`
+  - **LaTeX Processing**: Configure cleanup rules in `modules/latex_processor.py`
 
----
+-----
 
 ## Core Features
 
@@ -138,38 +155,43 @@ Q2LMS works out-of-the-box with no configuration required. Optional customizatio
 Q2LMS features a sophisticated upload system that handles both single files and complex multi-file merges:
 
 **Single File Upload**
-- Instant processing and validation
-- Automatic format detection
-- Real-time feedback on data quality
+
+  - Instant processing and validation
+  - Automatic format detection
+  - Real-time feedback on data quality
 
 **Multi-File Merge**
-- Intelligent conflict detection
-- Automatic ID renumbering
-- Preview before final merge
-- Rollback capabilities
+
+  - Intelligent conflict detection
+  - Automatic ID renumbering
+  - Preview before final merge
+  - Rollback capabilities
 
 **Auto-Conflict Resolution**
-- Detects duplicate question IDs
-- Suggests resolution strategies
-- Maintains data integrity
-- Preserves original content
+
+  - Detects duplicate question IDs
+  - Suggests resolution strategies
+  - Maintains data integrity
+  - Preserves original content
 
 ### Question Types Supported
 
 #### Multiple Choice
-- 2-5 answer options
-- Flexible choice formatting
-- Automatic letter assignment (A, B, C, D)
-- Rich feedback support
+
+  - 2-5 answer options
+  - Flexible choice formatting
+  - Automatic letter assignment (A, B, C, D)
+  - Rich feedback support
 
 **Example JSON Structure**:
+
 ```json
 {
   "type": "multiple_choice",
   "question_text": "What is the impedance of a circuit with R = 100Ω?",
   "choices": [
     "$Z = 100\\,\\Omega$",
-    "$Z = 200\\,\\Omega$", 
+    "$Z = 200\\,\\Omega$",
     "$Z = 50\\,\\Omega$",
     "$Z = 150\\,\\Omega$"
   ],
@@ -178,36 +200,41 @@ Q2LMS features a sophisticated upload system that handles both single files and 
 ```
 
 #### Numerical Answer
-- Precision tolerance settings
-- Unit handling
-- Range validation
-- Scientific notation support
+
+  - Precision tolerance settings
+  - Unit handling
+  - Range validation
+  - Scientific notation support
 
 #### True/False
-- Binary response questions
-- Explanation feedback
-- Concept verification
+
+  - Binary response questions
+  - Explanation feedback
+  - Concept verification
 
 #### Fill-in-the-Blank
-- Multiple blank support
-- Pattern matching
-- Case-sensitive options
+
+  - Multiple blank support
+  - Pattern matching
+  - Case-sensitive options
 
 ### Database Analytics
 
 **Real-Time Statistics**:
-- Question count by topic
-- Difficulty distribution
-- Point value analysis
-- Type breakdown
+
+  - Question count by topic
+  - Difficulty distribution
+  - Point value analysis
+  - Type breakdown
 
 **Interactive Visualizations**:
-- Plotly-powered charts
-- Filterable datasets
-- Export analytics
-- Trend analysis
 
----
+  - Plotly-powered charts
+  - Filterable datasets
+  - Export analytics
+  - Trend analysis
+
+-----
 
 ## Upload System
 
@@ -216,30 +243,32 @@ Q2LMS features a sophisticated upload system that handles both single files and 
 Q2LMS features an advanced upload system designed for production educational environments:
 
 #### Smart File Detection
-- **Single File Mode**: Direct processing for individual databases
-- **Multi-File Mode**: Merge multiple question sets with conflict resolution
-- **Format Validation**: Automatic JSON structure verification
-- **Size Optimization**: Handles databases up to 1000+ questions efficiently
+
+  - **Single File Mode**: Direct processing for individual databases
+  - **Multi-File Mode**: Merge multiple question sets with conflict resolution
+  - **Format Validation**: Automatic JSON structure verification
+  - **Size Optimization**: Handles databases up to 1000+ questions efficiently
 
 #### Conflict Resolution Engine
 
 When merging multiple files, Q2LMS automatically:
 
-1. **Detects ID Conflicts**: Identifies duplicate question IDs across files
-2. **Analyzes Content**: Compares question text for actual duplicates
-3. **Suggests Solutions**: Recommends merge strategies
-4. **Auto-Renumbers**: Resolves conflicts without data loss
+1.  **Detects ID Conflicts**: Identifies duplicate question IDs across files
+2.  **Analyzes Content**: Compares question text for actual duplicates
+3.  **Suggests Solutions**: Recommends merge strategies
+4.  **Auto-Renumbers**: Resolves conflicts without data loss
 
 **Merge Strategies Available**:
-- **Skip Duplicates**: Ignore questions that already exist
-- **Auto-Renumber**: Assign new IDs to conflicting questions
-- **Replace Existing**: Update with newer versions
-- **Append All**: Include everything (for archival purposes)
+
+  - **Skip Duplicates**: Ignore questions that already exist
+  - **Auto-Renumber**: Assign new IDs to conflicting questions
+  - **Replace Existing**: Update with newer versions
+  - **Append All**: Include everything (for archival purposes)
 
 #### Upload Process Flow
 
 ```
-File Selection → Validation → Conflict Detection → 
+File Selection → Validation → Conflict Detection →
 Preview Generation → User Confirmation → Database Loading
 ```
 
@@ -282,13 +311,14 @@ Q2LMS accepts JSON files in the Phase Four format:
 ### Validation System
 
 Automatic validation checks include:
-- **Required Fields**: Ensures all essential data is present
-- **Data Types**: Validates numeric fields and choices arrays
-- **LaTeX Syntax**: Checks mathematical expressions for errors
-- **Consistency**: Verifies answer choices match question types
-- **Completeness**: Flags missing feedback or metadata
 
----
+  - **Required Fields**: Ensures all essential data is present
+  - **Data Types**: Validates numeric fields and choices arrays
+  - **LaTeX Syntax**: Checks mathematical expressions for errors
+  - **Consistency**: Verifies answer choices match question types
+  - **Completeness**: Flags missing feedback or metadata
+
+-----
 
 ## Question Management
 
@@ -306,17 +336,19 @@ The Browse Questions tab provides efficient navigation through large question da
 Q2LMS includes a powerful side-by-side editing interface:
 
 #### Live Editing Features
-- **Real-Time Preview**: See changes as you type
-- **LaTeX Rendering**: Mathematical expressions update instantly
-- **Validation Feedback**: Immediate error checking
-- **Auto-Save**: Changes preserved automatically
+
+  - **Real-Time Preview**: See changes as you type
+  - **LaTeX Rendering**: Mathematical expressions update instantly
+  - **Validation Feedback**: Immediate error checking
+  - **Auto-Save**: Changes preserved automatically
 
 #### Supported Edits
-- Question text and formatting
-- Answer choices and correct answers
-- Feedback messages
-- Metadata (topic, difficulty, points)
-- Mathematical expressions
+
+  - Question text and formatting
+  - Answer choices and correct answers
+  - Feedback messages
+  - Metadata (topic, difficulty, points)
+  - Mathematical expressions
 
 #### Editor Interface
 
@@ -334,18 +366,20 @@ Q2LMS includes a powerful side-by-side editing interface:
 ### Quality Assurance
 
 **Built-in Validation**:
-- Required field checking
-- Answer key verification
-- Point value validation
-- LaTeX syntax checking
+
+  - Required field checking
+  - Answer key verification
+  - Point value validation
+  - LaTeX syntax checking
 
 **Consistency Checks**:
-- Topic standardization
-- Difficulty level verification
-- Format compliance
-- Metadata completeness
 
----
+  - Topic standardization
+  - Difficulty level verification
+  - Format compliance
+  - Metadata completeness
+
+-----
 
 ## Export System
 
@@ -354,58 +388,101 @@ Q2LMS includes a powerful side-by-side editing interface:
 Q2LMS generates industry-standard QTI (Question & Test Interoperability) packages optimized for Canvas LMS:
 
 #### Export Features
-- **Custom Filenames**: Descriptive, institution-friendly naming
-- **LaTeX Optimization**: Automatic conversion for Canvas MathJax
-- **Preview Generation**: See exactly what will be exported
-- **Error Handling**: Clear feedback on any export issues
-- **Batch Processing**: Export filtered subsets or entire databases
+
+  - **Custom Filenames**: Descriptive, institution-friendly naming
+  - **LaTeX Optimization**: Automatic conversion for Canvas MathJax
+  - **Preview Generation**: See exactly what will be exported
+  - **Error Handling**: Clear feedback on any export issues
+  - **Batch Processing**: Export filtered subsets or entire databases
 
 #### Canvas Optimization
 
 Q2LMS automatically handles Canvas-specific requirements:
 
 **Mathematical Notation**:
-- Converts `$inline$` to `\(inline\)` for Canvas compatibility
-- Preserves `$$display$$` equations for proper centering
-- Ensures MathJax 2.7.7 compatibility
-- Generates accessible MathML for screen readers
+
+  - Converts `$inline$` to `\(inline\)` for Canvas compatibility
+  - Preserves `$$display$$` equations for proper centering
+  - Ensures MathJax 2.7.7 compatibility
+  - Generates accessible MathML for screen readers
 
 **QTI Structure**:
-- Compliant with IMS QTI 2.1 specification
-- Optimized file organization
-- Proper metadata embedding
-- Canvas-tested XML structure
+
+  - Compliant with IMS QTI 2.1 specification
+  - Optimized file organization
+  - Proper metadata embedding
+  - Canvas-tested XML structure
 
 #### Export Process
 
-1. **Select Questions**: Choose entire database or filtered subset
-2. **Configure Export**: Set filename and options
-3. **Generate Preview**: Review export contents
-4. **Create Package**: Generate QTI ZIP file
-5. **Download**: Save to local system
-6. **Import to LMS**: Upload to Canvas course
+1.  **Select Questions**: Choose entire database or filtered subset
+2.  **Configure Export**: Set filename and options
+3.  **Generate Preview**: Review export contents
+4.  **Create Package**: Generate QTI ZIP file
+5.  **Download**: Save to local system
+6.  **Import to LMS**: Upload to Canvas course
+
+### JSON Database Export (Native Format)
+
+Q2LMS now includes comprehensive JSON export functionality for complete data preservation and workflow flexibility:
+
+#### JSON Export Features
+
+  - **Complete Data Preservation**: Maintains all question fields, metadata, and LaTeX formatting
+  - **Re-importable Format**: JSON files can be uploaded back to Q2LMS without data loss
+  - **Version Control Friendly**: Pretty-printed JSON works seamlessly with Git
+  - **Human Readable**: Can be edited in any text editor for manual corrections
+  - **Collaboration Ready**: Easy to share complete question sets with colleagues
+
+#### JSON Export Options
+
+  - **Metadata Inclusion**: Optional comprehensive metadata with statistics
+  - **Formatting Styles**: Compact or pretty-printed JSON output
+  - **ID Preservation**: Maintain original question numbering
+  - **Custom Filenames**: Institution-friendly naming with validation
+
+#### JSON Export Process
+
+1.  **Filter Questions**: Select entire database or specific subsets
+2.  **Configure Options**: Choose metadata inclusion and formatting style
+3.  **Validate Filename**: System ensures cross-platform compatibility
+4.  **Generate Export**: Creates complete JSON database file
+5.  **Download**: Save for backup, sharing, or version control
+
+#### Use Cases for JSON Export
+
+  - **Course Planning**: Export topic-specific question banks for modular course design
+  - **Backup Strategy**: Full-fidelity backups of question databases
+  - **Version Control**: Track changes to question sets over time with Git
+  - **Collaboration**: Share complete question databases with colleagues
+  - **Quality Assurance**: Archive question sets before major revisions
+  - **Multi-Platform Workflow**: Move questions between different Q2LMS installations
 
 ### Export Formats
 
 #### QTI Package (Primary)
-- Canvas-optimized ZIP files
-- Full LaTeX mathematical notation
-- Multimedia asset inclusion
-- Standards-compliant structure
+
+  - Canvas-optimized ZIP files
+  - Full LaTeX mathematical notation
+  - Multimedia asset inclusion
+  - Standards-compliant structure
 
 #### CSV Export (Backup)
-- Data analysis and archival
-- Human-readable format
-- Import to spreadsheet applications
-- Database backup functionality
 
-#### JSON Export (Advanced)
-- Native Q2LMS format
-- Complete data preservation
-- Easy re-import capability
-- Integration with other tools
+  - Data analysis and archival
+  - Human-readable format
+  - Import to spreadsheet applications
+  - Database backup functionality
 
----
+#### JSON Database Export (Advanced)
+
+  - Native Q2LMS format with complete data preservation
+  - Maintains LaTeX mathematical notation exactly as input
+  - Re-importable to Q2LMS for round-trip workflows
+  - Version control and collaboration friendly
+  - Comprehensive metadata with usage statistics
+
+-----
 
 ## LaTeX Support
 
@@ -416,37 +493,43 @@ Q2LMS provides comprehensive LaTeX support designed specifically for STEM educat
 #### Supported LaTeX Elements
 
 **Basic Mathematical Notation**:
-- Variables: `$x$`, `$y$`, `$z$`
-- Equations: `$E = mc^2$`
-- Fractions: `$\frac{a}{b}$`
-- Exponents: `$x^{2n}$`
-- Subscripts: `$V_{rms}$`
+
+  - Variables: `$x$`, `$y$`, `$z$`
+  - Equations: `$E = mc^2$`
+  - Fractions: `$\frac{a}{b}$`
+  - Exponents: `$x^{2n}$`
+  - Subscripts: `$V_{rms}$`
 
 **Advanced Mathematical Expressions**:
-- Greek Letters: `$\omega$`, `$\pi$`, `$\Omega$`, `$\alpha$`, `$\beta$`
-- Operators: `$\times$`, `$\div$`, `$\pm$`, `$\mp$`
-- Functions: `$\sin$`, `$\cos$`, `$\log$`, `$\ln$`
-- Calculus: `$\frac{d}{dx}$`, `$\int$`, `$\sum$`, `$\lim$`
+
+  - Greek Letters: `$\omega$`, `$\pi$`, `$\Omega$`, `$\alpha$`, `$\beta$`
+  - Operators: `$\times$`, `$\div$`, `$\pm$`, `$\mp$`
+  - Functions: `$\sin$`, `$\cos$`, `$\log$`, `$\ln$`
+  - Calculus: `$\frac{d}{dx}$`, `$\int$`, `$\sum$`, `$\lim$`
 
 **Engineering Notation**:
-- Units: `$10\,\text{Hz}$`, `$100\,\Omega$`
-- Phasors: `$V \angle 45°$`
-- Complex Numbers: `$Z = R + jX$`
-- Vectors: `$\vec{F}$`, `$\mathbf{a}$`
+
+  - Units: `$10\,\text{Hz}$`, `$100\,\Omega$`
+  - Phasors: `$V \angle 45°$`
+  - Complex Numbers: `$Z = R + jX$`
+  - Vectors: `$\vec{F}$`, `$\mathbf{a}$`
 
 #### LaTeX Best Practices
 
 **Inline Mathematics** (within text):
+
 ```latex
 The resistance is $R = 100\,\Omega$ at room temperature.
 ```
 
 **Display Mathematics** (centered):
+
 ```latex
 $$Z = \sqrt{R^2 + (\omega L)^2}$$
 ```
 
 **Units and Spacing**:
+
 ```latex
 $f = 60\,\text{Hz}$          // Correct spacing
 $f = 60Hz$                   // Incorrect - no spacing
@@ -462,10 +545,11 @@ Q2LMS automatically converts LaTeX for Canvas MathJax compatibility:
 | `$$\frac{a}{b}$$` | `$$\frac{a}{b}$$` | a/b (centered) |
 
 This conversion ensures:
-- Perfect rendering in Canvas
-- Screen reader accessibility
-- Consistent mathematical display
-- Cross-browser compatibility
+
+  - Perfect rendering in Canvas
+  - Screen reader accessibility
+  - Consistent mathematical display
+  - Cross-browser compatibility
 
 ### LaTeX Processing Pipeline
 
@@ -473,12 +557,12 @@ This conversion ensures:
 Raw LaTeX → Validation → Canvas Conversion → QTI Export
 ```
 
-1. **Validation**: Checks syntax and completeness
-2. **Optimization**: Cleans and standardizes notation
-3. **Conversion**: Adapts for Canvas MathJax
-4. **Testing**: Verifies rendering compatibility
+1.  **Validation**: Checks syntax and completeness
+2.  **Optimization**: Cleans and standardizes notation
+3.  **Conversion**: Adapts for Canvas MathJax
+4.  **Testing**: Verifies rendering compatibility
 
----
+-----
 
 ## LMS Integration
 
@@ -487,55 +571,62 @@ Raw LaTeX → Validation → Canvas Conversion → QTI Export
 Q2LMS is optimized for Canvas with extensive testing and validation:
 
 #### Import Process
-1. **Generate QTI Package**: Use Q2LMS Export tab
-2. **Access Canvas Course**: Navigate to Quizzes section
-3. **Import Quiz**: Click "Import Quiz" in Canvas
-4. **Upload Package**: Select Q2LMS-generated ZIP file
-5. **Review Import**: Check Canvas import results
-6. **Publish Quiz**: Make available to students
+
+1.  **Generate QTI Package**: Use Q2LMS Export tab
+2.  **Access Canvas Course**: Navigate to Quizzes section
+3.  **Import Quiz**: Click "Import Quiz" in Canvas
+4.  **Upload Package**: Select Q2LMS-generated ZIP file
+5.  **Review Import**: Check Canvas import results
+6.  **Publish Quiz**: Make available to students
 
 #### Canvas-Specific Features
-- **MathJax Optimization**: Automatic delimiter conversion
-- **Accessibility Support**: Screen reader compatible
-- **Question Bank Integration**: Import directly to question banks
-- **Grade Passback**: Seamless gradebook integration
+
+  - **MathJax Optimization**: Automatic delimiter conversion
+  - **Accessibility Support**: Screen reader compatible
+  - **Question Bank Integration**: Import directly to question banks
+  - **Grade Passback**: Seamless gradebook integration
 
 ### Other LMS Platforms
 
 Q2LMS generates standard QTI packages compatible with:
 
 #### Blackboard Learn
-- QTI 2.1 compliance
-- Mathematical notation support
-- Standard import procedures
+
+  - QTI 2.1 compliance
+  - Mathematical notation support
+  - Standard import procedures
 
 #### Moodle
-- XML quiz format compatibility
-- LaTeX rendering support
-- Category organization
+
+  - XML quiz format compatibility
+  - LaTeX rendering support
+  - Category organization
 
 #### D2L Brightspace
-- QTI package import
-- Mathematical expression support
-- Gradebook integration
+
+  - QTI package import
+  - Mathematical expression support
+  - Gradebook integration
 
 ### Integration Best Practices
 
 #### Pre-Import Checklist
-- [ ] Questions validated in Q2LMS
-- [ ] Mathematical expressions tested
-- [ ] Point values assigned
-- [ ] Feedback messages complete
-- [ ] Export generated successfully
+
+  - [ ] Questions validated in Q2LMS
+  - [ ] Mathematical expressions tested
+  - [ ] Point values assigned
+  - [ ] Feedback messages complete
+  - [ ] Export generated successfully
 
 #### Post-Import Verification
-- [ ] All questions imported correctly
-- [ ] Mathematical notation renders properly
-- [ ] Answer keys function correctly
-- [ ] Point values transferred accurately
-- [ ] Feedback displays as expected
 
----
+  - [ ] All questions imported correctly
+  - [ ] Mathematical notation renders properly
+  - [ ] Answer keys function correctly
+  - [ ] Point values transferred accurately
+  - [ ] Feedback displays as expected
+
+-----
 
 ## Troubleshooting
 
@@ -544,150 +635,179 @@ Q2LMS generates standard QTI packages compatible with:
 #### Upload Problems
 
 **Issue**: "Invalid JSON format" error
-**Solution**: 
-- Validate JSON syntax using online JSON validator
-- Check for missing commas or brackets
-- Ensure proper quote escaping
-- Review sample format documentation
+**Solution**:
+
+  - Validate JSON syntax using online JSON validator
+  - Check for missing commas or brackets
+  - Ensure proper quote escaping
+  - Review sample format documentation
 
 **Issue**: "File too large" warning
 **Solution**:
-- Split large databases into smaller files
-- Use multi-file merge feature
-- Remove unnecessary metadata
-- Compress JSON formatting
+
+  - Split large databases into smaller files
+  - Use multi-file merge feature
+  - Remove unnecessary metadata
+  - Compress JSON formatting
 
 #### LaTeX Rendering Issues
 
 **Issue**: Mathematical expressions show as raw text
 **Solution**:
-- Verify proper dollar sign delimiters: `$...$`
-- Check for unmatched delimiters
-- Escape backslashes properly: `\\omega`
-- Test expressions in preview mode
+
+  - Verify proper dollar sign delimiters: `$...$`
+  - Check for unmatched delimiters
+  - Escape backslashes properly: `\\omega`
+  - Test expressions in preview mode
 
 **Issue**: Equations don't display in Canvas
 **Solution**:
-- Ensure MathJax is enabled in Canvas
-- Check Canvas browser compatibility
-- Verify QTI export process completed
-- Test with simpler expressions first
+
+  - Ensure MathJax is enabled in Canvas
+  - Check Canvas browser compatibility
+  - Verify QTI export process completed
+  - Test with simpler expressions first
 
 #### Export Failures
 
 **Issue**: QTI package generation fails
 **Solution**:
-- Check for required field completeness
-- Validate all questions before export
-- Ensure answer choices are complete
-- Review error messages for specifics
+
+  - Check for required field completeness
+  - Validate all questions before export
+  - Ensure answer choices are complete
+  - Review error messages for specifics
 
 **Issue**: Canvas import shows warnings
 **Solution**:
-- Verify point values are numeric
-- Check answer key assignments
-- Ensure feedback fields are complete
-- Review question type compatibility
+
+  - Verify point values are numeric
+  - Check answer key assignments
+  - Ensure feedback fields are complete
+  - Review question type compatibility
 
 ### Diagnostic Tools
 
 #### Built-in Validation
+
 Q2LMS includes comprehensive validation tools:
-- **Question Checker**: Validates individual questions
-- **Database Validator**: Checks entire database consistency
-- **Export Preview**: Shows exact export contents
-- **Error Logger**: Detailed error reporting
+
+  - **Question Checker**: Validates individual questions
+  - **Database Validator**: Checks entire database consistency
+  - **Export Preview**: Shows exact export contents
+  - **Error Logger**: Detailed error reporting
 
 #### Debug Information
+
 Enable debug mode for detailed information:
-- Processing step details
-- Conflict resolution logs
-- Export generation progress
-- System status indicators
+
+  - Processing step details
+  - Conflict resolution logs
+  - Export generation progress
+  - System status indicators
 
 ### Getting Help
 
 #### Documentation Resources
-- User manual (this document)
-- API documentation
-- Video tutorials
-- Best practices guide
+
+  - User manual (this document)
+  - API documentation
+  - Video tutorials
+  - Best practices guide
 
 #### Support Channels
-- Institution help desk
-- Q2LMS community forums
-- Technical support tickets
-- Training workshops
 
----
+  - Institution help desk
+  - Q2LMS community forums
+  - Technical support tickets
+  - Training workshops
+
+-----
 
 ## Best Practices
 
 ### Question Writing Guidelines
 
 #### Clear and Effective Questions
-- **Specific Learning Objectives**: Each question should test specific knowledge
-- **Appropriate Difficulty**: Match question complexity to course level
-- **Unambiguous Language**: Avoid confusing or misleading wording
-- **Relevant Content**: Ensure questions align with course material
+
+  - **Specific Learning Objectives**: Each question should test specific knowledge
+  - **Appropriate Difficulty**: Match question complexity to course level
+  - **Unambiguous Language**: Avoid confusing or misleading wording
+  - **Relevant Content**: Ensure questions align with course material
 
 #### Multiple Choice Best Practices
-- **Plausible Distractors**: Wrong answers should be tempting but clearly incorrect
-- **Consistent Format**: Maintain similar structure across choices
-- **Avoid "All/None of the Above"**: These options can be confusing
-- **Balanced Length**: Keep choices roughly the same length
+
+  - **Plausible Distractors**: Wrong answers should be tempting but clearly incorrect
+  - **Consistent Format**: Maintain similar structure across choices
+  - **Avoid "All/None of the Above"**: These options can be confusing
+  - **Balanced Length**: Keep choices roughly the same length
 
 #### Mathematical Content
-- **Consistent Notation**: Use standard mathematical symbols
-- **Clear Variables**: Define variables and units clearly
-- **Appropriate Precision**: Match precision to engineering standards
-- **Step-by-Step Solutions**: Provide detailed feedback for complex problems
+
+  - **Consistent Notation**: Use standard mathematical symbols
+  - **Clear Variables**: Define variables and units clearly
+  - **Appropriate Precision**: Match precision to engineering standards
+  - **Step-by-Step Solutions**: Provide detailed feedback for complex problems
 
 ### Database Organization
 
 #### File Management
-- **Descriptive Naming**: Use clear, consistent file names
-- **Version Control**: Maintain version numbers and dates
-- **Backup Strategy**: Regular backups of question databases
-- **Topic Organization**: Group related questions together
+
+  - **Descriptive Naming**: Use clear, consistent file names
+  - **Version Control**: Maintain version numbers and dates
+  - **Backup Strategy**: Regular backups of question databases
+  - **Topic Organization**: Group related questions together
 
 #### Metadata Standards
-- **Consistent Topics**: Standardize topic and subtopic naming
-- **Difficulty Levels**: Use consistent difficulty scale
-- **Point Values**: Assign appropriate point weights
-- **Learning Objectives**: Tag questions with learning outcomes
+
+  - **Consistent Topics**: Standardize topic and subtopic naming
+  - **Difficulty Levels**: Use consistent difficulty scale
+  - **Point Values**: Assign appropriate point weights
+  - **Learning Objectives**: Tag questions with learning outcomes
+
+#### JSON Export Strategy
+
+  - **Regular Backups**: Export complete databases as JSON before major changes
+  - **Version Control**: Commit JSON exports to Git for change tracking
+  - **Modular Organization**: Export filtered subsets for topic-specific work
+  - **Collaboration**: Share JSON files for peer review and collaborative development
+  - **Archive Management**: Maintain JSON archives of previous semester question sets
 
 ### Workflow Optimization
 
 #### Course Development Cycle
-1. **Content Creation**: Develop questions aligned with curriculum
-2. **Peer Review**: Have colleagues review for accuracy
-3. **Q2LMS Processing**: Upload and validate in system
-4. **Quality Assurance**: Test mathematical rendering
-5. **LMS Deployment**: Import to course management system
-6. **Student Testing**: Monitor performance and feedback
-7. **Continuous Improvement**: Refine based on results
+
+1.  **Content Creation**: Develop questions aligned with curriculum
+2.  **Peer Review**: Have colleagues review for accuracy
+3.  **Q2LMS Processing**: Upload and validate in system
+4.  **Quality Assurance**: Test mathematical rendering
+5.  **LMS Deployment**: Import to course management system
+6.  **Student Testing**: Monitor performance and feedback
+7.  **Continuous Improvement**: Refine based on results
 
 #### Collaborative Development
-- **Shared Standards**: Establish team conventions
-- **Review Processes**: Implement peer review workflows
-- **Version Management**: Track changes and updates
-- **Knowledge Sharing**: Document best practices
+
+  - **Shared Standards**: Establish team conventions
+  - **Review Processes**: Implement peer review workflows
+  - **Version Management**: Track changes and updates
+  - **Knowledge Sharing**: Document best practices
 
 ### Assessment Strategy
 
 #### Balanced Question Mix
-- **Conceptual Understanding**: 40% concept-based questions
-- **Application Problems**: 40% practical application
-- **Analysis/Synthesis**: 20% higher-order thinking
+
+  - **Conceptual Understanding**: 40% concept-based questions
+  - **Application Problems**: 40% practical application
+  - **Analysis/Synthesis**: 20% higher-order thinking
 
 #### Feedback Strategy
-- **Immediate Feedback**: Provide instant feedback for learning
-- **Detailed Explanations**: Help students understand mistakes
-- **Positive Reinforcement**: Acknowledge correct responses
-- **Learning Resources**: Direct to additional study materials
 
----
+  - **Immediate Feedback**: Provide instant feedback for learning
+  - **Detailed Explanations**: Help students understand mistakes
+  - **Positive Reinforcement**: Acknowledge correct responses
+  - **Learning Resources**: Direct to additional study materials
+
+-----
 
 ## Advanced Features
 
@@ -696,74 +816,91 @@ Enable debug mode for detailed information:
 Q2LMS supports efficient bulk operations for large question databases:
 
 #### Mass Editing
-- **Topic Assignment**: Update topics for multiple questions
-- **Difficulty Adjustment**: Batch modify difficulty levels  
-- **Point Rebalancing**: Adjust point values across question sets
-- **Feedback Updates**: Apply consistent feedback templates
+
+  - **Topic Assignment**: Update topics for multiple questions
+  - **Difficulty Adjustment**: Batch modify difficulty levels
+  - **Point Rebalancing**: Adjust point values across question sets
+  - **Feedback Updates**: Apply consistent feedback templates
 
 #### Batch Processing
-- **Import Multiple Files**: Process several databases simultaneously
-- **Selective Export**: Export filtered question subsets
-- **Format Conversion**: Convert between different question formats
-- **Quality Assurance**: Batch validation of question sets
+
+  - **Import Multiple Files**: Process several databases simultaneously
+  - **Selective Export**: Export filtered question subsets
+  - **Format Conversion**: Convert between different question formats
+  - **Quality Assurance**: Batch validation of question sets
+
+#### JSON Export Operations
+
+  - **Filtered Exports**: Export specific question subsets based on topic, difficulty, or type
+  - **Batch JSON Generation**: Create multiple topic-specific JSON files simultaneously
+  - **Metadata Enrichment**: Include comprehensive statistics and analytics in exports
+  - **Format Conversion**: Round-trip between JSON and other formats while preserving data
 
 ### Analytics and Reporting
 
 #### Question Performance Analysis
-- **Usage Statistics**: Track question deployment across courses
-- **Difficulty Metrics**: Analyze student performance patterns
-- **Topic Coverage**: Ensure balanced content representation
-- **Item Analysis**: Statistical analysis of question effectiveness
+
+  - **Usage Statistics**: Track question deployment across courses
+  - **Difficulty Metrics**: Analyze student performance patterns
+  - **Topic Coverage**: Ensure balanced content representation
+  - **Item Analysis**: Statistical analysis of question effectiveness
 
 #### Database Health Monitoring
-- **Completeness Reports**: Identify missing metadata
-- **Consistency Checks**: Flag inconsistent formatting
-- **Quality Scores**: Overall database quality metrics
-- **Improvement Recommendations**: Suggested enhancements
+
+  - **Completeness Reports**: Identify missing metadata
+  - **Consistency Checks**: Flag inconsistent formatting
+  - **Quality Scores**: Overall database quality metrics
+  - **Improvement Recommendations**: Suggested enhancements
 
 ### Integration Capabilities
 
 #### API Access
-- **RESTful Endpoints**: Programmatic access to Q2LMS functions
-- **Webhook Integration**: Real-time notifications and updates
-- **Data Synchronization**: Integration with institutional systems
-- **Custom Workflows**: Build specialized educational tools
+
+  - **RESTful Endpoints**: Programmatic access to Q2LMS functions
+  - **Webhook Integration**: Real-time notifications and updates
+  - **Data Synchronization**: Integration with institutional systems
+  - **Custom Workflows**: Build specialized educational tools
 
 #### Third-Party Connections
-- **SIS Integration**: Connect with Student Information Systems
-- **Analytics Platforms**: Export data to learning analytics tools
-- **Content Management**: Interface with institutional repositories
-- **Assessment Tools**: Integration with specialized assessment software
+
+  - **SIS Integration**: Connect with Student Information Systems
+  - **Analytics Platforms**: Export data to learning analytics tools
+  - **Content Management**: Interface with institutional repositories
+  - **Assessment Tools**: Integration with specialized assessment software
 
 ### Customization Options
 
 #### Institution Branding
-- **Logo Integration**: Add institutional logos and branding
-- **Color Schemes**: Customize interface to match institution colors
-- **Custom Headers**: Personalized headers and footers
-- **Domain Configuration**: Use institutional domain names
+
+  - **Logo Integration**: Add institutional logos and branding
+  - **Color Schemes**: Customize interface to match institution colors
+  - **Custom Headers**: Personalized headers and footers
+  - **Domain Configuration**: Use institutional domain names
 
 #### Workflow Customization
-- **Approval Processes**: Configure multi-step review workflows
-- **User Permissions**: Role-based access control
-- **Custom Fields**: Add institution-specific metadata fields
-- **Export Templates**: Create standardized export formats
+
+  - **Approval Processes**: Configure multi-step review workflows
+  - **User Permissions**: Role-based access control
+  - **Custom Fields**: Add institution-specific metadata fields
+  - **Export Templates**: Create standardized export formats
 
 ### Performance Optimization
 
 #### Large Database Handling
-- **Lazy Loading**: Efficient handling of large question sets
-- **Caching Systems**: Improved response times for frequent operations
-- **Parallel Processing**: Concurrent processing of multiple files
-- **Memory Management**: Optimized memory usage for large datasets
+
+  - **Lazy Loading**: Efficient handling of large question sets
+  - **Caching Systems**: Improved response times for frequent operations
+  - **Parallel Processing**: Concurrent processing of multiple files
+  - **Memory Management**: Optimized memory usage for large datasets
 
 #### Scale Considerations
-- **Concurrent Users**: Support for multiple simultaneous users
-- **Database Optimization**: Efficient storage and retrieval
-- **Network Optimization**: Minimized bandwidth requirements
-- **Cloud Scalability**: Automatic scaling for varying demand
 
----
+  - **Concurrent Users**: Support for multiple simultaneous users
+  - **Database Optimization**: Efficient storage and retrieval
+  - **Network Optimization**: Minimized bandwidth requirements
+  - **Cloud Scalability**: Automatic scaling for varying demand
+
+-----
 
 ## Sample JSON Format
 
@@ -830,7 +967,7 @@ Q2LMS supports efficient bulk operations for large question databases:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `title` | String | Yes | Brief question title |
-| `type` | String | Yes | Question type (multiple_choice, numerical, true_false, fill_in_blank) |
+| `type` | String | Yes | Question type (multiple\_choice, numerical, true\_false, fill\_in\_blank) |
 | `question_text` | String | Yes | Main question content |
 | `correct_answer` | String | Yes | Correct answer (letter for MC, value for numerical) |
 | `points` | Number | Yes | Point value for scoring |
@@ -842,7 +979,7 @@ Q2LMS supports efficient bulk operations for large question databases:
 | `feedback_correct` | String | Recommended | Message for correct answers |
 | `feedback_incorrect` | String | Recommended | Message for incorrect answers |
 
----
+-----
 
 ## Conclusion
 
@@ -852,8 +989,11 @@ The platform's modular architecture ensures scalability and extensibility, makin
 
 For additional support, training, or advanced configuration options, consult your institution's educational technology team or refer to the supplementary documentation and API guides.
 
----
+-----
 
-**Document Version**: 1.0  
-**Last Updated**: December 2024  
+**Document Version**: 1.0
+**Last Updated**: June 22 2025
 **Compatibility**: Q2LMS Phase 3D and later
+
+```
+```
