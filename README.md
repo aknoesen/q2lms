@@ -10,7 +10,7 @@
 
 ```bash
 # Clone and run
-git clone https://github.com/your-org/q2lms.git
+git clone https://github.com/aknoesen/q2lms.git
 cd q2lms
 pip install -r requirements.txt
 streamlit run streamlit_app.py
