@@ -6,14 +6,15 @@
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/streamlit-1.20+-red.svg)](https://streamlit.io)
 
+
 ## 🚀 Quick Start
 
 ```bash
 # Clone and run
-git clone https://github.com/aknoesen/q2lms.git
+git clone https://github.com/your-username/q2lms.git
 cd q2lms
 pip install -r requirements.txt
-streamlit run streamlit_app.py
+python -m streamlit run streamlit_app.py
 ```
 
 ## 📚 Documentation
