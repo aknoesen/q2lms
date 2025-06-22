@@ -1,0 +1,389 @@
+ {
+      "type": "multiple_choice",
+      "title": "Fundamental Op-Amp Operation",
+      "question_text": "What is the fundamental mathematical operation an ideal operational amplifier performs on its input signals v₊ and v₋?",
+      "correct_answer": "Differential amplification A(v₊ - v₋)",
+      "choices": [
+        "Addition (v₊ + v₋)",
+        "Multiplication (v₊ × v₋)",
+        "Differential amplification A(v₊ - v₋)",
+        "Integration ∫(v₊ - v₋)dt"
+      ],
+      "feedback_correct": "Correct! Op-amps perform differential amplification: Vout = A(v₊ - v₋), where A is the open-loop gain.",
+      "feedback_incorrect": "Op-amps fundamentally amplify the voltage difference between inputs: Vout = A(v₊ - v₋).",
+      "points": 2,
+      "difficulty": "Easy",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Non-Inverting Input Terminal Symbol",
+      "question_text": "What does the \"+\" symbol on an op-amp input terminal indicate about signal processing?",
+      "correct_answer": "Non-inverting input with in-phase output",
+      "choices": [
+        "Must always have positive voltage",
+        "Non-inverting input with in-phase output",
+        "Requires higher voltage than \"-\" terminal",
+        "Only accepts DC signals"
+      ],
+      "feedback_correct": "Correct! The \"+\" indicates the non-inverting input where signals appear in-phase (same polarity) at the output after amplification.",
+      "feedback_incorrect": "The \"+\" symbol designates the non-inverting input, meaning signals applied here appear with the same phase at the output.",
+      "points": 2,
+      "difficulty": "Easy",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Ideal Op-Amp Open-Loop Gain",
+      "question_text": "In the ideal op-amp model, what is the assumed value of the open-loop voltage gain A?",
+      "correct_answer": "A → ∞",
+      "choices": [
+        "A = 0",
+        "A = 1",
+        "A = 10⁵",
+        "A → ∞"
+      ],
+      "feedback_correct": "Correct! The ideal op-amp model assumes infinite open-loop gain (A → ∞) to simplify circuit analysis.",
+      "feedback_incorrect": "Ideal op-amp model uses A → ∞. Real op-amps have large finite gains (10⁴ to 10⁶), but infinite gain simplifies analysis.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Equal Input Voltage Output",
+      "question_text": "For an ideal op-amp with v₊ = v₋, what is the output voltage Vout?",
+      "correct_answer": "Vout = 0V",
+      "choices": [
+        "Vout = +VCC",
+        "Vout = -VCC",
+        "Vout = 0V",
+        "Vout = VCC/2"
+      ],
+      "feedback_correct": "Correct! When v₊ = v₋, the differential input is zero: Vout = A(v₊ - v₋) = A(0) = 0V.",
+      "feedback_incorrect": "For equal input voltages: Vout = A(v₊ - v₋) = A(0) = 0V in the ideal model.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Op-Amp Saturation Behavior",
+      "question_text": "When an op-amp reaches saturation, what determines the output voltage level?",
+      "correct_answer": "Power supply voltage limits (±VCC)",
+      "choices": [
+        "Average of input voltages",
+        "Rapid oscillation between ±VCC",
+        "Power supply voltage limits (±VCC)",
+        "Unpredictable unstable output"
+      ],
+      "feedback_correct": "Correct! In saturation, the op-amp output is limited by the power supply voltages: Vout = ±VCC depending on input polarity.",
+      "feedback_incorrect": "Saturation occurs when the amplified signal exceeds the power supply limits, clamping the output to ±VCC.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Ideal Op-Amp Input Impedance",
+      "question_text": "What is the input impedance Zin of an ideal operational amplifier?",
+      "correct_answer": "Zin → ∞",
+      "choices": [
+        "Zin = 0Ω",
+        "Zin = 50Ω",
+        "Zin = 10kΩ",
+        "Zin → ∞"
+      ],
+      "feedback_correct": "Correct! Ideal op-amp has infinite input impedance, meaning no current flows into input terminals (i₊ = i₋ = 0).",
+      "feedback_incorrect": "Ideal op-amp model assumes Zin → ∞, which forms the basis for the Virtual Open Rule.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Ideal Op-Amp Output Impedance",
+      "question_text": "What is the output impedance Zout of an ideal operational amplifier?",
+      "correct_answer": "Zout = 0Ω",
+      "choices": [
+        "Zout = 0Ω",
+        "Zout = 50Ω",
+        "Zout = 10kΩ",
+        "Zout → ∞"
+      ],
+      "feedback_correct": "Correct! Ideal op-amp has zero output impedance, allowing it to drive any load without voltage drop across internal resistance.",
+      "feedback_incorrect": "Zero output impedance ensures the op-amp can deliver its calculated output voltage regardless of load impedance.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Op-Amp Linear Region Definition",
+      "question_text": "The op-amp linear region is characterized by which operating conditions?",
+      "correct_answer": "Very small |v₊ - v₋| and non-saturated output",
+      "choices": [
+        "Balanced input currents",
+        "Very small |v₊ - v₋| and non-saturated output",
+        "Differential input mode",
+        "Active biasing region"
+      ],
+      "feedback_correct": "Correct! Linear region requires: (1) very small input voltage difference, and (2) output not saturated at supply rails.",
+      "feedback_incorrect": "Linear region is defined by small input voltage differences and non-saturated output operation.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "numerical",
+      "title": "Op-Amp Saturation Threshold Calculation",
+      "question_text": "For a real op-amp with gain A = 10⁵ and ±15V supplies, calculate the minimum input voltage difference (in μV) that causes saturation.",
+      "correct_answer": "150",
+      "choices": [],
+      "feedback_correct": "Correct! Saturation threshold = VCC/A = 15V/10⁵ = 150×10⁻⁶V = 150μV.",
+      "feedback_incorrect": "Use saturation condition: |Vout| = |A(v₊ - v₋)| ≥ VCC. Minimum difference = VCC/A = 15V/10⁵ = 150μV.",
+      "points": 3,
+      "difficulty": "Hard",
+      "topic": "Operational Amplifiers",
+      "tolerance": 5,
+      "image_file": [],
+      "subtopic": "Ideal Model"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Negative Feedback Primary Function",
+      "question_text": "What is the primary engineering function of negative feedback in op-amp circuits?",
+      "correct_answer": "Create self-correcting system for stability and predictability",
+      "choices": [
+        "Reinforce changes leading to instability",
+        "Cause output saturation at supply rails",
+        "Create self-correcting system for stability and predictability",
+        "Enable operation without external components"
+      ],
+      "feedback_correct": "Correct! Negative feedback creates self-regulation: deviations from desired operation are automatically corrected, ensuring stability and predictable behavior.",
+      "feedback_incorrect": "Negative feedback provides automatic error correction, making circuits stable and their behavior predictable and controllable.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Negative Feedback Effect on Input Voltage Difference",
+      "question_text": "How does negative feedback affect the voltage difference (v₊ - v₋) between op-amp input terminals?",
+      "correct_answer": "Minimizes voltage difference toward zero",
+      "choices": [
+        "Makes voltage difference infinite",
+        "Causes output saturation",
+        "Minimizes voltage difference toward zero",
+        "Maintains large constant difference"
+      ],
+      "feedback_correct": "Correct! Negative feedback creates a control loop that actively works to minimize (v₊ - v₋) → 0, forming the basis of the Virtual Short Rule.",
+      "feedback_incorrect": "Negative feedback control action continuously works to reduce the input voltage difference toward zero.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Negative Feedback Connection Point",
+      "question_text": "In op-amp circuits with negative feedback, to which input terminal is the output signal typically connected?",
+      "correct_answer": "Inverting input (-)",
+      "choices": [
+        "Non-inverting input (+)",
+        "Output terminal itself",
+        "Power supply terminals",
+        "Inverting input (-)"
+      ],
+      "feedback_correct": "Correct! Negative feedback typically connects output to the inverting input (-) through a feedback network, creating the corrective action.",
+      "feedback_incorrect": "Negative feedback connects the output to the inverting input (-), either directly or through a feedback network.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Circuit Gain Determination with Feedback",
+      "question_text": "When negative feedback is applied to an op-amp, what primarily determines the overall circuit gain and behavior?",
+      "correct_answer": "External feedback network components",
+      "choices": [
+        "Op-amp internal open-loop gain A",
+        "Power supply voltages ±VCC",
+        "Specific op-amp chip type",
+        "External feedback network components"
+      ],
+      "feedback_correct": "Correct! With negative feedback, the external components (typically resistors) in the feedback network determine circuit gain, not the op-amp's internal characteristics.",
+      "feedback_incorrect": "Negative feedback makes circuit behavior dependent on external feedback components rather than internal op-amp parameters.",
+      "points": 3,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Open-Loop Operation Consequences",
+      "question_text": "Without negative feedback, an op-amp's high gain (10⁵-10⁶) means even tiny input differences will most likely cause:",
+      "correct_answer": "Output to saturate at voltage limits",
+      "choices": [
+        "Output to remain at 0V",
+        "Output to saturate at voltage limits",
+        "Precise scaled output proportional to input",
+        "Infinite output voltage"
+      ],
+      "feedback_correct": "Correct! High open-loop gain amplifies tiny differences to large values: A×(small difference) = large output, typically exceeding supply limits (saturation).",
+      "feedback_incorrect": "Open-loop operation with high gain typically results in saturation because A×(v₊ - v₋) quickly exceeds ±VCC for any finite input difference.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Negative Feedback Benefits Analysis",
+      "question_text": "Which is NOT a benefit of negative feedback in linear op-amp applications?",
+      "correct_answer": "Consistently inverts output signal",
+      "choices": [
+        "Makes circuit behavior predictable",
+        "Allows wider input signal range processing",
+        "Consistently inverts output signal",
+        "Promotes circuit stability"
+      ],
+      "feedback_correct": "Correct! Signal inversion depends on circuit configuration (inverting vs. non-inverting), not feedback type. Negative feedback can be used in both inverting and non-inverting configurations.",
+      "feedback_incorrect": "Output signal polarity depends on circuit topology (inverting vs. non-inverting), not on the presence of negative feedback.",
+      "points": 3,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Mechanical Stability Analogy",
+      "question_text": "The ball-in-valley mechanical analogy for negative feedback illustrates which system characteristic?",
+      "correct_answer": "Stable equilibrium with restoring forces",
+      "choices": [
+        "System instability with displacement divergence",
+        "Unlimited movement potential",
+        "Positive feedback behavior",
+        "Stable equilibrium with restoring forces"
+      ],
+      "feedback_correct": "Correct! The ball-in-valley analogy shows stable equilibrium: any displacement creates restoring forces that return the system to its stable position.",
+      "feedback_incorrect": "Ball-in-valley demonstrates stable equilibrium where perturbations create restoring forces, analogous to negative feedback error correction.",
+      "points": 2,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Negative Feedback Definition",
+      "question_text": "Which statement best defines negative feedback in electronic systems?",
+      "correct_answer": "Output signal opposes input changes",
+      "choices": [
+        "Output signal reinforces input changes",
+        "Output signal opposes input changes",
+        "Configuration always results in signal inversion",
+        "Method to maximize op-amp gain"
+      ],
+      "feedback_correct": "Correct! Negative feedback means the output signal opposes (counteracts) changes at the input, creating self-correcting behavior.",
+      "feedback_incorrect": "Negative feedback creates opposition to input changes, forming the basis for stable, self-regulating systems.",
+      "points": 2,
+      "difficulty": "Easy",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Feedback Signal Input Terminal",
+      "question_text": "In standard negative feedback op-amp circuits, which input terminal typically receives the feedback signal?",
+      "correct_answer": "Inverting input (-)",
+      "choices": [
+        "Non-inverting input (+)",
+        "Inverting input (-)",
+        "Power supply terminal",
+        "Output terminal"
+      ],
+      "feedback_correct": "Correct! Standard negative feedback connects the output to the inverting input (-) through the feedback network.",
+      "feedback_incorrect": "Negative feedback typically uses the inverting input (-) to receive the feedback signal from the output.",
+      "points": 1,
+      "difficulty": "Easy",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    },
+    {
+      "type": "multiple_choice",
+      "title": "Gain-Bandwidth Trade-off",
+      "question_text": "What happens to an op-amp's effective bandwidth when negative feedback reduces the circuit gain?",
+      "correct_answer": "Bandwidth increases proportionally to gain reduction",
+      "choices": [
+        "Bandwidth decreases proportionally to gain reduction",
+        "Bandwidth increases proportionally to gain reduction",
+        "Bandwidth remains unchanged",
+        "Bandwidth becomes zero for DC only"
+      ],
+      "feedback_correct": "Correct! Gain-bandwidth product is constant: GBW = A×BW = constant. When feedback reduces gain, bandwidth increases proportionally (GBW trade-off).",
+      "feedback_incorrect": "Due to gain-bandwidth product conservation, reducing gain through negative feedback proportionally increases the usable bandwidth.",
+      "points": 3,
+      "difficulty": "Medium",
+      "topic": "Operational Amplifiers",
+      "tolerance": 0.05,
+      "image_file": [],
+      "subtopic": "Feedback"
+    }
+  ],
+  "metadata": {
+    "exported_from": "Topic Subtopic Bulk Editor",
+    "export_date": "2025-06-05T22:52:51.984Z",
+    "total_questions": 369,
+    "modified_questions": 369,
+    "format_version": "Phase Four",
+    "topic_subtopic_statistics": {
+      "unique_topics": 15,
+      "unique_subtopics": 42,
+      "empty_subtopics": 20
+    }
+  }
+}

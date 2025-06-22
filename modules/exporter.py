@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Question Export Module - Main Interface
-Clean, modular approach to question export functionality
+Enhanced with JSON export capability for native format preservation
 """
 
 import streamlit as st
@@ -9,6 +9,7 @@ import pandas as pd
 from typing import List, Dict, Any, Optional
 import logging
 import io
+import json
 from datetime import datetime
 
 # Set up logging
@@ -41,7 +42,7 @@ class QuestionExporter:
                                df: pd.DataFrame, 
                                original_questions: List[Dict[str, Any]]) -> None:
         """
-        Render the complete export interface
+        Render the complete export interface with JSON support
         
         Args:
             df: Current DataFrame with filtered questions
@@ -51,22 +52,250 @@ class QuestionExporter:
             st.markdown("### 📥 Export System")
             st.success("✅ Export system ready with custom filename support!")
             
-            # Export type selection
+            # Export type selection with JSON option
             export_type = st.radio(
                 "Choose Export Format:",
-                ["📊 CSV Export", "📦 QTI Package for Canvas"],
+                [
+                    "📊 CSV Export", 
+                    "📦 QTI Package for Canvas",
+                    "📄 JSON Database (Native Format)"
+                ],
                 key="export_type_selection"
             )
             
             if export_type == "📊 CSV Export":
                 self._render_csv_export(df)
-            else:
+            elif export_type == "📦 QTI Package for Canvas":
                 self._render_qti_export(df, original_questions)
+            else:  # JSON export
+                self._render_json_export(df, original_questions)
             
         except Exception as e:
             logger.exception("Error rendering export interface")
             st.error(f"❌ Error loading export interface: {str(e)}")
     
+    def _render_json_export(self, df: pd.DataFrame, original_questions: List[Dict[str, Any]]):
+        """Render JSON export interface"""
+        
+        st.subheader("📄 JSON Database Export")
+        st.info("📋 **Native Format Export**: Preserves complete question structure with LaTeX formatting intact")
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            # Filename input with validation
+            suggested_name = f"questions_filtered_{len(df)}Q_{datetime.now().strftime('%Y%m%d')}"
+            
+            filename_input = st.text_input(
+                "📝 Custom Filename (without .json extension):",
+                value=suggested_name,
+                help="Enter a name for your JSON database file. Extension will be added automatically.",
+                key="json_filename_input"
+            )
+            
+            # Validate filename
+            if filename_input:
+                is_valid, message = self.naming_manager.validate_user_input(filename_input)
+                if is_valid:
+                    st.success(f"✅ {message}")
+                    final_filename = f"{filename_input}.json"
+                    st.caption(f"📁 Final filename: `{final_filename}`")
+                else:
+                    st.error(f"❌ {message}")
+            
+            # Export options
+            with st.expander("⚙️ JSON Export Options"):
+                include_metadata = st.checkbox(
+                    "Include metadata section",
+                    value=True,
+                    help="Include course/instructor metadata in the JSON file"
+                )
+                
+                format_style = st.selectbox(
+                    "JSON formatting:",
+                    ["Compact", "Pretty (indented)"],
+                    index=1,
+                    help="Choose formatting style for the JSON output"
+                )
+                
+                preserve_ids = st.checkbox(
+                    "Preserve original question IDs",
+                    value=True,
+                    help="Keep original question ID numbering from source"
+                )
+        
+        with col2:
+            st.metric("Questions to Export", len(df))
+            if 'Points' in df.columns:
+                total_points = df['Points'].sum()
+                st.metric("Total Points", int(total_points))
+            
+            # JSON-specific info
+            st.info("""
+            📄 **JSON Export Benefits:**
+            • Complete data preservation
+            • LaTeX formatting intact
+            • Re-importable to Q2LMS
+            • Human-readable format
+            • Version control friendly
+            """)
+        
+        # Export preview
+        with st.expander("📋 Preview Export Structure"):
+            # Show what the JSON structure will look like
+            if original_questions:
+                sample_question = original_questions[0] if original_questions else {}
+                st.json({
+                    "questions": [sample_question],
+                    "metadata": {
+                        "subject": "Sample Course",
+                        "exported_date": datetime.now().isoformat(),
+                        "total_questions": len(df),
+                        "format_version": "Phase Four"
+                    }
+                })
+            st.caption(f"Sample structure - actual export will contain {len(df)} questions")
+        
+        # Export button
+        if st.button("📄 Download JSON Database", type="primary", key="json_export_btn"):
+            json_filename = f"{filename_input}.json" if filename_input else f"{suggested_name}.json"
+            self._export_json(
+                df, 
+                original_questions, 
+                json_filename, 
+                include_metadata, 
+                format_style, 
+                preserve_ids
+            )
+    
+    def _export_json(self, 
+                    df: pd.DataFrame, 
+                    original_questions: List[Dict[str, Any]], 
+                    filename: str,
+                    include_metadata: bool = True,
+                    format_style: str = "Pretty (indented)",
+                    preserve_ids: bool = True) -> None:
+        """
+        Export filtered questions to JSON format
+        
+        Args:
+            df: Filtered DataFrame
+            original_questions: Original question data  
+            filename: Output filename
+            include_metadata: Whether to include metadata section
+            format_style: JSON formatting style
+            preserve_ids: Whether to preserve original IDs
+        """
+        try:
+            with st.spinner("🔄 Preparing JSON export..."):
+                
+                # Process questions for export
+                st.info("📊 Processing question data...")
+                processed_questions, report = self.data_manager.prepare_questions_for_export(
+                    df, original_questions
+                )
+                
+                if not report["success"]:
+                    st.error(f"❌ Data processing failed: {report['errors']}")
+                    return
+                
+                if report.get("warnings"):
+                    st.warning("⚠️ " + "; ".join(report["warnings"]))
+                
+                # Create JSON structure
+                json_data = {
+                    "questions": processed_questions
+                }
+                
+                # Add metadata if requested
+                if include_metadata:
+                    json_data["metadata"] = self._create_export_metadata(df, processed_questions)
+                
+                # Format JSON based on style preference
+                if format_style == "Pretty (indented)":
+                    json_string = json.dumps(json_data, indent=2, ensure_ascii=False)
+                else:
+                    json_string = json.dumps(json_data, ensure_ascii=False)
+                
+                # Provide download
+                st.download_button(
+                    label="📄 Download JSON File",
+                    data=json_string,
+                    file_name=filename,
+                    mime="application/json",
+                    key=f"json_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                )
+                
+                # Show success details
+                st.success(f"""
+                ✅ **JSON Database Export Ready!**
+                
+                📁 **Filename:** `{filename}`
+                📊 **Questions:** {len(processed_questions)}
+                🎯 **Total Points:** {sum(q.get('points', 1) for q in processed_questions)}
+                📄 **Format:** Q2LMS Native JSON
+                
+                **Features:**
+                • Complete question data preserved
+                • LaTeX mathematical notation intact
+                • Re-importable to Q2LMS
+                • Compatible with version control
+                
+                **Usage:**
+                1. Download the JSON file above
+                2. Store as backup or share with colleagues  
+                3. Re-import to Q2LMS using Upload tab
+                4. Edit with any text editor if needed
+                """)
+                
+        except Exception as e:
+            logger.exception("Error in JSON export")
+            st.error(f"❌ JSON export failed: {str(e)}")
+            with st.expander("🔍 Error Details"):
+                import traceback
+                st.code(traceback.format_exc())
+    
+    def _create_export_metadata(self, df: pd.DataFrame, questions: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Create metadata section for JSON export"""
+        
+        # Analyze question data
+        topics = set()
+        difficulties = set()
+        question_types = set()
+        
+        for question in questions:
+            if question.get('topic'):
+                topics.add(question['topic'])
+            if question.get('difficulty'):
+                difficulties.add(question['difficulty'])
+            if question.get('type'):
+                question_types.add(question['type'])
+        
+        # Calculate statistics
+        total_points = sum(q.get('points', 1) for q in questions)
+        latex_analysis = self.latex_analyzer.analyze_questions(questions)
+        
+        metadata = {
+            "exported_date": datetime.now().isoformat(),
+            "export_source": "Q2LMS Export System",
+            "format_version": "Phase Four",
+            "total_questions": len(questions),
+            "total_points": total_points,
+            "question_types": list(question_types),
+            "topics": list(topics),
+            "difficulties": list(difficulties),
+            "latex_questions": latex_analysis.get('questions_with_latex', 0),
+            "statistics": {
+                "avg_points_per_question": round(total_points / len(questions), 2) if questions else 0,
+                "latex_percentage": latex_analysis.get('latex_percentage', 0),
+                "type_distribution": {qtype: sum(1 for q in questions if q.get('type') == qtype) 
+                                   for qtype in question_types}
+            }
+        }
+        
+        return metadata
+    
+    # Keep existing CSV and QTI methods unchanged
     def _render_csv_export(self, df: pd.DataFrame):
         """Render CSV export interface"""
         
@@ -346,7 +575,7 @@ def integrate_with_existing_ui(df: pd.DataFrame,
     st.info(f"""
     📊 **Current Database:** {len(df)} questions loaded
     
-    🚀 Export system ready with custom filename support, LaTeX optimization, and Canvas compatibility.
+    🚀 Export system ready with custom filename support, LaTeX optimization, Canvas compatibility, and native JSON export.
     """)
     
     # Create and use the exporter
@@ -364,6 +593,17 @@ def export_to_csv(df: pd.DataFrame, filename: str = "filtered_questions.csv") ->
     if EXPORT_SYSTEM_AVAILABLE:
         exporter = QuestionExporter()
         exporter._export_csv(df, filename)
+    else:
+        st.error("❌ Export system not available")
+
+
+def export_to_json(df: pd.DataFrame, 
+                  original_questions: List[Dict[str, Any]], 
+                  filename: str = "filtered_questions.json") -> None:
+    """New JSON export function for backward compatibility"""
+    if EXPORT_SYSTEM_AVAILABLE:
+        exporter = QuestionExporter()
+        exporter._export_json(df, original_questions, filename)
     else:
         st.error("❌ Export system not available")
 
