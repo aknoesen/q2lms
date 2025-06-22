@@ -320,6 +320,9 @@ Automatic validation checks include:
 
 -----
 
+## Advanced Filtering Features
+#
+
 ## Question Management
 
 ### Browse Interface
@@ -627,6 +630,9 @@ Q2LMS generates standard QTI packages compatible with:
   - [ ] Feedback displays as expected
 
 -----
+
+## Professional Session Management
+#
 
 ## Troubleshooting
 
