@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Question Database Manager - Main Streamlit Application
-Clean production version with integrated upload and export systems
+Q2LMS - Question Database Manager
+Web-based interface for managing educational question databases and generating LMS-ready QTI packages
 """
 
 import streamlit as st
@@ -93,16 +93,20 @@ except ImportError as e:
     st.error(f"❌ UI components not available: {e}")
     UI_COMPONENTS_AVAILABLE = False
 
-# Page configuration
+# Page configuration with new branding
 st.set_page_config(
-    page_title="Question Database Manager",
-    page_icon="📊",
+    page_title="Q2LMS - Question Database Manager",
+    page_icon="assets/favicon.ico",  # ← Your browser tab icon
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # Show system status in sidebar
 with st.sidebar:
+        # Add logo at top of sidebar
+    st.image("assets/q2lms_icon.svg", width=120)  # Slightly smaller for sidebar
+    st.markdown("---")  # Nice separator
+    
     st.markdown("### 🔧 System Status")
     
     if SESSION_MANAGER_AVAILABLE:
@@ -119,7 +123,7 @@ with st.sidebar:
     
     if EXPORT_SYSTEM_AVAILABLE:
         st.success("✅ Export System")
-        st.caption("• Custom filenames\n• Canvas compatibility\n• LaTeX optimization")
+        st.caption("• Custom filenames\n• LMS compatibility\n• LaTeX optimization")
     else:
         st.error("❌ Export System")
     
@@ -133,7 +137,7 @@ with st.sidebar:
     else:
         st.warning("⚠️ LaTeX Processor")
 
-# Custom CSS
+# Custom CSS with Q2LMS branding colors
 st.markdown("""
 <style>
     .main-header {
@@ -143,6 +147,23 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
+    
+    .q2lms-brand {
+    color: #1f77b4; /* Blue to match the Q2 elements in icon */
+    font-weight: 800;
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    }
+    
+    .brand-tagline {
+        color: #6b7280;
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
+    }
+    
     .metric-card {
         background-color: #f0f2f6;
         padding: 1rem;
@@ -237,6 +258,22 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(31, 119, 180, 0.3);
     }
+    
+    /* Q2LMS feature highlights */
+    .feature-card {
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -314,10 +351,13 @@ def main():
     if SESSION_MANAGER_AVAILABLE:
         initialize_session_state()
     
-    st.markdown("""
-    # 📊 Question Database Manager
-    **Web-based interface for managing educational question databases and generating Canvas-ready QTI packages**
-    """)
+    # Updated branding header
+    #col1, col2, col3 = st.columns([1, 2, 1])
+    #with col2:
+    #    st.image("assets/q2lms_icon.svg", width=150)  # ← Always crisp
+
+    st.markdown('<div class="q2lms-brand">Q2LMS</div>', unsafe_allow_html=True)
+    st.markdown('<div class="brand-tagline">Transform questions into LMS-ready packages with seamless QTI export</div>', unsafe_allow_html=True)
     
     # Show overall system status
     critical_systems = [SESSION_MANAGER_AVAILABLE, UI_COMPONENTS_AVAILABLE]
@@ -380,24 +420,27 @@ def main():
     else:
         # No database loaded - show getting started
         st.markdown("---")
-        st.markdown("## 🚀 Getting Started")
+        st.markdown("## 🚀 Getting Started with Q2LMS")
         
         col1, col2 = st.columns(2)
         
         with col1:
+            st.markdown('<div class="feature-card">', unsafe_allow_html=True)
             st.markdown("""
-            ### 📋 What You Can Do:
+            ### 📋 Core Features:
             
             1. **📤 Upload** JSON question databases (single or multiple files)
-            2. **📝 Browse** questions with live LaTeX preview
+            2. **📝 Browse** questions with live LaTeX preview  
             3. **🎯 Filter** by topic, difficulty, and type
-            4. **📦 Export** to Canvas-ready QTI packages
+            4. **📦 Export** to LMS-ready QTI packages
             5. **📊 Analyze** question distributions and statistics
             6. **🔧 Edit** questions with real-time preview
             """)
+            st.markdown('</div>', unsafe_allow_html=True)
             
             # Show export features if available
             if EXPORT_SYSTEM_AVAILABLE:
+                st.markdown('<div class="feature-card">', unsafe_allow_html=True)
                 st.markdown("""
                 ### 🚀 Export Features:
                 
@@ -405,10 +448,12 @@ def main():
                 - **📋 Export Preview** before creating files
                 - **🔢 LaTeX Analysis** and conversion
                 - **⚠️ Clear Error Handling** with helpful messages
-                - **🎯 Canvas Optimization** for seamless import
+                - **🎯 LMS Optimization** for seamless import
                 """)
+                st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
+            st.markdown('<div class="feature-card">', unsafe_allow_html=True)
             st.markdown("""
             ### 🎓 Perfect for Instructors:
             
@@ -416,9 +461,22 @@ def main():
             - **LaTeX Support** for engineering formulas
             - **Multiple Question Types** (MC, numerical, T/F, fill-in-blank)
             - **Topic Organization** with subtopics
-            - **Canvas Integration** via QTI export
+            - **LMS Integration** via QTI export
             - **Conflict Resolution** when merging multiple files
             """)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.markdown('<div class="feature-card">', unsafe_allow_html=True)
+            st.markdown("""
+            ### 🔄 Supported LMS Platforms:
+            
+            - **Canvas** (primary optimization)
+            - **Blackboard** Learn
+            - **Moodle**
+            - **D2L Brightspace**
+            - **Any QTI 2.1 compatible** system
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Show sample file format
         with st.expander("📄 Sample JSON Format", expanded=False):
