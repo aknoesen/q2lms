@@ -277,6 +277,57 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ====================================================================
+# CLEAN MULTI-SUBJECT FILTER - Add at line 279 in streamlit_app.py
+# ====================================================================
+
+def enhanced_subject_filtering(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Multi-subject filter using the correct 'Topic' column
+    """
+    if df.empty:
+        return df
+    
+    # Use 'Topic' instead of 'Subject'
+    if 'Topic' not in df.columns:
+        return df
+    
+    # Get unique topics
+    topics = sorted(df['Topic'].dropna().unique())
+    if not topics:
+        return df
+    
+    # Add topic filter to sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📚 Topic Filter")
+    
+    selected_topics = st.sidebar.multiselect(
+        "Choose topics:",
+        options=topics,
+        default=topics,  # Start with all topics selected
+        key="topic_filter_multi",
+        help="Select multiple topics to include questions from any chosen topic"
+    )
+    
+    # Apply filtering
+    if selected_topics:
+        filtered_df = df[df['Topic'].isin(selected_topics)]
+        st.sidebar.success(f"✅ {len(selected_topics)} of {len(topics)} topics selected")
+    else:
+        filtered_df = pd.DataFrame()  # Empty if nothing selected
+        st.sidebar.warning("⚠️ No topics selected")
+    
+    st.sidebar.markdown("---")
+    
+    return filtered_df
+# ====================================================================
+# INTEGRATION: Replace this ONE line in main():
+# 
+# OLD: filtered_df = apply_filters(df)
+# NEW: filtered_df = enhanced_subject_filtering(df)
+# ====================================================================
+
+
 def render_upload_interface():
     """Render the upload interface"""
     
@@ -358,7 +409,10 @@ def main():
 
     st.markdown('<div class="q2lms-brand">Q2LMS</div>', unsafe_allow_html=True)
     st.markdown('<div class="brand-tagline">Transform questions into LMS-ready packages with seamless QTI export</div>', unsafe_allow_html=True)
-    
+
+
+
+
     # Show overall system status
     critical_systems = [SESSION_MANAGER_AVAILABLE, UI_COMPONENTS_AVAILABLE]
     essential_systems = [UPLOAD_SYSTEM_AVAILABLE or BASIC_UPLOAD_AVAILABLE, EXPORT_SYSTEM_AVAILABLE]
@@ -388,7 +442,7 @@ def main():
         df = st.session_state['df']
         metadata = st.session_state['metadata']
         original_questions = st.session_state['original_questions']
-        filtered_df = apply_filters(df)
+        filtered_df = enhanced_subject_filtering(df)
         
         # Show success message
         st.success(f"✅ Database loaded successfully! {len(df)} questions ready.")
