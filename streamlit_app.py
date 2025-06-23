@@ -20,7 +20,21 @@ import re
 
 # Import modules
 import sys
+
+# Page configuration with new branding
+st.set_page_config(
+    page_title="Q2LMS - Question Database Manager",
+    page_icon="assets/favicon.ico",  # ← Your browser tab icon
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+
+
 import os
+
+
+
 
 # Add modules directory to Python path
 modules_path = os.path.join(os.path.dirname(__file__), 'modules')
@@ -93,13 +107,7 @@ except ImportError as e:
     st.error(f"❌ UI components not available: {e}")
     UI_COMPONENTS_AVAILABLE = False
 
-# Page configuration with new branding
-st.set_page_config(
-    page_title="Q2LMS - Question Database Manager",
-    page_icon="assets/favicon.ico",  # ← Your browser tab icon
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+
 
 # Show system status in sidebar
 with st.sidebar:

@@ -110,7 +110,7 @@ def enhanced_file_upload_widget():
             # Processing options
             col1, col2 = st.columns(2)
             with col1:
-                auto_latex = st.checkbox("🧮 Auto-process LaTeX", value=True)
+                auto_latex = st.checkbox("🧮 Auto-process LaTeX", value=False, help="Automatically clean LaTeX notation")
                 validate_questions = st.checkbox("✅ Validate questions", value=True)
             with col2:
                 assign_new_ids = st.checkbox("🔄 Assign new IDs", value=False)
@@ -194,7 +194,7 @@ def handle_database_replacement():
         
         col1, col2 = st.columns(2)
         with col1:
-            auto_latex = st.checkbox("🧮 Auto-process LaTeX", value=True, help="Automatically clean LaTeX notation")
+            auto_latex = st.checkbox("🧮 Auto-process LaTeX", value=False, help="Automatically clean LaTeX notation")
             validate_questions = st.checkbox("✅ Validate questions", value=True, help="Check for required fields and consistency")
         
         with col2:
@@ -278,7 +278,7 @@ def handle_single_upload():
         
         col1, col2 = st.columns(2)
         with col1:
-            auto_latex = st.checkbox("🧮 Auto-process LaTeX", value=True, help="Automatically clean LaTeX notation")
+            auto_latex = st.checkbox("🧮 Auto-process LaTeX", value=False, help="Automatically clean LaTeX notation")
             validate_questions = st.checkbox("✅ Validate questions", value=True, help="Check for required fields and consistency")
         
         with col2:

@@ -1,132 +1,19 @@
-#!/usr/bin/env python3
-"""
-Question Editor Module for Question Database Manager
-Handles live question editing with side-by-side preview
-"""
+# modules/question_editor.py
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from .utils import render_latex_in_text
+# Note: CanvasLaTeXConverter is not used directly for display logic in this rollback version
+# from .export.latex_converter import CanvasLaTeXConverter 
+
+# _latex_converter_instance is not instantiated in this rollback version
+# _latex_converter_instance = CanvasLaTeXConverter() 
 
 # Import from other modules
 from .database_processor import save_question_changes, delete_question, validate_single_question
-
-def render_latex_in_text(text):
-    """
-    Enhanced LaTeX rendering for Streamlit with comprehensive mathematical notation support
-    """
-    if not text or not isinstance(text, str):
-        return text
-    
-    import re
-    
-    # Preserve existing Unicode symbols first
-    unicode_preservations = {
-        'π': '###PI###',
-        'Ω': '###OMEGA###', 
-        'μ': '###MU###',
-        'α': '###ALPHA###',
-        'β': '###BETA###',
-        'γ': '###GAMMA###',
-        'δ': '###DELTA###',
-        'θ': '###THETA###',
-        'λ': '###LAMBDA###',
-        'σ': '###SIGMA###',
-        'φ': '###PHI###',
-        'τ': '###TAU###',
-        '·': '###DOT###',
-        '×': '###TIMES###',
-        '±': '###PLUSMINUS###'
-    }
-    
-    # Temporarily replace Unicode with placeholders
-    protected_text = text
-    for unicode_char, placeholder in unicode_preservations.items():
-        protected_text = protected_text.replace(unicode_char, placeholder)
-
-    # Step 1: Preserve math environments ($$...$$ and $...$)
-    math_pattern = r'(\$\$.*?\$\$|\$.*?\$)'
-    parts = re.split(math_pattern, protected_text)
-    
-    # Step 2: LaTeX to Unicode conversion mapping
-    latex_to_unicode = {
-        # Greek letters
-        r'\\Omega': 'Ω',
-        r'\\mu': 'μ', 
-        r'\\omega': 'ω',
-        r'\\pi': 'π',
-        r'\\alpha': 'α',
-        r'\\beta': 'β',
-        r'\\gamma': 'γ',
-        r'\\delta': 'δ',
-        r'\\theta': 'θ',
-        r'\\lambda': 'λ',
-        r'\\sigma': 'σ',
-        r'\\phi': 'φ',
-        r'\\tau': 'τ',
-        
-        # Mathematical symbols
-        r'\\infty': '∞',
-        r'\\pm': '±',
-        r'\\mp': '∓',
-        r'\\times': '×',
-        r'\\div': '÷',
-        r'\\neq': '≠',
-        r'\\leq': '≤',
-        r'\\geq': '≥',
-        r'\\approx': '≈',
-        r'\\angle': '∠',
-        r'\\sqrt': '√',
-        r'\\partial': '∂',
-        r'\\nabla': '∇',
-        r'\\sum': '∑',
-        r'\\int': '∫',
-        r'\\prod': '∏',
-    }
-    
-    # Step 3: Process each part
-    for i, part in enumerate(parts):
-        # Only convert LaTeX in non-math parts (even indices)
-        if i % 2 == 0:  # Non-math part
-            
-            # Handle specific patterns
-            part = re.sub(r'\\mu([A-Z])', r'μ\1', part)
-            
-            # Fix superscripts and subscripts
-            part = re.sub(r'\^{?([0-9])}?', lambda m: {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'}.get(m.group(1), f'^{m.group(1)}'), part)
-            part = re.sub(r'_{?([0-9])}?', lambda m: {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'}.get(m.group(1), f'_{m.group(1)}'), part)
-            
-            # Apply general LaTeX to Unicode conversions
-            for latex_cmd, unicode_char in latex_to_unicode.items():
-                if latex_cmd.startswith(r'\\'):
-                    clean_cmd = latex_cmd.replace(r'\\', '\\\\')
-                    pattern = clean_cmd + r'(?![a-zA-Z])'
-                    part = re.sub(pattern, unicode_char, part)
-            
-            # Fix spacing around units and symbols
-            part = re.sub(r'(\d+)(Ω|μ|ω|π|α|β|γ|δ|θ|λ|σ|φ|τ|∞|°)', r'\1 \2', part)
-            part = re.sub(r'(\d+)(Hz|V|A|W|F|H|Ω|S|m|s|J)', r'\1 \2', part)
-            part = re.sub(r'(\d+)\s*μ\s*([A-Z])', r'\1 μ\2', part)
-            
-            # Clean up LaTeX spacing commands
-            part = re.sub(r'\\,', ' ', part)
-            part = re.sub(r'\\text\{([^}]+)\}', r'\1', part)
-            part = re.sub(r'\\mathrm\{([^}]+)\}', r'\1', part)
-            part = re.sub(r'\s{3,}', ' ', part)
-            part = part.strip()
-        
-        parts[i] = part
-    
-    # Rejoin all parts
-    result = ''.join(parts)
-    
-    # Restore preserved Unicode symbols
-    for unicode_char, placeholder in unicode_preservations.items():
-        result = result.replace(placeholder, unicode_char)
-    
-    return result
 
 def determine_correct_answer_letter(correct_answer_text, choice_texts):
     """Determine the correct answer letter (A, B, C, D) from the correct answer text"""
@@ -149,103 +36,107 @@ def determine_correct_answer_letter(correct_answer_text, choice_texts):
     return 'A'
 
 def display_live_question_preview(question_data):
-    """Display live preview of question as user edits"""
+    """
+    Display with basic LaTeX handling (relying on st.markdown's default behavior).
+    """
     
-    st.markdown('<div class="question-preview">', unsafe_allow_html=True)
-    
-    # Header with metadata
+    # Header with metadata (standard markdown)
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     
     with col1:
-        st.markdown(f"**{question_data.get('title', 'Untitled')}**")
+        st.markdown(f"**{question_data.get('title', 'Untitled')}**") 
     with col2:
         question_type = question_data.get('question_type', 'multiple_choice')
-        st.markdown(f"🏷️ **{question_type.replace('_', ' ').title()}**")
+        st.markdown(f"🏷️ **{question_type.replace('_', ' ').title()}**") 
     with col3:
         difficulty = question_data.get('difficulty', 'Medium')
         difficulty_colors = {'Easy': '🟢', 'Medium': '🟡', 'Hard': '🔴'}
         difficulty_icon = difficulty_colors.get(difficulty, '⚪')
-        st.markdown(f"{difficulty_icon} **{difficulty}**")
+        st.markdown(f"{difficulty_icon} **{difficulty}**") 
     with col4:
         points = question_data.get('points', 1)
-        st.markdown(f"**{points} pts**")
+        st.markdown(f"**{points} pts**") 
     
-    # Topic and subtopic info
     topic = question_data.get('topic', 'General')
     subtopic = question_data.get('subtopic', '')
     topic_info = f"📚 {topic}"
     if subtopic and subtopic not in ['', 'N/A', 'empty']:
         topic_info += f" → {subtopic}"
-    st.markdown(f"*{topic_info}*")
+    st.markdown(f"*{topic_info}*") 
     
     st.markdown("---")
     
-    # Question text with LaTeX rendering
-    question_text = render_latex_in_text(question_data.get('question_text', ''))
-    st.markdown(f"**Question:** {question_text}")
+    # Question text: Rely on st.markdown's native LaTeX detection.
+    # Pass latex_converter=None for this rollback.
+    st.markdown(f"**Question:** {render_latex_in_text(question_data.get('question_text', ''), latex_converter=None)}") 
     
     # Handle different question types
     if question_data.get('question_type') == 'multiple_choice':
-        st.markdown("**Choices:**")
-        choices = ['A', 'B', 'C', 'D']
+        st.markdown("**Choices:**") 
+        
+        choices_list = ['A', 'B', 'C', 'D']
         correct_answer = question_data.get('correct_answer', 'A')
         
-        # Get all choice texts
         choice_texts = {}
-        for choice_letter in choices:
+        for choice_letter in choices_list:
             choice_text = question_data.get(f'choice_{choice_letter.lower()}', '')
             if choice_text and str(choice_text).strip():
                 choice_texts[choice_letter] = str(choice_text).strip()
         
-        # Determine correct answer letter
         if correct_answer not in ['A', 'B', 'C', 'D']:
             correct_letter = determine_correct_answer_letter(correct_answer, choice_texts)
         else:
             correct_letter = correct_answer
         
-        # Display choices with highlighting
-        for choice_letter in choices:
+        for choice_letter in choices_list:
             if choice_letter in choice_texts:
                 choice_text_clean = choice_texts[choice_letter]
-                choice_text_rendered = render_latex_in_text(choice_text_clean)
+                # Pass latex_converter=None for this rollback.
+                choice_text_rendered = render_latex_in_text(choice_text_clean, latex_converter=None)
                 
                 is_correct = (choice_letter == correct_letter)
                 
+                # Standard markdown output
                 if is_correct:
-                    st.markdown(f"• **{choice_letter}:** {choice_text_rendered} ✅ **← Correct Answer**")
+                    st.markdown(f"• **{choice_letter}:** {choice_text_rendered} ✅ ← Correct Answer") 
                 else:
                     st.markdown(f"• **{choice_letter}:** {choice_text_rendered}")
     
     elif question_data.get('question_type') == 'numerical':
-        correct_answer = render_latex_in_text(str(question_data.get('correct_answer', '')))
-        st.markdown(f"**Correct Answer:** {correct_answer} ✅")
+        correct_answer_rendered = render_latex_in_text(str(question_data.get('correct_answer', '')), latex_converter=None)
+        st.markdown(f"**Correct Answer:** {correct_answer_rendered} ✅")
+        
         tolerance = question_data.get('tolerance', 0)
         if tolerance and float(tolerance) > 0:
-            st.markdown(f"**Tolerance:** ±{tolerance}")
+            st.markdown(f"**Tolerance:** ±{tolerance}") 
     
     elif question_data.get('question_type') == 'true_false':
         correct_answer = str(question_data.get('correct_answer', '')).strip()
-        st.markdown(f"**Correct Answer:** {correct_answer} ✅")
+        st.markdown(f"**Correct Answer:** {correct_answer} ✅") 
     
     elif question_data.get('question_type') == 'fill_in_blank':
-        correct_answer = render_latex_in_text(str(question_data.get('correct_answer', '')))
-        st.markdown(f"**Correct Answer:** {correct_answer} ✅")
+        correct_answer_rendered = render_latex_in_text(str(question_data.get('correct_answer', '')), latex_converter=None)
+        st.markdown(f"**Correct Answer:** {correct_answer_rendered} ✅")
     
-    # Feedback
+    # Feedback (standard markdown)
     correct_feedback = question_data.get('correct_feedback', '')
     incorrect_feedback = question_data.get('incorrect_feedback', '')
     
     if correct_feedback or incorrect_feedback:
         with st.expander("💡 View Feedback"):
             if correct_feedback:
-                rendered_correct = render_latex_in_text(str(correct_feedback))
+                rendered_correct = render_latex_in_text(str(correct_feedback), latex_converter=None)
                 st.markdown(f"**Correct:** {rendered_correct}")
             
             if incorrect_feedback:
-                rendered_incorrect = render_latex_in_text(str(incorrect_feedback))
+                rendered_incorrect = render_latex_in_text(str(incorrect_feedback), latex_converter=None)
                 st.markdown(f"**Incorrect:** {rendered_incorrect}")
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Removed explicit closing div (which was causing issues). Streamlit handles this for top-level markdown.
+    pass 
+
+# Import from other modules (placed here to resolve potential circular imports during rollback)
+# from .database_processor import save_question_changes, delete_question, validate_single_question
 
 def side_by_side_question_editor(filtered_df):
     """Enhanced Browse & Edit with side-by-side live preview"""
@@ -333,7 +224,7 @@ def side_by_side_question_editor(filtered_df):
                 edit_question_form(actual_index, question)
             
             st.markdown("---")
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True) # Added unsafe_allow_html=True here
         
         # Navigation at bottom
         if total_pages > 1:

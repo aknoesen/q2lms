@@ -1,5 +1,10 @@
 import streamlit as st
 from modules.utils import render_latex_in_text
+# REMOVE CanvasLaTeXConverter import
+# from modules.export.latex_converter import CanvasLaTeXConverter # <-- REMOVE THIS LINE
+
+# REMOVE CanvasLaTeXConverter instantiation
+# _simple_browse_latex_converter_instance = CanvasLaTeXConverter() # <-- REMOVE THIS LINE
 
 def simple_browse_questions_tab(filtered_df):
     st.markdown(f"### 📋 Browse Questions ({len(filtered_df)} results)")
@@ -35,8 +40,9 @@ def simple_browse_questions_tab(filtered_df):
         st.markdown("---")
         for idx, (_, question) in enumerate(page_df.iterrows()):
             st.markdown(f"### Question {idx + 1}")
-            # Use a simple preview (reuse display_question_preview if needed)
-            st.markdown(f"**Question:** {render_latex_in_text(question['Question_Text'])}")
+            # Use a simple preview (relying on st.markdown's native LaTeX detection)
+            # Pass latex_converter=None for this rollback
+            st.markdown(f"**Question:** {render_latex_in_text(question['Question_Text'], latex_converter=None)}")
             st.markdown("---")
     else:
         st.warning("🔍 No questions match the current filters.")
