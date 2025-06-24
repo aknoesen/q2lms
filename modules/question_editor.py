@@ -331,35 +331,52 @@ def handle_multiple_choice_fields(question_index, original_question):
     choice_c_key = f"edit_choice_c_{question_index}"
     choice_d_key = f"edit_choice_d_{question_index}"
     correct_answer_key = f"edit_correct_answer_{question_index}"
+    
     init_session_state(choice_a_key, original_question['Choice_A'] or '')
     init_session_state(choice_b_key, original_question['Choice_B'] or '')
     init_session_state(choice_c_key, original_question['Choice_C'] or '')
     init_session_state(choice_d_key, original_question['Choice_D'] or '')
     init_session_state(correct_answer_key, original_question['Correct_Answer'])
+    
     choice_a = st.text_area("Choice A", key=choice_a_key, height=70)
     choice_b = st.text_area("Choice B", key=choice_b_key, height=70)
     choice_c = st.text_area("Choice C", key=choice_c_key, height=70)
     choice_d = st.text_area("Choice D", key=choice_d_key, height=70)
-    correct_answer = st.selectbox("Correct Answer", ['A', 'B', 'C', 'D'], 
-                                 index=['A', 'B', 'C', 'D'].index(st.session_state[correct_answer_key]) if st.session_state[correct_answer_key] in ['A', 'B', 'C', 'D'] else 0,
-                                 key=correct_answer_key)
+    
+    # FIXED: Remove index parameter - let session state handle the value
+    correct_answer = st.selectbox("Correct Answer", ['A', 'B', 'C', 'D'], key=correct_answer_key)
+    
     return choice_a, choice_b, choice_c, choice_d, correct_answer
 
 def handle_numerical_fields(question_index, original_question):
     correct_answer_key = f"edit_correct_answer_{question_index}"
     tolerance_key = f"edit_tolerance_{question_index}"
+    
     init_session_state(correct_answer_key, str(original_question['Correct_Answer']))
     init_session_state(tolerance_key, float(original_question['Tolerance']) if original_question['Tolerance'] else 0.05)
+    
     correct_answer = st.text_input("Correct Answer", key=correct_answer_key)
     tolerance = st.number_input("Tolerance", min_value=0.0, key=tolerance_key, step=0.01)
+    
     return correct_answer, tolerance
 
 def handle_true_false_fields(question_index, original_question):
     correct_answer_key = f"edit_correct_answer_{question_index}"
+    
     init_session_state(correct_answer_key, original_question['Correct_Answer'])
-    correct_answer = st.selectbox("Correct Answer", ['True', 'False'], 
-                                 index=['True', 'False'].index(st.session_state[correct_answer_key]) if st.session_state[correct_answer_key] in ['True', 'False'] else 0,
-                                 key=correct_answer_key)
+    
+    # FIXED: Remove index parameter - let session state handle the value
+    correct_answer = st.selectbox("Correct Answer", ['True', 'False'], key=correct_answer_key)
+    
+    return correct_answer
+
+def handle_fill_in_blank_fields(question_index, original_question):
+    correct_answer_key = f"edit_correct_answer_{question_index}"
+    
+    init_session_state(correct_answer_key, str(original_question['Correct_Answer']))
+    
+    correct_answer = st.text_input("Correct Answer", key=correct_answer_key)
+    
     return correct_answer
 
 def handle_fill_in_blank_fields(question_index, original_question):

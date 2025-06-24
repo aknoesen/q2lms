@@ -69,9 +69,9 @@ def render_latex_in_text(text, latex_converter=None):
     # Apply space protection
     final_result = _protect_latex_spaces(normalized_text)
     
-    # Show normalization in console
-    if text != normalized_text:
-        print(f"🔧 LATEX NORMALIZED: '{text}' → '{normalized_text}'")
+    # Debug output removed - LaTeX normalization working correctly
+    # if text != normalized_text:
+    #     print(f"🔧 LATEX NORMALIZED: '{text}' → '{normalized_text}'")
     
     return final_result
 
