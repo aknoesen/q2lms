@@ -833,8 +833,7 @@ def main():
         
         with tab1:
 
-            st.markdown("**LaTeX Test:** $x^2 + y^2 = z^2$")
-            st.markdown("**Another test:** $\\alpha + \\beta = \\gamma$")
+
             display_database_summary(df, metadata)
             st.markdown("---")
             create_summary_charts(df)
