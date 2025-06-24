@@ -3960,3 +3960,242 @@ FEATURE_FLAGS = {
 - Added integration patterns for new functionality
 - Included technical implementation details
 - Updated feature flags for new capabilities
+
+<!-- Updates Applied -->
+# API.md Update Instructions
+
+## 1. Add Phase 8 Functions to Core Modules Section
+
+**Location**: In the `streamlit_app.py` section, add this new subsection after the existing function documentation:
+
+```markdown
+### Phase 8 Enhancement Functions
+
+#### Multi-Topic Filtering System
+```python
+def enhanced_subject_filtering() -> pd.DataFrame:
+    """
+    Render enhanced multi-topic filtering interface with OR logic
+    
+    Returns:
+        pd.DataFrame: Filtered questions from selected topics
+        
+    Features:
+        - Multi-select dropdown for topic combinations
+        - OR logic filtering (questions from ANY selected topics)
+        - Visual feedback with selection counts
+        - Integration with existing difficulty/type filters
+    
+    Location: Sidebar, positioned above existing filters
+    UI Integration: Replaces apply_filters(df) call in main function
+    Column Used: 'Topic' (not 'Subject' - discovered during implementation)
+    """
+
+def add_exit_button_to_sidebar():
+    """
+    Add professional exit button to sidebar under "Application" section
+    
+    Creates:
+        - Prominent "Exit Q2LMS" button with professional styling
+        - Bottom sidebar positioning for easy access
+        - Integration with session state management
+        - "Application" section header organization
+    
+    Placement: Bottom of sidebar after all other controls
+    Styling: Professional button appearance with clear labeling
+    """
+
+def show_exit_interface():
+    """
+    Display comprehensive exit interface with session management
+    
+    Features:
+        - Current session information display (start time, duration)
+        - Active filters and loaded questions summary
+        - Data backup options (quick JSON export)
+        - Session cleanup confirmation dialog
+        - Professional exit messaging with next steps
+    
+    Returns:
+        None: Handles complete exit workflow through UI
+        
+    Session State: Sets 'exit_interface_active' to control display
+    """
+
+def cleanup_session_state():
+    """
+    Perform thorough session state cleanup and resource management
+    
+    Cleanup Operations:
+        - Clear temporary data and cached objects
+        - Release memory resources appropriately
+        - Reset UI state while preserving essential data
+        - Maintain application stability during exit
+    
+    Safety Features:
+        - Preserves core application functionality
+        - Prevents data loss of essential state
+        - Graceful resource deallocation
+    """
+```
+
+## 2. Update Session State Schema
+
+**Location**: In the existing SESSION_STATE_SCHEMA section, add these new keys:
+
+```python
+# Phase 8 Enhancement Keys
+SESSION_STATE_SCHEMA = {
+    # ... existing keys ...
+    
+    # Multi-topic filtering
+    'selected_topics': List[str],           # Currently selected topics for filtering
+    'topic_filter_count': int,              # Number of topics selected
+    'topic_selection_feedback': str,        # UI feedback message
+    
+    # Session management
+    'session_start_time': str,              # Session tracking for exit interface
+    'exit_interface_active': bool,          # Controls exit interface display
+    'last_backup_time': Optional[str],      # Data backup tracking
+    'session_cleanup_pending': bool,       # Cleanup state management
+}
+```
+
+## 3. Add Integration Patterns Section
+
+**Location**: Create new section after existing integration patterns:
+
+```markdown
+### Phase 8 Integration Patterns
+
+#### Multi-Topic Filtering Integration
+```python
+def apply_enhanced_filtering(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply multi-topic filtering with existing filter integration
+    
+    Args:
+        df: Source question DataFrame
+        
+    Returns:
+        pd.DataFrame: Filtered questions based on all active filters
+        
+    Integration Notes:
+        - Uses 'Topic' column for filtering (not 'Subject')
+        - Applies OR logic for multiple topic selections
+        - Maintains compatibility with existing filters
+    """
+    # Multi-topic filtering (Phase 8)
+    if st.session_state.get('selected_topics'):
+        topic_filter = df['Topic'].isin(st.session_state['selected_topics'])
+        df = df[topic_filter]
+    
+    # Existing difficulty/type filters continue to work
+    if st.session_state.get('selected_difficulty') != 'All':
+        df = df[df['Difficulty'] == st.session_state['selected_difficulty']]
+    
+    return df
+
+# Main application integration
+def main():
+    """Enhanced main function with Phase 8 capabilities"""
+    
+    # Early exit check (Phase 8) - positioned at beginning for immediate visibility
+    if st.session_state.get('exit_interface_active', False):
+        show_exit_interface()
+        return
+    
+    # Initialize session tracking
+    if 'session_start_time' not in st.session_state:
+        st.session_state['session_start_time'] = datetime.now().isoformat()
+    
+    # Add exit button to sidebar (Phase 8)
+    add_exit_button_to_sidebar()
+    
+    # Enhanced filtering replaces previous apply_filters call
+    filtered_df = enhanced_subject_filtering()
+    
+    # Continue with existing application logic
+    render_main_interface(filtered_df)
+```
+
+#### Graceful Exit Integration
+```python
+def handle_exit_workflow():
+    """
+    Complete exit workflow management
+    
+    Workflow Steps:
+        1. Display session information
+        2. Offer data backup options
+        3. Confirm exit intention
+        4. Perform cleanup operations
+        5. Provide professional closure
+    """
+    
+    # Session information display
+    session_info = {
+        'start_time': st.session_state.get('session_start_time'),
+        'questions_loaded': len(st.session_state.get('df', [])),
+        'active_filters': get_active_filter_summary(),
+        'duration': calculate_session_duration()
+    }
+    
+    # Data preservation options
+    if st.button("💾 Export Current Work"):
+        export_current_filtered_questions()
+    
+    # Cleanup and exit
+    if st.button("✅ Complete Exit"):
+        cleanup_session_state()
+        st.success("Session ended successfully. Thank you for using Q2LMS!")
+        st.stop()
+```
+
+## 4. Update Technical Implementation Notes
+
+**Location**: Add to existing technical details section:
+
+```markdown
+### Phase 8 Technical Details
+
+#### Key Technical Discoveries
+- **Column Name**: Multi-topic filtering uses 'Topic' column (not 'Subject' as initially planned)
+- **UI Integration**: Enhanced filtering positioned above existing filters for logical flow
+- **Session Management**: Exit interface positioned early in main() function for immediate visibility
+- **Memory Management**: Session cleanup prevents resource leaks in long planning sessions
+
+#### Performance Considerations
+- **Large Datasets**: Multi-topic filtering tested with 237+ questions without performance issues
+- **Memory Efficiency**: Session cleanup optimized for educational environments
+- **UI Responsiveness**: Visual feedback provides immediate user confirmation
+- **Resource Management**: Professional-grade session handling prevents memory leaks
+
+#### Error Handling
+- **Graceful Fallbacks**: Missing UI components handled gracefully
+- **Data Preservation**: Exit process preserves essential application state
+- **Session Recovery**: Robust session state management
+- **Filter Validation**: Multi-topic selections validated against available topics
+```
+
+## 5. Update Feature Flags Section
+
+**Location**: In existing feature flags, add:
+
+```python
+FEATURE_FLAGS = {
+    'advanced_upload': UPLOAD_SYSTEM_AVAILABLE,
+    'question_editor': QUESTION_EDITOR_AVAILABLE,
+    'export_system': EXPORT_SYSTEM_AVAILABLE,
+    'multi_topic_filtering': True,          # Phase 8 enhancement
+    'graceful_exit': True,                  # Phase 8 enhancement
+    'latex_processor': LATEX_PROCESSOR_AVAILABLE
+}
+```
+
+## Summary of API Changes
+- Added 4 new core functions for Phase 8 features
+- Updated session state schema with new keys
+- Added integration patterns for new functionality
+- Included technical implementation details
+- Updated feature flags for new capabilities

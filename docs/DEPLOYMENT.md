@@ -1,4350 +1,1300 @@
-Q2LMS API Documentation
-Developer Reference Guide
-Table of Contents
+# Q2LMS Deployment Guide
+Educational Question Database Management Platform
 
-Architecture Overview
-Core Modules
-Session Management
-Upload System
-Database Processing
-Question Editor
-Export System
-LaTeX Processing
-UI Components
-Integration Patterns
-Extension Guide
-Testing Framework
+## Table of Contents
 
+1. [Deployment Overview](#deployment-overview)
+2. [System Requirements](#system-requirements)
+3. [Quick Deployment](#quick-deployment)
+4. [Production Deployments](#production-deployments)
+5. [Configuration Management](#configuration-management)
+6. [Monitoring and Maintenance](#monitoring-and-maintenance)
+7. [Troubleshooting](#troubleshooting)
+8. [Backup and Recovery](#backup-and-recovery)
 
-Architecture Overview
-Q2LMS follows a modular architecture designed for maintainability, extensibility, and robust operation in educational environments.
-System Design
-streamlit_app.py (Main Controller)
-    ├── modules/session_manager.py (State Management)
-    ├── modules/upload_interface_v2.py (File Processing)
-    ├── modules/database_processor.py (Data Validation)
-    ├── modules/question_editor.py (Content Editing)
-    ├── modules/export/ (QTI Generation)
-    │   ├── qti_generator.py
-    │   ├── canvas_adapter.py
-    │   └── latex_converter.py
-    ├── modules/ui_components.py (Interface Elements)
-    └── utilities/ (Helper Functions)
-Core Dependencies
+---
+
+## Deployment Overview
+
+Q2LMS offers flexible deployment options designed for educational institutions, from individual instructor use to enterprise-wide implementations. Choose the deployment tier that matches your needs and scale.
+
+### Deployment Tiers
+
+| Tier | Use Case | Platform | Users | Features |
+|------|----------|----------|-------|----------|
+| **Development** | Individual instructors | Local Python | 1 | Full feature set |
+| **Department** | Small teams, courses | Streamlit Cloud/Docker | 5-50 | Shared databases |
+| **Enterprise** | Large institutions | Kubernetes | 50-500 | Load balancing, monitoring |
+| **Institution** | Multi-campus | Cloud platforms | 500+ | High availability, scaling |
+
+### Key Features by Tier
+- **All Tiers**: Question editing, LaTeX support, Canvas QTI export, multi-format support
+- **Department+**: User management, shared question databases, basic analytics
+- **Enterprise+**: SSO integration, advanced monitoring, API access, backup automation
+- **Institution**: Multi-tenant architecture, custom integrations, dedicated support
+
+---
+
+## System Requirements
+
+### Minimum Requirements
+```bash
+# Hardware
+CPU: 2 cores, 2.0 GHz
+RAM: 4 GB (8 GB recommended)
+Storage: 10 GB available space
+Network: Stable internet connection
+
+# Software
+Python: 3.8 or later
+Browser: Modern browser (Chrome, Firefox, Safari, Edge)
+Operating System: Windows 10+, macOS 10.14+, Linux (Ubuntu 18.04+)
+```
+
+### Production Requirements
+```bash
+# Hardware (per instance)
+CPU: 4+ cores, 2.4+ GHz
+RAM: 8-16 GB (depending on concurrent users)
+Storage: 50+ GB SSD recommended
+Network: High-speed connection, backup connectivity
+
+# Software Stack
+Python: 3.9+ (recommended)
+Streamlit: 1.20.0+
+Database: File-based (JSON) or PostgreSQL for enterprise
+Load Balancer: nginx, Traefik, or cloud load balancer
+Monitoring: Prometheus/Grafana recommended
+```
+
+### Dependencies
 ```python
-Required packages
+# Core Dependencies (automatically installed)
 streamlit >= 1.20.0
 pandas >= 1.5.0
 plotly >= 5.0.0
-Optional enhancements
-numpy >= 1.21.0
-python-dateutil >= 2.8.0
-```
-Data Flow Architecture
-JSON Input → FileProcessor → ConflictResolver → 
-DatabaseMerger → SessionManager → UIComponents → 
-QTIExporter → Canvas-Ready Output
 
-Core Modules
-streamlit_app.py
-Purpose: Main application controller and UI orchestration
-Location: /streamlit_app.py
-Key Functions
-```python
-def main():
-    """
-    Main application entry point
-    Orchestrates tab navigation and module loading
-    """
-    # Initialize session state
-    initialize_session_state()
-# Render upload interface
-has_database = render_upload_interface()
-
-# Conditional tab rendering based on database state
-if has_database:
-    render_main_tabs()
-
-def render_upload_interface() -> bool:
-    """
-    Render upload interface with system availability checks
-Returns:
-    bool: True if database successfully loaded
-"""
-if UPLOAD_SYSTEM_AVAILABLE:
-    upload_interface = UploadInterfaceV2()
-    upload_interface.render_complete_interface()
-else:
-    fallback_upload_handler()
-
-def render_main_tabs():
-    """
-    Render main application tabs (Overview, Browse, Edit, Export)
-    Handles conditional feature availability
-    """
-```
-Module Integration
-```python
-Import pattern with graceful degradation
-try:
-    from modules.session_manager import initialize_session_state
-    SESSION_MANAGER_AVAILABLE = True
-except ImportError as e:
-    st.error(f"Session management unavailable: {e}")
-    SESSION_MANAGER_AVAILABLE = False
-Feature flags for conditional functionality
-FEATURE_FLAGS = {
-    'advanced_upload': UPLOAD_SYSTEM_AVAILABLE,
-    'question_editor': QUESTION_EDITOR_AVAILABLE,
-    'export_system': EXPORT_SYSTEM_AVAILABLE,
-    'latex_processor': LATEX_PROCESSOR_AVAILABLE
-}
-```
-Configuration
-```python
-Page configuration
-st.set_page_config(
-    page_title="Q2LMS - Question Database Manager",
-    page_icon="assets/favicon.ico",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-CSS customization
-CUSTOM_CSS = """
-
-"""
+# Optional Dependencies
+numpy >= 1.21.0          # Enhanced mathematical operations
+python-dateutil >= 2.8.0 # Advanced date handling
+psutil                   # System monitoring
 ```
 
-Session Management
-modules/session_manager.py
-Purpose: Centralized session state management with database history and lifecycle control
-Location: /modules/session_manager.py
-Core Functions
-```python
-def initialize_session_state():
-    """
-    Initialize session state with default values
-    Sets up database history tracking and upload session management
-    """
-    if 'database_history' not in st.session_state:
-        st.session_state['database_history'] = []
-if 'current_database_id' not in st.session_state:
-    st.session_state['current_database_id'] = None
+---
 
-if 'upload_session' not in st.session_state:
-    st.session_state['upload_session'] = 0
+## Quick Deployment
 
-def clear_session_state():
-    """
-    Clear all database-related session state
-    Preserves UI state while clearing data
-    """
-    keys_to_clear = [
-        'df', 'metadata', 'original_questions', 'cleanup_reports', 
-        'filename', 'processing_options', 'batch_processed_files',
-        'quiz_questions', 'current_page', 'last_page', 'loaded_at'
-    ]
-for key in keys_to_clear:
-    if key in st.session_state:
-        del st.session_state[key]
+### Local Development Setup
 
-def save_database_to_history() -> bool:
-    """
-    Save current database state to history before operations
-Returns:
-    bool: Success status of save operation
-"""
-try:
-    history_entry = {
-        'id': len(st.session_state.get('database_history', [])),
-        'filename': st.session_state.get('filename', 'Unknown'),
-        'df': st.session_state['df'].copy(),
-        'metadata': st.session_state.get('metadata', {}),
-        'original_questions': st.session_state.get('original_questions', []).copy(),
-        'saved_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'summary': get_database_summary()
-    }
-
-    st.session_state['database_history'].append(history_entry)
-
-    # Keep only last 5 for memory management
-    if len(st.session_state['database_history']) > 5:
-        st.session_state['database_history'] = st.session_state['database_history'][-5:]
-
-    return True
-
-except Exception as e:
-    st.error(f"Error deleting question: {str(e)}")
-    return False
-
-```
-
-Question Editor
-modules/question_editor.py
-Purpose: Interactive question editing interface with live preview capabilities
-Location: /modules/question_editor.py
-Side-by-Side Editor
-```python
-def side_by_side_question_editor(filtered_df: pd.DataFrame):
-    """
-    Render side-by-side question editor with live preview
-Args:
-    filtered_df: Filtered DataFrame of questions to edit
-"""
-if filtered_df.empty:
-    st.info("No questions available for editing")
-    return
-
-st.markdown("### 📝 Question Editor")
-st.markdown("Select a question to edit with live preview")
-
-# Question selection
-question_options = [f"Q{i+1}: {row['Title']}" for i, row in filtered_df.iterrows()]
-selected_index = st.selectbox("Select Question", range(len(question_options)), 
-                             format_func=lambda x: question_options[x])
-
-if selected_index is not None:
-    render_editor_interface(filtered_df, selected_index)
-
-def render_editor_interface(df: pd.DataFrame, question_index: int):
-    """
-    Render the main editor interface with edit and preview panels
-Args:
-    df: Question DataFrame
-    question_index: Index of question being edited
-"""
-question = df.iloc[question_index]
-
-# Create two-column layout
-edit_col, preview_col = st.columns([1, 1])
-
-with edit_col:
-    st.markdown("#### ✏️ Edit Panel")
-    changes = render_edit_panel(question, question_index)
-
-with preview_col:
-    st.markdown("#### 👁️ Preview Panel")
-    render_preview_panel(question, changes)
-
-# Save/Cancel buttons
-col1, col2, col3 = st.columns([1, 1, 3])
-
-with col1:
-    if st.button("💾 Save Changes", key=f"save_{question_index}"):
-        if save_question_changes(question_index, changes):
-            st.rerun()
-
-with col2:
-    if st.button("🔄 Reset", key=f"reset_{question_index}"):
-        # Clear edit session state
-        _clear_edit_session_state(question_index)
-        st.rerun()
-
-def render_edit_panel(question: pd.Series, question_index: int) -> Dict[str, Any]:
-    """
-    Render editing controls for question fields
-Args:
-    question: Question data as pandas Series
-    question_index: Index for session state keys
-
-Returns:
-    dict: Current values from edit controls
-"""
-# Initialize session state for this question
-session_key_prefix = f"edit_{question_index}"
-
-# Basic information
-st.markdown("**Basic Information**")
-
-title = st.text_input(
-    "Title",
-    value=question.get('Title', ''),
-    key=f"{session_key_prefix}_title"
-)
-
-question_type = st.selectbox(
-    "Type",
-    ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'],
-    index=['multiple_choice', 'numerical', 'true_false', 'fill_in_blank'].index(
-        question.get('Type', 'multiple_choice')
-    ),
-    key=f"{session_key_prefix}_type"
-)
-
-col1, col2 = st.columns(2)
-with col1:
-    difficulty = st.selectbox(
-        "Difficulty",
-        ['Easy', 'Medium', 'Hard'],
-        index=['Easy', 'Medium', 'Hard'].index(question.get('Difficulty', 'Easy')),
-        key=f"{session_key_prefix}_difficulty"
-    )
-
-with col2:
-    points = st.number_input(
-        "Points",
-        min_value=0.1,
-        value=float(question.get('Points', 1)),
-        step=0.1,
-        key=f"{session_key_prefix}_points"
-    )
-
-# Topic information
-st.markdown("**Topic Information**")
-
-col1, col2 = st.columns(2)
-with col1:
-    topic = st.text_input(
-        "Topic",
-        value=question.get('Topic', ''),
-        key=f"{session_key_prefix}_topic"
-    )
-
-with col2:
-    subtopic = st.text_input(
-        "Subtopic",
-        value=question.get('Subtopic', ''),
-        key=f"{session_key_prefix}_subtopic"
-    )
-
-# Question content
-st.markdown("**Question Content**")
-
-question_text = st.text_area(
-    "Question Text",
-    value=question.get('Question_Text', ''),
-    height=100,
-    help="Use $...$ for inline math and $...$ for display math",
-    key=f"{session_key_prefix}_question_text"
-)
-
-# Type-specific fields
-if question_type == 'multiple_choice':
-    choices = render_multiple_choice_editor(question, session_key_prefix)
-    correct_answer = st.selectbox(
-        "Correct Answer",
-        ['A', 'B', 'C', 'D'],
-        index=['A', 'B', 'C', 'D'].index(question.get('Correct_Answer', 'A')),
-        key=f"{session_key_prefix}_correct"
-    )
-    tolerance = 0.05  # Not used for MC
-
-elif question_type == 'numerical':
-    choices = ['', '', '', '']  # Not used for numerical
-    correct_answer = st.text_input(
-        "Correct Answer",
-        value=str(question.get('Correct_Answer', '')),
-        help="Enter numeric value",
-        key=f"{session_key_prefix}_correct"
-    )
-    tolerance = st.number_input(
-        "Tolerance",
-        min_value=0.0,
-        value=float(question.get('Tolerance', 0.05)),
-        step=0.01,
-        help="Acceptable range (±)",
-        key=f"{session_key_prefix}_tolerance"
-    )
-
-else:  # true_false or fill_in_blank
-    choices = ['', '', '', '']
-    correct_answer = st.text_input(
-        "Correct Answer",
-        value=str(question.get('Correct_Answer', '')),
-        key=f"{session_key_prefix}_correct"
-    )
-    tolerance = 0.05
-
-# Feedback
-st.markdown("**Feedback**")
-
-correct_feedback = st.text_area(
-    "Correct Feedback",
-    value=question.get('Correct_Feedback', ''),
-    height=80,
-    key=f"{session_key_prefix}_correct_feedback"
-)
-
-incorrect_feedback = st.text_area(
-    "Incorrect Feedback",
-    value=question.get('Incorrect_Feedback', ''),
-    height=80,
-    key=f"{session_key_prefix}_incorrect_feedback"
-)
-
-# Return all current values
-return {
-    'title': title,
-    'question_type': question_type,
-    'difficulty': difficulty,
-    'points': points,
-    'topic': topic,
-    'subtopic': subtopic,
-    'question_text': question_text,
-    'choice_a': choices[0],
-    'choice_b': choices[1],
-    'choice_c': choices[2],
-    'choice_d': choices[3],
-    'correct_answer': correct_answer,
-    'tolerance': tolerance,
-    'correct_feedback': correct_feedback,
-    'incorrect_feedback': incorrect_feedback
-}
-
-def render_multiple_choice_editor(question: pd.Series, session_key_prefix: str) -> List[str]:
-    """
-    Render multiple choice specific editing controls
-Args:
-    question: Question data
-    session_key_prefix: Prefix for session state keys
-
-Returns:
-    list: Current choice values [A, B, C, D]
-"""
-st.markdown("**Answer Choices**")
-
-choices = []
-for letter in ['A', 'B', 'C', 'D']:
-    choice_value = st.text_input(
-        f"Choice {letter}",
-        value=question.get(f'Choice_{letter}', ''),
-        key=f"{session_key_prefix}_choice_{letter.lower()}"
-    )
-    choices.append(choice_value)
-
-return choices
-
-def render_preview_panel(question: pd.Series, changes: Dict[str, Any]):
-    """
-    Render live preview of question with current changes
-Args:
-    question: Original question data
-    changes: Current changes from edit panel
-"""
-# Merge original question with changes
-preview_data = question.to_dict()
-preview_data.update(changes)
-
-# Question header
-st.markdown(f"**{preview_data['title']}**")
-st.markdown(f"*{preview_data['question_type'].title()} | {preview_data['difficulty']} | {preview_data['points']} pts*")
-
-if preview_data['topic']:
-    st.markdown(f"*Topic: {preview_data['topic']}*")
-    if preview_data['subtopic']:
-        st.markdown(f"*Subtopic: {preview_data['subtopic']}*")
-
-st.markdown("---")
-
-# Question text with LaTeX rendering
-if preview_data['question_text']:
-    try:
-        st.markdown(render_latex_in_text(preview_data['question_text']))
-    except Exception:
-        st.markdown(preview_data['question_text'])  # Fallback to plain text
-
-# Type-specific preview
-if preview_data['question_type'] == 'multiple_choice':
-    st.markdown("**Choices:**")
-    choices = [
-        preview_data['choice_a'],
-        preview_data['choice_b'],
-        preview_data['choice_c'],
-        preview_data['choice_d']
-    ]
-
-    for i, choice in enumerate(choices):
-        if choice.strip():
-            letter = ['A', 'B', 'C', 'D'][i]
-            is_correct = (letter == preview_data['correct_answer'])
-
-            if is_correct:
-                st.markdown(f"**{letter}. {render_latex_in_text(choice)}** ✅")
-            else:
-                st.markdown(f"{letter}. {render_latex_in_text(choice)}")
-
-elif preview_data['question_type'] == 'numerical':
-    st.markdown(f"**Correct Answer:** {preview_data['correct_answer']}")
-    if preview_data['tolerance'] > 0:
-        st.markdown(f"**Tolerance:** ±{preview_data['tolerance']}")
-
-else:
-    st.markdown(f"**Correct Answer:** {preview_data['correct_answer']}")
-
-# Feedback preview
-if preview_data['correct_feedback']:
-    st.markdown("**Correct Feedback:**")
-    st.info(render_latex_in_text(preview_data['correct_feedback']))
-
-if preview_data['incorrect_feedback']:
-    st.markdown("**Incorrect Feedback:**")
-    st.warning(render_latex_in_text(preview_data['incorrect_feedback']))
-
-def _clear_edit_session_state(question_index: int):
-    """
-    Clear session state for a specific question being edited
-Args:
-    question_index: Index of question to clear state for
-"""
-session_key_prefix = f"edit_{question_index}"
-
-keys_to_remove = [key for key in st.session_state.keys() 
-                 if key.startswith(session_key_prefix)]
-
-for key in keys_to_remove:
-    del st.session_state[key]
-
-```
-
-Export System
-modules/export/qti_generator.py
-Purpose: Generate QTI-compliant packages for LMS import
-Location: /modules/export/qti_generator.py
-QTI Package Generation
-```python
-class QTIGenerator:
-    """
-    Generates IMS QTI 2.1 compliant packages for LMS import
-    Optimized for Canvas LMS with mathematical notation support
-    """
-def __init__(self):
-    self.canvas_adapter = CanvasAdapter()
-    self.latex_converter = LaTeXConverter()
-
-def generate_qti_package(self, questions: List[Dict], 
-                       package_name: str = "Q2LMS_Export") -> Tuple[bool, str, Optional[bytes]]:
-    """
-    Generate complete QTI package as ZIP file
-
-    Args:
-        questions: List of question dictionaries
-        package_name: Name for the QTI package
-
-    Returns:
-        Tuple of (success, message, zip_data)
-    """
-    try:
-        # Validate input
-        if not questions:
-            return False, "No questions provided", None
-
-        # Process questions for Canvas compatibility
-        processed_questions = self._process_questions_for_canvas(questions)
-
-        # Generate QTI XML structure
-        manifest_xml = self._generate_manifest(package_name, processed_questions)
-        assessment_xml = self._generate_assessment(processed_questions)
-
-        # Create ZIP package
-        zip_data = self._create_zip_package(manifest_xml, assessment_xml, package_name)
-
-        return True, f"Successfully generated QTI package with {len(questions)} questions", zip_data
-
-    except Exception as e:
-        return False, f"Error generating QTI package: {str(e)}", None
-
-def _process_questions_for_canvas(self, questions: List[Dict]) -> List[Dict]:
-    """
-    Process questions for Canvas LMS compatibility
-
-    Args:
-        questions: Original question list
-
-    Returns:
-        List[Dict]: Canvas-optimized questions
-    """
-    processed = []
-
-    for question in questions:
-        processed_question = question.copy()
-
-        # Convert LaTeX notation for Canvas
-        processed_question = self.latex_converter.convert_for_canvas(processed_question)
-
-        # Apply Canvas-specific adaptations
-        processed_question = self.canvas_adapter.adapt_question(processed_question)
-
-        processed.append(processed_question)
-
-    return processed
-
-def _generate_manifest(self, package_name: str, questions: List[Dict]) -> str:
-    """
-    Generate IMS QTI manifest XML
-
-    Args:
-        package_name: Package identifier
-        questions: Processed questions
-
-    Returns:
-        str: Manifest XML content
-    """
-    manifest_template = """<?xml version="1.0" encoding="UTF-8"?>
-
-
-<metadata>
-    <schema>IMS QTI</schema>
-    <schemaversion>2.1</schemaversion>
-    <imsmd:lom>
-        <imsmd:general>
-            <imsmd:title>
-                <imsmd:string>{package_name}</imsmd:string>
-            </imsmd:title>
-            <imsmd:description>
-                <imsmd:string>Q2LMS Generated Assessment Package</imsmd:string>
-            </imsmd:description>
-        </imsmd:general>
-    </imsmd:lom>
-</metadata>
-
-<organizations />
-
-<resources>
-    <resource identifier="assessment_resource" type="imsqti_assessment_xmlv2p1" href="assessment.xml">
-        <file href="assessment.xml"/>
-    </resource>
-
-{item_resources}
-    
-"""
-    # Generate item resources
-    item_resources = []
-    for i, question in enumerate(questions):
-        question_id = question.get('id', f"item_{i+1}")
-        item_resources.append(
-            f'        <resource identifier="{question_id}" type="imsqti_item_xmlv2p1" href="{question_id}.xml">\n'
-            f'            <file href="{question_id}.xml"/>\n'
-            f'        </resource>'
-        )
-
-    return manifest_template.format(
-        package_id=package_name.replace(' ', '_'),
-        package_name=package_name,
-        item_resources='\n'.join(item_resources)
-    )
-
-def _generate_assessment(self, questions: List[Dict]) -> str:
-    """
-    Generate assessment XML with question references
-
-    Args:
-        questions: Processed questions
-
-    Returns:
-        str: Assessment XML content
-    """
-    assessment_template = """<?xml version="1.0" encoding="UTF-8"?>
-
-
-<testPart identifier="testPart1" navigationMode="nonlinear" submissionMode="individual">
-    <assessmentSection identifier="section1" title="Questions" visible="true">
-
-{assessment_items}
-        
-
-<outcomeDeclaration identifier="SCORE" cardinality="single" baseType="float"/>
-
-"""
-    # Generate assessment items
-    assessment_items = []
-    for i, question in enumerate(questions):
-        question_id = question.get('id', f"item_{i+1}")
-        points = question.get('points', 1)
-
-        assessment_items.append(
-            f'            <assessmentItemRef identifier="{question_id}" href="{question_id}.xml">\n'
-            f'                <weight identifier="SCORE" value="{points}"/>\n'
-            f'            </assessmentItemRef>'
-        )
-
-    return assessment_template.format(
-        assessment_items='\n'.join(assessment_items)
-    )
-
-def _create_zip_package(self, manifest_xml: str, assessment_xml: str, 
-                       package_name: str) -> bytes:
-    """
-    Create ZIP package with all QTI files
-
-    Args:
-        manifest_xml: Manifest content
-        assessment_xml: Assessment content
-        package_name: Package name for filename
-
-    Returns:
-        bytes: ZIP file data
-    """
-    import zipfile
-    import io
-
-    zip_buffer = io.BytesIO()
-
-    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-        # Add manifest
-        zf.writestr('imsmanifest.xml', manifest_xml)
-
-        # Add assessment
-        zf.writestr('assessment.xml', assessment_xml)
-
-        # Add individual question items
-        # Note: In a full implementation, each question would be a separate XML file
-        # For this example, we're creating a simplified structure
-
-    return zip_buffer.getvalue()
-
-class LaTeXConverter:
-    """
-    Handles LaTeX notation conversion for Canvas compatibility
-    """
-def convert_for_canvas(self, question: Dict) -> Dict:
-    """
-    Convert LaTeX delimiters for Canvas MathJax compatibility
-
-    Args:
-        question: Question dictionary with LaTeX content
-
-    Returns:
-        Dict: Question with Canvas-compatible LaTeX
-    """
-    converted_question = question.copy()
-
-    # Fields that may contain LaTeX
-    latex_fields = [
-        'question_text', 'feedback_correct', 'feedback_incorrect',
-        'choices'  # Special handling for choices array
-    ]
-
-    for field in latex_fields:
-        if field in converted_question:
-            if field == 'choices' and isinstance(converted_question[field], list):
-                # Convert each choice
-                converted_question[field] = [
-                    self._convert_latex_delimiters(choice) 
-                    for choice in converted_question[field]
-                ]
-            else:
-                converted_question[field] = self._convert_latex_delimiters(
-                    converted_question[field]
-                )
-
-    return converted_question
-
-def _convert_latex_delimiters(self, text: str) -> str:
-    """
-    Convert LaTeX delimiters from $ format to Canvas format
-
-    Args:
-        text: Text potentially containing LaTeX
-
-    Returns:
-        str: Text with Canvas-compatible delimiters
-    """
-    if not isinstance(text, str):
-        return text
-
-    import re
-
-    # Convert inline math: $...$ → \(...\)
-    # But preserve display math: $...$ (unchanged)
-
-    # First, protect display math by temporarily replacing it
-    display_math_pattern = r'\$\$(.*?)\$\
-except Exception as e:
-    st.error(f"Error saving to history: {str(e)}")
-    return False
-
-```
-Session State Schema
-```python
-Primary database state
-SESSION_STATE_SCHEMA = {
-    # Core database
-    'df': pd.DataFrame,                    # Current questions as DataFrame
-    'original_questions': List[dict],      # Raw JSON question data
-    'metadata': dict,                      # Database metadata
-    'filename': str,                       # Current filename
-    'loaded_at': str,                      # Load timestamp
-# History management
-'database_history': List[dict],        # Previous database states
-'current_database_id': Optional[int],  # Active database identifier
-
-# Upload state
-'upload_state': {
-    'files_uploaded': bool,
-    'preview_generated': bool,
-    'merge_completed': bool,
-    'current_preview': 'MergePreviewData',
-    'final_database': List[dict],
-    'error_message': str
-},
-
-# Processing state
-'processing_options': dict,            # Last processing configuration
-'cleanup_reports': List[dict],         # LaTeX cleanup results
-'batch_processed_files': List[str],    # Multi-file processing tracking
-
-# UI state
-'current_page': int,                   # Pagination state
-'last_page': int,                      # Last accessed page
-'selected_filters': dict,              # Active filter configuration
-
-}
-```
-Database History Management
-```python
-def display_database_history():
-    """
-    Display database history with restore options
-    Provides rollback functionality for users
-    """
-    if not st.session_state.get('database_history'):
-        return
-st.markdown("### 📚 Recent Database History")
-
-for entry in reversed(st.session_state['database_history']):
-    with st.expander(f"📄 {entry['filename']} - {entry['saved_at']}", expanded=False):
-        if entry['summary']:
-            col1, col2, col3 = st.columns([2, 2, 1])
-
-            with col1:
-                st.write(f"**Questions:** {entry['summary']['total_questions']}")
-                st.write(f"**Topics:** {entry['summary']['topics']}")
-                st.write(f"**Total Points:** {entry['summary']['total_points']:.0f}")
-
-            with col2:
-                st.write("**Difficulty Distribution:**")
-                for diff, count in entry['summary']['difficulty_distribution'].items():
-                    st.write(f"  • {diff}: {count}")
-
-            with col3:
-                if st.button(f"🔄 Restore", key=f"restore_{entry['id']}"):
-                    if restore_database_from_history(entry['id']):
-                        st.success("✅ Database restored!")
-                        st.rerun()
-
-def restore_database_from_history(history_id: int) -> bool:
-    """
-    Restore database from history by ID
-Args:
-    history_id: Unique identifier for history entry
-
-Returns:
-    bool: Success status of restore operation
-"""
-
-```
-
-Upload System
-modules/upload_interface_v2.py
-Purpose: Advanced file upload system with multi-file merge capabilities and conflict resolution
-Location: /modules/upload_interface_v2.py
-UploadInterfaceV2 Class
-```python
-class UploadInterfaceV2:
-    """
-    Phase 3D Upload Interface
-    Handles single and multi-file uploads with intelligent conflict resolution
-    """
-def __init__(self):
-    self.file_processor = FileProcessor()
-    self.state_manager = UploadStateManager()
-    self.merger = DatabaseMerger()
-
-def render_complete_interface(self):
-    """
-    Render complete upload interface with state management
-    Handles all upload scenarios and user interactions
-    """
-    # Check current state and render appropriate interface
-    current_state = self.state_manager.get_current_state()
-
-    if current_state == UploadState.INITIAL:
-        self.render_upload_section()
-    elif current_state == UploadState.FILES_UPLOADED:
-        self.render_processing_section()
-    elif current_state == UploadState.PREVIEW_READY:
-        self.render_preview_section()
-    elif current_state == UploadState.MERGE_COMPLETED:
-        self.render_results_section()
-
-def render_upload_section(self):
-    """
-    Render file upload interface
-    Supports single and multiple file selection
-    """
-    st.markdown("### 📁 Upload Question Database Files")
-
-    uploaded_files = st.file_uploader(
-        "Choose JSON files",
-        type=['json'],
-        accept_multiple_files=True,
-        help="Upload one or more JSON question database files"
-    )
-
-    if uploaded_files:
-        self._handle_file_upload(uploaded_files)
-
-def _handle_file_upload(self, uploaded_files: List):
-    """
-    Process uploaded files through the file processor
-
-    Args:
-        uploaded_files: List of Streamlit uploaded file objects
-    """
-    processing_results = []
-
-    for uploaded_file in uploaded_files:
-        # Read file content
-        content = uploaded_file.read().decode('utf-8')
-
-        # Process through FileProcessor
-        result = self.file_processor.process_file(
-            content=content,
-            filename=uploaded_file.name,
-            options={'validate': True, 'cleanup_latex': True}
-        )
-
-        processing_results.append(result)
-
-    # Store results and update state
-    self.state_manager.store_processing_results(processing_results)
-    self.state_manager.transition_to(UploadState.FILES_UPLOADED)
-
-```
-File Processing Pipeline
-```python
-class FileProcessor:
-    """
-    Handles individual file processing with validation and cleanup
-    """
-def process_file(self, content: str, filename: str, options: Dict) -> Dict:
-    """
-    Process single file through validation and cleanup pipeline
-
-    Args:
-        content: Raw JSON file content
-        filename: Original filename
-        options: Processing configuration
-
-    Returns:
-        dict: Processing results with questions and metadata
-    """
-    try:
-        # Parse JSON content
-        raw_data = json.loads(content)
-
-        # Extract questions and metadata
-        if isinstance(raw_data, dict) and 'questions' in raw_data:
-            questions = raw_data['questions']
-            metadata = raw_data.get('metadata', {})
-        elif isinstance(raw_data, list):
-            questions = raw_data
-            metadata = {'format': 'legacy_array'}
-        else:
-            raise ValueError("Unexpected JSON structure")
-
-        # Validate questions
-        validation_results = self._validate_questions(questions)
-
-        # Apply LaTeX cleanup if requested
-        if options.get('cleanup_latex', False):
-            questions, cleanup_report = self._cleanup_latex(questions)
-        else:
-            cleanup_report = None
-
-        return {
-            'success': True,
-            'filename': filename,
-            'questions': questions,
-            'metadata': metadata,
-            'validation_results': validation_results,
-            'cleanup_report': cleanup_report,
-            'question_count': len(questions)
-        }
-
-    except Exception as e:
-        return {
-            'success': False,
-            'filename': filename,
-            'error': str(e),
-            'questions': [],
-            'metadata': {},
-            'question_count': 0
-        }
-
-def _validate_questions(self, questions: List[Dict]) -> Dict:
-    """
-    Validate question structure and required fields
-
-    Args:
-        questions: List of question dictionaries
-
-    Returns:
-        dict: Validation results with errors and warnings
-    """
-    errors = []
-    warnings = []
-
-    required_fields = ['question_text', 'correct_answer', 'type']
-
-    for i, question in enumerate(questions):
-        # Check required fields
-        missing_fields = [field for field in required_fields if not question.get(field)]
-        if missing_fields:
-            errors.append(f"Question {i+1}: Missing fields {missing_fields}")
-
-        # Validate question type
-        valid_types = ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank']
-        if question.get('type') not in valid_types:
-            errors.append(f"Question {i+1}: Invalid type '{question.get('type')}'")
-
-        # Type-specific validation
-        if question.get('type') == 'multiple_choice':
-            choices = question.get('choices', [])
-            if len(choices) < 2:
-                warnings.append(f"Question {i+1}: Less than 2 choices for multiple choice")
-
-    return {
-        'errors': errors,
-        'warnings': warnings,
-        'is_valid': len(errors) == 0,
-        'question_count': len(questions)
-    }
-
-```
-Conflict Resolution System
-```python
-class DatabaseMerger:
-    """
-    Handles merging multiple question databases with conflict resolution
-    """
-def __init__(self, strategy: MergeStrategy = MergeStrategy.SKIP_DUPLICATES):
-    self.strategy = strategy
-    self.conflict_detector = ConflictDetector()
-    self.conflict_resolver = ConflictResolver()
-
-def generate_preview(self, existing_df: pd.DataFrame, 
-                    new_questions: List[Dict], 
-                    auto_renumber: bool = True) -> MergePreview:
-    """
-    Generate merge preview with conflict analysis
-
-    Args:
-        existing_df: Current database DataFrame
-        new_questions: Questions to be merged
-        auto_renumber: Whether to automatically renumber conflicting IDs
-
-    Returns:
-        MergePreview: Detailed preview of merge operation
-    """
-    # Ensure questions have IDs
-    new_questions = self._ensure_questions_have_ids(new_questions)
-
-    # Check if auto-renumbering should be applied
-    if auto_renumber and self._should_apply_auto_renumbering(existing_df, new_questions):
-        final_questions = self.auto_renumber_questions(existing_df, new_questions)
-        auto_renumbered = True
-    else:
-        final_questions = new_questions
-        auto_renumbered = False
-
-    # Detect conflicts with final questions
-    conflicts = self.conflict_detector.detect_conflicts(existing_df, final_questions)
-
-    # Calculate statistics
-    existing_count = len(existing_df) if existing_df is not None else 0
-    new_count = len(new_questions)
-    final_count = self._estimate_final_count(existing_count, new_count, conflicts)
-
-    return MergePreview(
-        strategy=self.strategy,
-        existing_count=existing_count,
-        new_count=new_count,
-        final_count=final_count,
-        conflicts=conflicts,
-        auto_renumbered=auto_renumbered,
-        merge_summary=self._generate_merge_summary(conflicts, auto_renumbered),
-        warnings=self._generate_warnings(conflicts)
-    )
-
-def auto_renumber_questions(self, existing_df: pd.DataFrame, 
-                           new_questions: List[Dict]) -> List[Dict]:
-    """
-    Automatically renumber questions to avoid ID conflicts
-
-    Args:
-        existing_df: Current database
-        new_questions: Questions to renumber
-
-    Returns:
-        List[Dict]: Questions with new IDs assigned
-    """
-    if existing_df is None or len(existing_df) == 0:
-        return new_questions
-
-    # Find next available ID
-    next_id = self._get_next_available_id(existing_df)
-
-    # Renumber questions
-    renumbered_questions = []
-    for i, question in enumerate(new_questions):
-        new_question = question.copy()
-        new_id = next_id + i
-
-        # Update all possible ID fields
-        for id_field in ['id', 'question_id', 'ID', 'Question_ID']:
-            if id_field in new_question:
-                new_question[id_field] = str(new_id)
-
-        # Add ID if none exists
-        if not any(field in new_question for field in ['id', 'question_id']):
-            new_question['id'] = str(new_id)
-
-        renumbered_questions.append(new_question)
-
-    return renumbered_questions
-
-```
-Merge Strategies
-```python
-class MergeStrategy(Enum):
-    """Enumeration of available merge strategies"""
-    APPEND_ALL = "append_all"
-    SKIP_DUPLICATES = "skip_duplicates"
-    REPLACE_DUPLICATES = "replace_duplicates"
-    RENAME_DUPLICATES = "rename_duplicates"
-class ConflictType(Enum):
-    """Types of conflicts that can be detected"""
-    QUESTION_ID = "question_id"
-    CONTENT_DUPLICATE = "content_duplicate"
-    METADATA_CONFLICT = "metadata_conflict"
-    LATEX_CONFLICT = "latex_conflict"
-@dataclass
-class MergePreview:
-    """Data structure for merge preview information"""
-    strategy: MergeStrategy
-    existing_count: int
-    new_count: int
-    final_count: int
-    conflicts: List[Conflict]
-    auto_renumbered: bool
-    merge_summary: Dict[str, Any]
-    warnings: List[str]
-def get_conflict_summary(self) -> Dict[str, int]:
-    """Generate summary of conflicts by type"""
-    summary = {}
-    for conflict in self.conflicts:
-        key = f"{conflict.type}_{conflict.severity}"
-        summary[key] = summary.get(key, 0) + 1
-    return summary
-
-```
-
-Database Processing
-modules/database_processor.py
-Purpose: Core database processing, validation, and transformation functions
-Location: /modules/database_processor.py
-Core Processing Functions
-```python
-def load_database_from_json(json_content: str) -> Tuple[Optional[pd.DataFrame], Dict, List, List]:
-    """
-    Load and process JSON database content with automatic LaTeX processing
-Args:
-    json_content: Raw JSON string content
-
-Returns:
-    Tuple containing:
-    - pd.DataFrame: Processed questions as DataFrame
-    - dict: Metadata from original JSON
-    - list: Original questions list
-    - list: Cleanup reports from processing
-"""
-try:
-    data = json.loads(json_content)
-
-    # Handle both formats: {"questions": [...]} or direct [...]
-    if isinstance(data, dict) and 'questions' in data:
-        questions = data['questions']
-        metadata = data.get('metadata', {})
-    elif isinstance(data, list):
-        questions = data
-        metadata = {}
-    else:
-        raise ValueError("Unexpected JSON structure")
-
-    # Convert to standardized DataFrame format
-    df = _convert_questions_to_dataframe(questions)
-
-    return df, metadata, questions, []
-
-except json.JSONDecodeError as e:
-    st.error(f"Invalid JSON: {e}")
-    return None, None, None, None
-except Exception as e:
-    st.error(f"Error processing database: {e}")
-    return None, None, None, None
-
-def _convert_questions_to_dataframe(questions: List[Dict]) -> pd.DataFrame:
-    """
-    Convert questions list to standardized DataFrame format
-Args:
-    questions: List of question dictionaries
-
-Returns:
-    pd.DataFrame: Standardized question DataFrame
-"""
-rows = []
-
-for i, q in enumerate(questions):
-    # Generate question ID
-    question_id = q.get('id', q.get('question_id', f"Q_{i+1:05d}"))
-
-    # Extract and normalize fields
-    question_type = q.get('type', 'multiple_choice')
-    title = q.get('title', f"Question {i+1}")
-    question_text = q.get('question_text', '')
-
-    # Handle choices for multiple choice questions
-    choices = q.get('choices', [])
-    if not isinstance(choices, list):
-        choices = []
-
-    # Ensure exactly 4 choices (pad with empty strings)
-    while len(choices) < 4:
-        choices.append('')
-
-    # Process correct answer
-    original_correct_answer = q.get('correct_answer', '')
-    if question_type == 'multiple_choice':
-        correct_answer = _find_correct_letter(original_correct_answer, choices[:4])
-    else:
-        correct_answer = str(original_correct_answer)
-
-    # Extract metadata with defaults
-    points = _safe_float(q.get('points', 1))
-    tolerance = _safe_float(q.get('tolerance', 0.05))
-    topic = q.get('topic', 'General')
-    subtopic = q.get('subtopic', '')
-    difficulty = q.get('difficulty', 'Easy')
-
-    # Handle feedback
-    feedback_correct = q.get('feedback_correct', '')
-    feedback_incorrect = q.get('feedback_incorrect', '')
-
-    # Create standardized row
-    row = {
-        'ID': question_id,
-        'Type': question_type,
-        'Title': title,
-        'Question_Text': question_text,
-        'Choice_A': choices[0] if len(choices) > 0 else '',
-        'Choice_B': choices[1] if len(choices) > 1 else '',
-        'Choice_C': choices[2] if len(choices) > 2 else '',
-        'Choice_D': choices[3] if len(choices) > 3 else '',
-        'Correct_Answer': correct_answer,
-        'Points': points,
-        'Tolerance': tolerance,
-        'Feedback': feedback_correct,
-        'Correct_Feedback': feedback_correct,
-        'Incorrect_Feedback': feedback_incorrect,
-        'Topic': topic,
-        'Subtopic': subtopic,
-        'Difficulty': difficulty
-    }
-
-    rows.append(row)
-
-return pd.DataFrame(rows)
-
-def _find_correct_letter(correct_text: str, choices: List[str]) -> str:
-    """
-    Convert correct answer text to letter designation (A, B, C, D)
-Args:
-    correct_text: Text of correct answer
-    choices: List of available choices
-
-Returns:
-    str: Letter designation (A-D)
-"""
-if not correct_text:
-    return 'A'
-
-correct_clean = str(correct_text).strip().lower()
-
-# Check if already a letter
-if correct_clean.upper() in ['A', 'B', 'C', 'D']:
-    return correct_clean.upper()
-
-# Match against choices
-for i, choice in enumerate(choices):
-    if choice and str(choice).strip().lower() == correct_clean:
-        return ['A', 'B', 'C', 'D'][i]
-
-return 'A'  # Fallback
-
-def _safe_float(value: Any, default: float = 0.0) -> float:
-    """
-    Safely convert value to float with fallback
-Args:
-    value: Value to convert
-    default: Default value if conversion fails
-
-Returns:
-    float: Converted value or default
-"""
-try:
-    return float(value) if value is not None else default
-except (ValueError, TypeError):
-    return default
-
-```
-Validation System
-```python
-def validate_question_database(df: pd.DataFrame) -> Dict[str, Any]:
-    """
-    Comprehensive validation of question database
-Args:
-    df: Question database DataFrame
-
-Returns:
-    dict: Validation results with errors, warnings, and status
-"""
-errors = []
-warnings = []
-
-required_fields = ['ID', 'Type', 'Question_Text', 'Correct_Answer']
-
-for idx, row in df.iterrows():
-    # Check required fields
-    for field in required_fields:
-        if pd.isna(row[field]) or str(row[field]).strip() == '':
-            errors.append(f"Question {row['ID']}: Missing {field}")
-
-    # Type-specific validation
-    if row['Type'] == 'multiple_choice':
-        choices = [row.get(f'Choice_{c}', '') for c in ['A', 'B', 'C', 'D']]
-        non_empty_choices = [c for c in choices if str(c).strip()]
-
-        if len(non_empty_choices) < 2:
-            warnings.append(f"Question {row['ID']}: Insufficient choices for multiple choice")
-
-        if row['Correct_Answer'] not in ['A', 'B', 'C', 'D']:
-            errors.append(f"Question {row['ID']}: Invalid correct answer for multiple choice")
-
-    elif row['Type'] == 'numerical':
-        try:
-            float(row['Correct_Answer'])
-        except (ValueError, TypeError):
-            errors.append(f"Question {row['ID']}: Correct answer must be numeric for numerical type")
-
-    # Validate points
-    try:
-        points = float(row.get('Points', 0))
-        if points <= 0:
-            warnings.append(f"Question {row['ID']}: Points should be positive")
-    except (ValueError, TypeError):
-        errors.append(f"Question {row['ID']}: Points must be numeric")
-
-    # Check for LaTeX syntax issues
-    question_text = str(row.get('Question_Text', ''))
-    if ' in question_text:
-        dollar_count = question_text.count(')
-        if dollar_count % 2 != 0:
-            warnings.append(f"Question {row['ID']}: Unmatched LaTeX delimiters")
-
-return {
-    'errors': errors,
-    'warnings': warnings,
-    'is_valid': len(errors) == 0,
-    'question_count': len(df),
-    'validation_summary': {
-        'total_questions': len(df),
-        'error_count': len(errors),
-        'warning_count': len(warnings),
-        'success_rate': (len(df) - len(errors)) / len(df) if len(df) > 0 else 0
-    }
-}
-
-def validate_single_question(question_row: Dict) -> Dict[str, Any]:
-    """
-    Validate individual question for editing operations
-Args:
-    question_row: Single question data (dict or Series)
-
-Returns:
-    dict: Validation results for single question
-"""
-errors = []
-warnings = []
-
-# Convert Series to dict if needed
-if hasattr(question_row, 'to_dict'):
-    question_data = question_row.to_dict()
-else:
-    question_data = question_row
-
-# Check required fields
-required_fields = ['Title', 'Type', 'Question_Text', 'Correct_Answer']
-for field in required_fields:
-    value = question_data.get(field, '')
-    if not value or str(value).strip() == '' or str(value).lower() == 'nan':
-        errors.append(f"Missing {field}")
-
-# Type-specific validation
-question_type = question_data.get('Type', '')
-if question_type == 'multiple_choice':
-    choices = [question_data.get(f'Choice_{c}', '') for c in ['A', 'B', 'C', 'D']]
-    valid_choices = [c for c in choices if str(c).strip()]
-
-    if len(valid_choices) < 2:
-        warnings.append("Fewer than 2 choices for multiple choice")
-
-    correct_answer = question_data.get('Correct_Answer', '')
-    if correct_answer not in ['A', 'B', 'C', 'D']:
-        errors.append("Correct answer must be A, B, C, or D for multiple choice")
-
-elif question_type == 'numerical':
-    try:
-        float(question_data.get('Correct_Answer', ''))
-    except (ValueError, TypeError):
-        errors.append("Correct answer must be numeric for numerical questions")
-
-# Validate points
-try:
-    points = float(question_data.get('Points', 0))
-    if points <= 0:
-        warnings.append("Points should be positive")
-except (ValueError, TypeError):
-    errors.append("Points must be numeric")
-
-return {
-    'errors': errors,
-    'warnings': warnings,
-    'is_valid': len(errors) == 0
-}
-
-```
-Question Editing Operations
-```python
-def save_question_changes(question_index: int, changes: Dict[str, Any]) -> bool:
-    """
-    Save changes to both DataFrame and original_questions
-Args:
-    question_index: Index of question to update
-    changes: Dictionary of field changes
-
-Returns:
-    bool: Success status of save operation
-"""
-try:
-    # Get current data
-    df = st.session_state['df'].copy()
-    original_questions = st.session_state['original_questions'].copy()
-
-    # Validate index bounds
-    if question_index >= len(df) or question_index >= len(original_questions):
-        st.error("Invalid question index")
-        return False
-
-    # Update DataFrame
-    update_fields = [
-        'Title', 'Type', 'Difficulty', 'Points', 'Topic', 'Subtopic',
-        'Question_Text', 'Choice_A', 'Choice_B', 'Choice_C', 'Choice_D',
-        'Correct_Answer', 'Tolerance', 'Correct_Feedback', 'Incorrect_Feedback'
-    ]
-
-    for field in update_fields:
-        if field.lower() in changes:
-            df.loc[question_index, field] = changes[field.lower()]
-
-    # Update feedback field (for compatibility)
-    df.loc[question_index, 'Feedback'] = changes.get('correct_feedback', '')
-
-    # Update original_questions for QTI export compatibility
-    if question_index < len(original_questions):
-        q = original_questions[question_index]
-
-        # Map changes to original format
-        field_mapping = {
-            'title': 'title',
-            'question_type': 'type',
-            'difficulty': 'difficulty',
-            'points': 'points',
-            'topic': 'topic',
-            'subtopic': 'subtopic',
-            'question_text': 'question_text',
-            'correct_answer': 'correct_answer',
-            'tolerance': 'tolerance',
-            'correct_feedback': 'feedback_correct',
-            'incorrect_feedback': 'feedback_incorrect'
-        }
-
-        for change_key, orig_key in field_mapping.items():
-            if change_key in changes:
-                q[orig_key] = changes[change_key]
-
-        # Update choices for multiple choice
-        if changes.get('question_type') == 'multiple_choice':
-            q['choices'] = [
-                changes.get('choice_a', ''),
-                changes.get('choice_b', ''),
-                changes.get('choice_c', ''),
-                changes.get('choice_d', '')
-            ]
-
-    # Validate changes
-    validation_results = validate_single_question(df.iloc[question_index])
-
-    # Update session state
-    st.session_state['df'] = df
-    st.session_state['original_questions'] = original_questions
-
-    # Provide feedback
-    if validation_results['is_valid']:
-        st.success("✅ Question updated successfully!")
-    else:
-        st.warning("⚠️ Question saved but has validation issues:")
-        for error in validation_results['errors']:
-            st.write(f"• {error}")
-
-    return True
-
-except Exception as e:
-    st.error(f"Error saving changes: {str(e)}")
-    return False
-
-def delete_question(question_index: int) -> bool:
-    """
-    Delete question from both DataFrame and original_questions
-Args:
-    question_index: Index of question to delete
-
-Returns:
-    bool: Success status of delete operation
-"""
-try:
-    # Get current data
-    df = st.session_state['df']
-    original_questions = st.session_state['original_questions']
-
-    # Validate index
-    if question_index >= len(df) or question_index >= len(original_questions):
-        st.error("Invalid question index")
-        return False
-
-    # Remove from DataFrame and reset index
-    df_updated = df.drop(df.index[question_index]).reset_index(drop=True)
-
-    # Remove from original_questions
-    original_questions_updated = original_questions.copy()
-    original_questions_updated.pop(question_index)
-
-    # Regenerate sequential IDs
-    df_updated['ID'] = [f"Q_{i+1:05d}" for i in range(len(df_updated))]
-
-    # Update session state
-    st.session_state['df'] = df_updated
-    st.session_state['original_questions'] = original_questions_updated
-
-    # Clear related session state
-    keys_to_remove = [key for key in st.session_state.keys() 
-                     if key.endswith(f"_{question_index}")]
-    for key in keys_to_remove:
-        del st.session_state[key]
-
-    return True
-    display_matches = re.findall(display_math_pattern, text, re.DOTALL)
-
-    # Replace display math with placeholders
-    protected_text = text
-    for i, match in enumerate(display_matches):
-        placeholder = f"__DISPLAY_MATH_{i}__"
-        protected_text = protected_text.replace(f"${match}$", placeholder, 1)
-
-    # Convert inline math: $...$ → \(...\)
-    inline_math_pattern = r'\$([^$]+?)\
-except Exception as e:
-    st.error(f"Error saving to history: {str(e)}")
-    return False
-
-```
-Session State Schema
-```python
-Primary database state
-SESSION_STATE_SCHEMA = {
-    # Core database
-    'df': pd.DataFrame,                    # Current questions as DataFrame
-    'original_questions': List[dict],      # Raw JSON question data
-    'metadata': dict,                      # Database metadata
-    'filename': str,                       # Current filename
-    'loaded_at': str,                      # Load timestamp
-# History management
-'database_history': List[dict],        # Previous database states
-'current_database_id': Optional[int],  # Active database identifier
-
-# Upload state
-'upload_state': {
-    'files_uploaded': bool,
-    'preview_generated': bool,
-    'merge_completed': bool,
-    'current_preview': 'MergePreviewData',
-    'final_database': List[dict],
-    'error_message': str
-},
-
-# Processing state
-'processing_options': dict,            # Last processing configuration
-'cleanup_reports': List[dict],         # LaTeX cleanup results
-'batch_processed_files': List[str],    # Multi-file processing tracking
-
-# UI state
-'current_page': int,                   # Pagination state
-'last_page': int,                      # Last accessed page
-'selected_filters': dict,              # Active filter configuration
-
-}
-```
-Database History Management
-```python
-def display_database_history():
-    """
-    Display database history with restore options
-    Provides rollback functionality for users
-    """
-    if not st.session_state.get('database_history'):
-        return
-st.markdown("### 📚 Recent Database History")
-
-for entry in reversed(st.session_state['database_history']):
-    with st.expander(f"📄 {entry['filename']} - {entry['saved_at']}", expanded=False):
-        if entry['summary']:
-            col1, col2, col3 = st.columns([2, 2, 1])
-
-            with col1:
-                st.write(f"**Questions:** {entry['summary']['total_questions']}")
-                st.write(f"**Topics:** {entry['summary']['topics']}")
-                st.write(f"**Total Points:** {entry['summary']['total_points']:.0f}")
-
-            with col2:
-                st.write("**Difficulty Distribution:**")
-                for diff, count in entry['summary']['difficulty_distribution'].items():
-                    st.write(f"  • {diff}: {count}")
-
-            with col3:
-                if st.button(f"🔄 Restore", key=f"restore_{entry['id']}"):
-                    if restore_database_from_history(entry['id']):
-                        st.success("✅ Database restored!")
-                        st.rerun()
-
-def restore_database_from_history(history_id: int) -> bool:
-    """
-    Restore database from history by ID
-Args:
-    history_id: Unique identifier for history entry
-
-Returns:
-    bool: Success status of restore operation
-"""
-
-```
-
-Upload System
-modules/upload_interface_v2.py
-Purpose: Advanced file upload system with multi-file merge capabilities and conflict resolution
-Location: /modules/upload_interface_v2.py
-UploadInterfaceV2 Class
-```python
-class UploadInterfaceV2:
-    """
-    Phase 3D Upload Interface
-    Handles single and multi-file uploads with intelligent conflict resolution
-    """
-def __init__(self):
-    self.file_processor = FileProcessor()
-    self.state_manager = UploadStateManager()
-    self.merger = DatabaseMerger()
-
-def render_complete_interface(self):
-    """
-    Render complete upload interface with state management
-    Handles all upload scenarios and user interactions
-    """
-    # Check current state and render appropriate interface
-    current_state = self.state_manager.get_current_state()
-
-    if current_state == UploadState.INITIAL:
-        self.render_upload_section()
-    elif current_state == UploadState.FILES_UPLOADED:
-        self.render_processing_section()
-    elif current_state == UploadState.PREVIEW_READY:
-        self.render_preview_section()
-    elif current_state == UploadState.MERGE_COMPLETED:
-        self.render_results_section()
-
-def render_upload_section(self):
-    """
-    Render file upload interface
-    Supports single and multiple file selection
-    """
-    st.markdown("### 📁 Upload Question Database Files")
-
-    uploaded_files = st.file_uploader(
-        "Choose JSON files",
-        type=['json'],
-        accept_multiple_files=True,
-        help="Upload one or more JSON question database files"
-    )
-
-    if uploaded_files:
-        self._handle_file_upload(uploaded_files)
-
-def _handle_file_upload(self, uploaded_files: List):
-    """
-    Process uploaded files through the file processor
-
-    Args:
-        uploaded_files: List of Streamlit uploaded file objects
-    """
-    processing_results = []
-
-    for uploaded_file in uploaded_files:
-        # Read file content
-        content = uploaded_file.read().decode('utf-8')
-
-        # Process through FileProcessor
-        result = self.file_processor.process_file(
-            content=content,
-            filename=uploaded_file.name,
-            options={'validate': True, 'cleanup_latex': True}
-        )
-
-        processing_results.append(result)
-
-    # Store results and update state
-    self.state_manager.store_processing_results(processing_results)
-    self.state_manager.transition_to(UploadState.FILES_UPLOADED)
-
-```
-File Processing Pipeline
-```python
-class FileProcessor:
-    """
-    Handles individual file processing with validation and cleanup
-    """
-def process_file(self, content: str, filename: str, options: Dict) -> Dict:
-    """
-    Process single file through validation and cleanup pipeline
-
-    Args:
-        content: Raw JSON file content
-        filename: Original filename
-        options: Processing configuration
-
-    Returns:
-        dict: Processing results with questions and metadata
-    """
-    try:
-        # Parse JSON content
-        raw_data = json.loads(content)
-
-        # Extract questions and metadata
-        if isinstance(raw_data, dict) and 'questions' in raw_data:
-            questions = raw_data['questions']
-            metadata = raw_data.get('metadata', {})
-        elif isinstance(raw_data, list):
-            questions = raw_data
-            metadata = {'format': 'legacy_array'}
-        else:
-            raise ValueError("Unexpected JSON structure")
-
-        # Validate questions
-        validation_results = self._validate_questions(questions)
-
-        # Apply LaTeX cleanup if requested
-        if options.get('cleanup_latex', False):
-            questions, cleanup_report = self._cleanup_latex(questions)
-        else:
-            cleanup_report = None
-
-        return {
-            'success': True,
-            'filename': filename,
-            'questions': questions,
-            'metadata': metadata,
-            'validation_results': validation_results,
-            'cleanup_report': cleanup_report,
-            'question_count': len(questions)
-        }
-
-    except Exception as e:
-        return {
-            'success': False,
-            'filename': filename,
-            'error': str(e),
-            'questions': [],
-            'metadata': {},
-            'question_count': 0
-        }
-
-def _validate_questions(self, questions: List[Dict]) -> Dict:
-    """
-    Validate question structure and required fields
-
-    Args:
-        questions: List of question dictionaries
-
-    Returns:
-        dict: Validation results with errors and warnings
-    """
-    errors = []
-    warnings = []
-
-    required_fields = ['question_text', 'correct_answer', 'type']
-
-    for i, question in enumerate(questions):
-        # Check required fields
-        missing_fields = [field for field in required_fields if not question.get(field)]
-        if missing_fields:
-            errors.append(f"Question {i+1}: Missing fields {missing_fields}")
-
-        # Validate question type
-        valid_types = ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank']
-        if question.get('type') not in valid_types:
-            errors.append(f"Question {i+1}: Invalid type '{question.get('type')}'")
-
-        # Type-specific validation
-        if question.get('type') == 'multiple_choice':
-            choices = question.get('choices', [])
-            if len(choices) < 2:
-                warnings.append(f"Question {i+1}: Less than 2 choices for multiple choice")
-
-    return {
-        'errors': errors,
-        'warnings': warnings,
-        'is_valid': len(errors) == 0,
-        'question_count': len(questions)
-    }
-
-```
-Conflict Resolution System
-```python
-class DatabaseMerger:
-    """
-    Handles merging multiple question databases with conflict resolution
-    """
-def __init__(self, strategy: MergeStrategy = MergeStrategy.SKIP_DUPLICATES):
-    self.strategy = strategy
-    self.conflict_detector = ConflictDetector()
-    self.conflict_resolver = ConflictResolver()
-
-def generate_preview(self, existing_df: pd.DataFrame, 
-                    new_questions: List[Dict], 
-                    auto_renumber: bool = True) -> MergePreview:
-    """
-    Generate merge preview with conflict analysis
-
-    Args:
-        existing_df: Current database DataFrame
-        new_questions: Questions to be merged
-        auto_renumber: Whether to automatically renumber conflicting IDs
-
-    Returns:
-        MergePreview: Detailed preview of merge operation
-    """
-    # Ensure questions have IDs
-    new_questions = self._ensure_questions_have_ids(new_questions)
-
-    # Check if auto-renumbering should be applied
-    if auto_renumber and self._should_apply_auto_renumbering(existing_df, new_questions):
-        final_questions = self.auto_renumber_questions(existing_df, new_questions)
-        auto_renumbered = True
-    else:
-        final_questions = new_questions
-        auto_renumbered = False
-
-    # Detect conflicts with final questions
-    conflicts = self.conflict_detector.detect_conflicts(existing_df, final_questions)
-
-    # Calculate statistics
-    existing_count = len(existing_df) if existing_df is not None else 0
-    new_count = len(new_questions)
-    final_count = self._estimate_final_count(existing_count, new_count, conflicts)
-
-    return MergePreview(
-        strategy=self.strategy,
-        existing_count=existing_count,
-        new_count=new_count,
-        final_count=final_count,
-        conflicts=conflicts,
-        auto_renumbered=auto_renumbered,
-        merge_summary=self._generate_merge_summary(conflicts, auto_renumbered),
-        warnings=self._generate_warnings(conflicts)
-    )
-
-def auto_renumber_questions(self, existing_df: pd.DataFrame, 
-                           new_questions: List[Dict]) -> List[Dict]:
-    """
-    Automatically renumber questions to avoid ID conflicts
-
-    Args:
-        existing_df: Current database
-        new_questions: Questions to renumber
-
-    Returns:
-        List[Dict]: Questions with new IDs assigned
-    """
-    if existing_df is None or len(existing_df) == 0:
-        return new_questions
-
-    # Find next available ID
-    next_id = self._get_next_available_id(existing_df)
-
-    # Renumber questions
-    renumbered_questions = []
-    for i, question in enumerate(new_questions):
-        new_question = question.copy()
-        new_id = next_id + i
-
-        # Update all possible ID fields
-        for id_field in ['id', 'question_id', 'ID', 'Question_ID']:
-            if id_field in new_question:
-                new_question[id_field] = str(new_id)
-
-        # Add ID if none exists
-        if not any(field in new_question for field in ['id', 'question_id']):
-            new_question['id'] = str(new_id)
-
-        renumbered_questions.append(new_question)
-
-    return renumbered_questions
-
-```
-Merge Strategies
-```python
-class MergeStrategy(Enum):
-    """Enumeration of available merge strategies"""
-    APPEND_ALL = "append_all"
-    SKIP_DUPLICATES = "skip_duplicates"
-    REPLACE_DUPLICATES = "replace_duplicates"
-    RENAME_DUPLICATES = "rename_duplicates"
-class ConflictType(Enum):
-    """Types of conflicts that can be detected"""
-    QUESTION_ID = "question_id"
-    CONTENT_DUPLICATE = "content_duplicate"
-    METADATA_CONFLICT = "metadata_conflict"
-    LATEX_CONFLICT = "latex_conflict"
-@dataclass
-class MergePreview:
-    """Data structure for merge preview information"""
-    strategy: MergeStrategy
-    existing_count: int
-    new_count: int
-    final_count: int
-    conflicts: List[Conflict]
-    auto_renumbered: bool
-    merge_summary: Dict[str, Any]
-    warnings: List[str]
-def get_conflict_summary(self) -> Dict[str, int]:
-    """Generate summary of conflicts by type"""
-    summary = {}
-    for conflict in self.conflicts:
-        key = f"{conflict.type}_{conflict.severity}"
-        summary[key] = summary.get(key, 0) + 1
-    return summary
-
-```
-
-Database Processing
-modules/database_processor.py
-Purpose: Core database processing, validation, and transformation functions
-Location: /modules/database_processor.py
-Core Processing Functions
-```python
-def load_database_from_json(json_content: str) -> Tuple[Optional[pd.DataFrame], Dict, List, List]:
-    """
-    Load and process JSON database content with automatic LaTeX processing
-Args:
-    json_content: Raw JSON string content
-
-Returns:
-    Tuple containing:
-    - pd.DataFrame: Processed questions as DataFrame
-    - dict: Metadata from original JSON
-    - list: Original questions list
-    - list: Cleanup reports from processing
-"""
-try:
-    data = json.loads(json_content)
-
-    # Handle both formats: {"questions": [...]} or direct [...]
-    if isinstance(data, dict) and 'questions' in data:
-        questions = data['questions']
-        metadata = data.get('metadata', {})
-    elif isinstance(data, list):
-        questions = data
-        metadata = {}
-    else:
-        raise ValueError("Unexpected JSON structure")
-
-    # Convert to standardized DataFrame format
-    df = _convert_questions_to_dataframe(questions)
-
-    return df, metadata, questions, []
-
-except json.JSONDecodeError as e:
-    st.error(f"Invalid JSON: {e}")
-    return None, None, None, None
-except Exception as e:
-    st.error(f"Error processing database: {e}")
-    return None, None, None, None
-
-def _convert_questions_to_dataframe(questions: List[Dict]) -> pd.DataFrame:
-    """
-    Convert questions list to standardized DataFrame format
-Args:
-    questions: List of question dictionaries
-
-Returns:
-    pd.DataFrame: Standardized question DataFrame
-"""
-rows = []
-
-for i, q in enumerate(questions):
-    # Generate question ID
-    question_id = q.get('id', q.get('question_id', f"Q_{i+1:05d}"))
-
-    # Extract and normalize fields
-    question_type = q.get('type', 'multiple_choice')
-    title = q.get('title', f"Question {i+1}")
-    question_text = q.get('question_text', '')
-
-    # Handle choices for multiple choice questions
-    choices = q.get('choices', [])
-    if not isinstance(choices, list):
-        choices = []
-
-    # Ensure exactly 4 choices (pad with empty strings)
-    while len(choices) < 4:
-        choices.append('')
-
-    # Process correct answer
-    original_correct_answer = q.get('correct_answer', '')
-    if question_type == 'multiple_choice':
-        correct_answer = _find_correct_letter(original_correct_answer, choices[:4])
-    else:
-        correct_answer = str(original_correct_answer)
-
-    # Extract metadata with defaults
-    points = _safe_float(q.get('points', 1))
-    tolerance = _safe_float(q.get('tolerance', 0.05))
-    topic = q.get('topic', 'General')
-    subtopic = q.get('subtopic', '')
-    difficulty = q.get('difficulty', 'Easy')
-
-    # Handle feedback
-    feedback_correct = q.get('feedback_correct', '')
-    feedback_incorrect = q.get('feedback_incorrect', '')
-
-    # Create standardized row
-    row = {
-        'ID': question_id,
-        'Type': question_type,
-        'Title': title,
-        'Question_Text': question_text,
-        'Choice_A': choices[0] if len(choices) > 0 else '',
-        'Choice_B': choices[1] if len(choices) > 1 else '',
-        'Choice_C': choices[2] if len(choices) > 2 else '',
-        'Choice_D': choices[3] if len(choices) > 3 else '',
-        'Correct_Answer': correct_answer,
-        'Points': points,
-        'Tolerance': tolerance,
-        'Feedback': feedback_correct,
-        'Correct_Feedback': feedback_correct,
-        'Incorrect_Feedback': feedback_incorrect,
-        'Topic': topic,
-        'Subtopic': subtopic,
-        'Difficulty': difficulty
-    }
-
-    rows.append(row)
-
-return pd.DataFrame(rows)
-
-def _find_correct_letter(correct_text: str, choices: List[str]) -> str:
-    """
-    Convert correct answer text to letter designation (A, B, C, D)
-Args:
-    correct_text: Text of correct answer
-    choices: List of available choices
-
-Returns:
-    str: Letter designation (A-D)
-"""
-if not correct_text:
-    return 'A'
-
-correct_clean = str(correct_text).strip().lower()
-
-# Check if already a letter
-if correct_clean.upper() in ['A', 'B', 'C', 'D']:
-    return correct_clean.upper()
-
-# Match against choices
-for i, choice in enumerate(choices):
-    if choice and str(choice).strip().lower() == correct_clean:
-        return ['A', 'B', 'C', 'D'][i]
-
-return 'A'  # Fallback
-
-def _safe_float(value: Any, default: float = 0.0) -> float:
-    """
-    Safely convert value to float with fallback
-Args:
-    value: Value to convert
-    default: Default value if conversion fails
-
-Returns:
-    float: Converted value or default
-"""
-try:
-    return float(value) if value is not None else default
-except (ValueError, TypeError):
-    return default
-
-```
-Validation System
-```python
-def validate_question_database(df: pd.DataFrame) -> Dict[str, Any]:
-    """
-    Comprehensive validation of question database
-Args:
-    df: Question database DataFrame
-
-Returns:
-    dict: Validation results with errors, warnings, and status
-"""
-errors = []
-warnings = []
-
-required_fields = ['ID', 'Type', 'Question_Text', 'Correct_Answer']
-
-for idx, row in df.iterrows():
-    # Check required fields
-    for field in required_fields:
-        if pd.isna(row[field]) or str(row[field]).strip() == '':
-            errors.append(f"Question {row['ID']}: Missing {field}")
-
-    # Type-specific validation
-    if row['Type'] == 'multiple_choice':
-        choices = [row.get(f'Choice_{c}', '') for c in ['A', 'B', 'C', 'D']]
-        non_empty_choices = [c for c in choices if str(c).strip()]
-
-        if len(non_empty_choices) < 2:
-            warnings.append(f"Question {row['ID']}: Insufficient choices for multiple choice")
-
-        if row['Correct_Answer'] not in ['A', 'B', 'C', 'D']:
-            errors.append(f"Question {row['ID']}: Invalid correct answer for multiple choice")
-
-    elif row['Type'] == 'numerical':
-        try:
-            float(row['Correct_Answer'])
-        except (ValueError, TypeError):
-            errors.append(f"Question {row['ID']}: Correct answer must be numeric for numerical type")
-
-    # Validate points
-    try:
-        points = float(row.get('Points', 0))
-        if points <= 0:
-            warnings.append(f"Question {row['ID']}: Points should be positive")
-    except (ValueError, TypeError):
-        errors.append(f"Question {row['ID']}: Points must be numeric")
-
-    # Check for LaTeX syntax issues
-    question_text = str(row.get('Question_Text', ''))
-    if ' in question_text:
-        dollar_count = question_text.count(')
-        if dollar_count % 2 != 0:
-            warnings.append(f"Question {row['ID']}: Unmatched LaTeX delimiters")
-
-return {
-    'errors': errors,
-    'warnings': warnings,
-    'is_valid': len(errors) == 0,
-    'question_count': len(df),
-    'validation_summary': {
-        'total_questions': len(df),
-        'error_count': len(errors),
-        'warning_count': len(warnings),
-        'success_rate': (len(df) - len(errors)) / len(df) if len(df) > 0 else 0
-    }
-}
-
-def validate_single_question(question_row: Dict) -> Dict[str, Any]:
-    """
-    Validate individual question for editing operations
-Args:
-    question_row: Single question data (dict or Series)
-
-Returns:
-    dict: Validation results for single question
-"""
-errors = []
-warnings = []
-
-# Convert Series to dict if needed
-if hasattr(question_row, 'to_dict'):
-    question_data = question_row.to_dict()
-else:
-    question_data = question_row
-
-# Check required fields
-required_fields = ['Title', 'Type', 'Question_Text', 'Correct_Answer']
-for field in required_fields:
-    value = question_data.get(field, '')
-    if not value or str(value).strip() == '' or str(value).lower() == 'nan':
-        errors.append(f"Missing {field}")
-
-# Type-specific validation
-question_type = question_data.get('Type', '')
-if question_type == 'multiple_choice':
-    choices = [question_data.get(f'Choice_{c}', '') for c in ['A', 'B', 'C', 'D']]
-    valid_choices = [c for c in choices if str(c).strip()]
-
-    if len(valid_choices) < 2:
-        warnings.append("Fewer than 2 choices for multiple choice")
-
-    correct_answer = question_data.get('Correct_Answer', '')
-    if correct_answer not in ['A', 'B', 'C', 'D']:
-        errors.append("Correct answer must be A, B, C, or D for multiple choice")
-
-elif question_type == 'numerical':
-    try:
-        float(question_data.get('Correct_Answer', ''))
-    except (ValueError, TypeError):
-        errors.append("Correct answer must be numeric for numerical questions")
-
-# Validate points
-try:
-    points = float(question_data.get('Points', 0))
-    if points <= 0:
-        warnings.append("Points should be positive")
-except (ValueError, TypeError):
-    errors.append("Points must be numeric")
-
-return {
-    'errors': errors,
-    'warnings': warnings,
-    'is_valid': len(errors) == 0
-}
-
-```
-Question Editing Operations
-```python
-def save_question_changes(question_index: int, changes: Dict[str, Any]) -> bool:
-    """
-    Save changes to both DataFrame and original_questions
-Args:
-    question_index: Index of question to update
-    changes: Dictionary of field changes
-
-Returns:
-    bool: Success status of save operation
-"""
-try:
-    # Get current data
-    df = st.session_state['df'].copy()
-    original_questions = st.session_state['original_questions'].copy()
-
-    # Validate index bounds
-    if question_index >= len(df) or question_index >= len(original_questions):
-        st.error("Invalid question index")
-        return False
-
-    # Update DataFrame
-    update_fields = [
-        'Title', 'Type', 'Difficulty', 'Points', 'Topic', 'Subtopic',
-        'Question_Text', 'Choice_A', 'Choice_B', 'Choice_C', 'Choice_D',
-        'Correct_Answer', 'Tolerance', 'Correct_Feedback', 'Incorrect_Feedback'
-    ]
-
-    for field in update_fields:
-        if field.lower() in changes:
-            df.loc[question_index, field] = changes[field.lower()]
-
-    # Update feedback field (for compatibility)
-    df.loc[question_index, 'Feedback'] = changes.get('correct_feedback', '')
-
-    # Update original_questions for QTI export compatibility
-    if question_index < len(original_questions):
-        q = original_questions[question_index]
-
-        # Map changes to original format
-        field_mapping = {
-            'title': 'title',
-            'question_type': 'type',
-            'difficulty': 'difficulty',
-            'points': 'points',
-            'topic': 'topic',
-            'subtopic': 'subtopic',
-            'question_text': 'question_text',
-            'correct_answer': 'correct_answer',
-            'tolerance': 'tolerance',
-            'correct_feedback': 'feedback_correct',
-            'incorrect_feedback': 'feedback_incorrect'
-        }
-
-        for change_key, orig_key in field_mapping.items():
-            if change_key in changes:
-                q[orig_key] = changes[change_key]
-
-        # Update choices for multiple choice
-        if changes.get('question_type') == 'multiple_choice':
-            q['choices'] = [
-                changes.get('choice_a', ''),
-                changes.get('choice_b', ''),
-                changes.get('choice_c', ''),
-                changes.get('choice_d', '')
-            ]
-
-    # Validate changes
-    validation_results = validate_single_question(df.iloc[question_index])
-
-    # Update session state
-    st.session_state['df'] = df
-    st.session_state['original_questions'] = original_questions
-
-    # Provide feedback
-    if validation_results['is_valid']:
-        st.success("✅ Question updated successfully!")
-    else:
-        st.warning("⚠️ Question saved but has validation issues:")
-        for error in validation_results['errors']:
-            st.write(f"• {error}")
-
-    return True
-
-except Exception as e:
-    st.error(f"Error saving changes: {str(e)}")
-    return False
-
-def delete_question(question_index: int) -> bool:
-    """
-    Delete question from both DataFrame and original_questions
-Args:
-    question_index: Index of question to delete
-
-Returns:
-    bool: Success status of delete operation
-"""
-try:
-    # Get current data
-    df = st.session_state['df']
-    original_questions = st.session_state['original_questions']
-
-    # Validate index
-    if question_index >= len(df) or question_index >= len(original_questions):
-        st.error("Invalid question index")
-        return False
-
-    # Remove from DataFrame and reset index
-    df_updated = df.drop(df.index[question_index]).reset_index(drop=True)
-
-    # Remove from original_questions
-    original_questions_updated = original_questions.copy()
-    original_questions_updated.pop(question_index)
-
-    # Regenerate sequential IDs
-    df_updated['ID'] = [f"Q_{i+1:05d}" for i in range(len(df_updated))]
-
-    # Update session state
-    st.session_state['df'] = df_updated
-    st.session_state['original_questions'] = original_questions_updated
-
-    # Clear related session state
-    keys_to_remove = [key for key in st.session_state.keys() 
-                     if key.endswith(f"_{question_index}")]
-    for key in keys_to_remove:
-        del st.session_state[key]
-
-    return True
-    protected_text = re.sub(inline_math_pattern, r'\\(\1\\)', protected_text)
-
-    # Restore display math
-    for i, match in enumerate(display_matches):
-        placeholder = f"__DISPLAY_MATH_{i}__"
-        protected_text = protected_text.replace(placeholder, f"${match}$")
-
-    return protected_text
-
-class CanvasAdapter:
-    """
-    Canvas-specific adaptations for QTI content
-    """
-def adapt_question(self, question: Dict) -> Dict:
-    """
-    Apply Canvas-specific question adaptations
-
-    Args:
-        question: Question to adapt
-
-    Returns:
-        Dict: Canvas-adapted question
-    """
-    adapted = question.copy()
-
-    # Ensure required Canvas fields
-    if 'points' not in adapted:
-        adapted['points'] = 1
-
-    # Validate question type
-    valid_types = ['multiple_choice', 'numerical_answer', 'true_false', 'fill_in_multiple_blanks']
-    if adapted.get('type') not in valid_types:
-        # Map common types to Canvas types
-        type_mapping = {
-            'numerical': 'numerical_answer',
-            'fill_in_blank': 'fill_in_multiple_blanks'
-        }
-        adapted['type'] = type_mapping.get(adapted.get('type'), 'multiple_choice')
-
-    # Ensure multiple choice questions have proper structure
-    if adapted['type'] == 'multiple_choice':
-        adapted = self._adapt_multiple_choice(adapted)
-
-    return adapted
-
-def _adapt_multiple_choice(self, question: Dict) -> Dict:
-    """
-    Adapt multiple choice question for Canvas
-
-    Args:
-        question: Multiple choice question
-
-    Returns:
-        Dict: Canvas-adapted multiple choice question
-    """
-    adapted = question.copy()
-
-    # Ensure choices are properly formatted
-    if 'choices' in adapted and isinstance(adapted['choices'], list):
-        # Remove empty choices
-        adapted['choices'] = [choice for choice in adapted['choices'] if choice.strip()]
-
-        # Ensure at least 2 choices
-        while len(adapted['choices']) < 2:
-            adapted['choices'].append(f"Choice {len(adapted['choices']) + 1}")
-
-    # Validate correct answer format
-    if 'correct_answer' in adapted:
-        correct = adapted['correct_answer']
-        if isinstance(correct, str) and correct.upper() in ['A', 'B', 'C', 'D']:
-            # Convert letter to index for Canvas
-            letter_to_index = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
-            adapted['correct_answer_index'] = letter_to_index[correct.upper()]
-
-    return adapted
-
-```
-
-LaTeX Processing
-modules/latex_processor.py
-Purpose: LaTeX cleanup and processing for educational mathematical content
-Location: /modules/latex_processor.py
-LaTeX Processing Pipeline
-```python
-class LaTeXProcessor:
-    """
-    Comprehensive LaTeX processing for educational content
-    Handles cleanup, validation, and optimization
-    """
-def __init__(self):
-    self.unicode_map = self._build_unicode_map()
-    self.validation_patterns = self._build_validation_patterns()
-
-def process_questions(self, questions: List[Dict], 
-                     cleanup_options: Dict[str, bool] = None) -> Tuple[List[Dict], List[Dict]]:
-    """
-    Process list of questions for LaTeX cleanup
-
-    Args:
-        questions: List of question dictionaries
-        cleanup_options: Options for cleanup operations
-
-    Returns:
-        Tuple of (processed_questions, cleanup_reports)
-    """
-    if cleanup_options is None:
-        cleanup_options = {
-            'convert_unicode': True,
-            'fix_delimiters': True,
-            'validate_syntax': True,
-            'optimize_spacing': True
-        }
-
-    processed_questions = []
-    cleanup_reports = []
-
-    for i, question in enumerate(questions):
-        processed_question, report = self.process_single_question(
-            question, cleanup_options
-        )
-
-        processed_questions.append(processed_question)
-
-        if report['changes_made']:
-            report['question_index'] = i
-            cleanup_reports.append(report)
-
-    return processed_questions, cleanup_reports
-
-def process_single_question(self, question: Dict, 
-                           cleanup_options: Dict[str, bool]) -> Tuple[Dict, Dict]:
-    """
-    Process single question for LaTeX cleanup
-
-    Args:
-        question: Question dictionary
-        cleanup_options: Cleanup configuration
-
-    Returns:
-        Tuple of (processed_question, cleanup_report)
-    """
-    processed = question.copy()
-    report = {
-        'changes_made': False,
-        'operations': [],
-        'errors': [],
-        'warnings': []
-    }
-
-    # Fields that may contain LaTeX
-    latex_fields = [
-        'question_text', 'feedback_correct', 'feedback_incorrect'
-    ]
-
-    # Add choices if they exist
-    if 'choices' in processed and isinstance(processed['choices'], list):
-        latex_fields.append('choices')
-
-    for field in latex_fields:
-        if field in processed:
-            if field == 'choices':
-                # Process each choice
-                original_choices = processed[field].copy()
-                processed_choices = []
-
-                for choice in original_choices:
-                    processed_choice, field_report = self._process_text_field(
-                        choice, cleanup_options
-                    )
-                    processed_choices.append(processed_choice)
-
-                    if field_report['changes_made']:
-                        report['changes_made'] = True
-                        report['operations'].extend(field_report['operations'])
-
-                processed[field] = processed_choices
-
-            else:
-                # Process single text field
-                original_text = processed[field]
-                processed_text, field_report = self._process_text_field(
-                    original_text, cleanup_options
-                )
-
-                processed[field] = processed_text
-
-                if field_report['changes_made']:
-                    report['changes_made'] = True
-                    report['operations'].extend(field_report['operations'])
-                    report['errors'].extend(field_report['errors'])
-                    report['warnings'].extend(field_report['warnings'])
-
-    return processed, report
-
-def _process_text_field(self, text: str, 
-                       cleanup_options: Dict[str, bool]) -> Tuple[str, Dict]:
-    """
-    Process individual text field for LaTeX cleanup
-
-    Args:
-        text: Text content to process
-        cleanup_options: Cleanup configuration
-
-    Returns:
-        Tuple of (processed_text, field_report)
-    """
-    if not isinstance(text, str) or not text.strip():
-        return text, {'changes_made': False, 'operations': [], 'errors': [], 'warnings': []}
-
-    processed_text = text
-    report = {
-        'changes_made': False,
-        'operations': [],
-        'errors': [],
-        'warnings': []
-    }
-
-    # Unicode to LaTeX conversion
-    if cleanup_options.get('convert_unicode', True):
-        converted_text = self._convert_unicode_to_latex(processed_text)
-        if converted_text != processed_text:
-            report['changes_made'] = True
-            report['operations'].append('Unicode symbols converted to LaTeX')
-            processed_text = converted_text
-
-    # Fix LaTeX delimiters
-    if cleanup_options.get('fix_delimiters', True):
-        fixed_text = self._fix_latex_delimiters(processed_text)
-        if fixed_text != processed_text:
-            report['changes_made'] = True
-            report['operations'].append('LaTeX delimiters fixed')
-            processed_text = fixed_text
-
-    # Optimize spacing
-    if cleanup_options.get('optimize_spacing', True):
-        optimized_text = self._optimize_latex_spacing(processed_text)
-        if optimized_text != processed_text:
-            report['changes_made'] = True
-            report['operations'].append('LaTeX spacing optimized')
-            processed_text = optimized_text
-
-    # Validate syntax
-    if cleanup_options.get('validate_syntax', True):
-        validation_results = self._validate_latex_syntax(processed_text)
-        if validation_results['errors']:
-            report['errors'].extend(validation_results['errors'])
-        if validation_results['warnings']:
-            report['warnings'].extend(validation_results['warnings'])
-
-    return processed_text, report
-
-def _convert_unicode_to_latex(self, text: str) -> str:
-    """
-    Convert Unicode mathematical symbols to LaTeX equivalents
-
-    Args:
-        text: Text containing Unicode symbols
-
-    Returns:
-        str: Text with LaTeX equivalents
-    """
-    converted = text
-
-    for unicode_char, latex_equiv in self.unicode_map
-except Exception as e:
-    st.error(f"Error saving to history: {str(e)}")
-    return False
-
-```
-Session State Schema
-```python
-Primary database state
-SESSION_STATE_SCHEMA = {
-    # Core database
-    'df': pd.DataFrame,                    # Current questions as DataFrame
-    'original_questions': List[dict],      # Raw JSON question data
-    'metadata': dict,                      # Database metadata
-    'filename': str,                       # Current filename
-    'loaded_at': str,                      # Load timestamp
-# History management
-'database_history': List[dict],        # Previous database states
-'current_database_id': Optional[int],  # Active database identifier
-
-# Upload state
-'upload_state': {
-    'files_uploaded': bool,
-    'preview_generated': bool,
-    'merge_completed': bool,
-    'current_preview': 'MergePreviewData',
-    'final_database': List[dict],
-    'error_message': str
-},
-
-# Processing state
-'processing_options': dict,            # Last processing configuration
-'cleanup_reports': List[dict],         # LaTeX cleanup results
-'batch_processed_files': List[str],    # Multi-file processing tracking
-
-# UI state
-'current_page': int,                   # Pagination state
-'last_page': int,                      # Last accessed page
-'selected_filters': dict,              # Active filter configuration
-
-}
-```
-Database History Management
-```python
-def display_database_history():
-    """
-    Display database history with restore options
-    Provides rollback functionality for users
-    """
-    if not st.session_state.get('database_history'):
-        return
-st.markdown("### 📚 Recent Database History")
-
-for entry in reversed(st.session_state['database_history']):
-    with st.expander(f"📄 {entry['filename']} - {entry['saved_at']}", expanded=False):
-        if entry['summary']:
-            col1, col2, col3 = st.columns([2, 2, 1])
-
-            with col1:
-                st.write(f"**Questions:** {entry['summary']['total_questions']}")
-                st.write(f"**Topics:** {entry['summary']['topics']}")
-                st.write(f"**Total Points:** {entry['summary']['total_points']:.0f}")
-
-            with col2:
-                st.write("**Difficulty Distribution:**")
-                for diff, count in entry['summary']['difficulty_distribution'].items():
-                    st.write(f"  • {diff}: {count}")
-
-            with col3:
-                if st.button(f"🔄 Restore", key=f"restore_{entry['id']}"):
-                    if restore_database_from_history(entry['id']):
-                        st.success("✅ Database restored!")
-                        st.rerun()
-
-def restore_database_from_history(history_id: int) -> bool:
-    """
-    Restore database from history by ID
-Args:
-    history_id: Unique identifier for history entry
-
-Returns:
-    bool: Success status of restore operation
-"""
-
-```
-
-Upload System
-modules/upload_interface_v2.py
-Purpose: Advanced file upload system with multi-file merge capabilities and conflict resolution
-Location: /modules/upload_interface_v2.py
-UploadInterfaceV2 Class
-```python
-class UploadInterfaceV2:
-    """
-    Phase 3D Upload Interface
-    Handles single and multi-file uploads with intelligent conflict resolution
-    """
-def __init__(self):
-    self.file_processor = FileProcessor()
-    self.state_manager = UploadStateManager()
-    self.merger = DatabaseMerger()
-
-def render_complete_interface(self):
-    """
-    Render complete upload interface with state management
-    Handles all upload scenarios and user interactions
-    """
-    # Check current state and render appropriate interface
-    current_state = self.state_manager.get_current_state()
-
-    if current_state == UploadState.INITIAL:
-        self.render_upload_section()
-    elif current_state == UploadState.FILES_UPLOADED:
-        self.render_processing_section()
-    elif current_state == UploadState.PREVIEW_READY:
-        self.render_preview_section()
-    elif current_state == UploadState.MERGE_COMPLETED:
-        self.render_results_section()
-
-def render_upload_section(self):
-    """
-    Render file upload interface
-    Supports single and multiple file selection
-    """
-    st.markdown("### 📁 Upload Question Database Files")
-
-    uploaded_files = st.file_uploader(
-        "Choose JSON files",
-        type=['json'],
-        accept_multiple_files=True,
-        help="Upload one or more JSON question database files"
-    )
-
-    if uploaded_files:
-        self._handle_file_upload(uploaded_files)
-
-def _handle_file_upload(self, uploaded_files: List):
-    """
-    Process uploaded files through the file processor
-
-    Args:
-        uploaded_files: List of Streamlit uploaded file objects
-    """
-    processing_results = []
-
-    for uploaded_file in uploaded_files:
-        # Read file content
-        content = uploaded_file.read().decode('utf-8')
-
-        # Process through FileProcessor
-        result = self.file_processor.process_file(
-            content=content,
-            filename=uploaded_file.name,
-            options={'validate': True, 'cleanup_latex': True}
-        )
-
-        processing_results.append(result)
-
-    # Store results and update state
-    self.state_manager.store_processing_results(processing_results)
-    self.state_manager.transition_to(UploadState.FILES_UPLOADED)
-
-```
-File Processing Pipeline
-```python
-class FileProcessor:
-    """
-    Handles individual file processing with validation and cleanup
-    """
-def process_file(self, content: str, filename: str, options: Dict) -> Dict:
-    """
-    Process single file through validation and cleanup pipeline
-
-    Args:
-        content: Raw JSON file content
-        filename: Original filename
-        options: Processing configuration
-
-    Returns:
-        dict: Processing results with questions and metadata
-    """
-    try:
-        # Parse JSON content
-        raw_data = json.loads(content)
-
-        # Extract questions and metadata
-        if isinstance(raw_data, dict) and 'questions' in raw_data:
-            questions = raw_data['questions']
-            metadata = raw_data.get('metadata', {})
-        elif isinstance(raw_data, list):
-            questions = raw_data
-            metadata = {'format': 'legacy_array'}
-        else:
-            raise ValueError("Unexpected JSON structure")
-
-        # Validate questions
-        validation_results = self._validate_questions(questions)
-
-        # Apply LaTeX cleanup if requested
-        if options.get('cleanup_latex', False):
-            questions, cleanup_report = self._cleanup_latex(questions)
-        else:
-            cleanup_report = None
-
-        return {
-            'success': True,
-            'filename': filename,
-            'questions': questions,
-            'metadata': metadata,
-            'validation_results': validation_results,
-            'cleanup_report': cleanup_report,
-            'question_count': len(questions)
-        }
-
-    except Exception as e:
-        return {
-            'success': False,
-            'filename': filename,
-            'error': str(e),
-            'questions': [],
-            'metadata': {},
-            'question_count': 0
-        }
-
-def _validate_questions(self, questions: List[Dict]) -> Dict:
-    """
-    Validate question structure and required fields
-
-    Args:
-        questions: List of question dictionaries
-
-    Returns:
-        dict: Validation results with errors and warnings
-    """
-    errors = []
-    warnings = []
-
-    required_fields = ['question_text', 'correct_answer', 'type']
-
-    for i, question in enumerate(questions):
-        # Check required fields
-        missing_fields = [field for field in required_fields if not question.get(field)]
-        if missing_fields:
-            errors.append(f"Question {i+1}: Missing fields {missing_fields}")
-
-        # Validate question type
-        valid_types = ['multiple_choice', 'numerical', 'true_false', 'fill_in_blank']
-        if question.get('type') not in valid_types:
-            errors.append(f"Question {i+1}: Invalid type '{question.get('type')}'")
-
-        # Type-specific validation
-        if question.get('type') == 'multiple_choice':
-            choices = question.get('choices', [])
-            if len(choices) < 2:
-                warnings.append(f"Question {i+1}: Less than 2 choices for multiple choice")
-
-    return {
-        'errors': errors,
-        'warnings': warnings,
-        'is_valid': len(errors) == 0,
-        'question_count': len(questions)
-    }
-
-```
-Conflict Resolution System
-```python
-class DatabaseMerger:
-    """
-    Handles merging multiple question databases with conflict resolution
-    """
-def __init__(self, strategy: MergeStrategy = MergeStrategy.SKIP_DUPLICATES):
-    self.strategy = strategy
-    self.conflict_detector = ConflictDetector()
-    self.conflict_resolver = ConflictResolver()
-
-def generate_preview(self, existing_df: pd.DataFrame, 
-                    new_questions: List[Dict], 
-                    auto_renumber: bool = True) -> MergePreview:
-    """
-    Generate merge preview with conflict analysis
-
-    Args:
-        existing_df: Current database DataFrame
-        new_questions: Questions to be merged
-        auto_renumber: Whether to automatically renumber conflicting IDs
-
-    Returns:
-        MergePreview: Detailed preview of merge operation
-    """
-    # Ensure questions have IDs
-    new_questions = self._ensure_questions_have_ids(new_questions)
-
-    # Check if auto-renumbering should be applied
-    if auto_renumber and self._should_apply_auto_renumbering(existing_df, new_questions):
-        final_questions = self.auto_renumber_questions(existing_df, new_questions)
-        auto_renumbered = True
-    else:
-        final_questions = new_questions
-        auto_renumbered = False
-
-    # Detect conflicts with final questions
-    conflicts = self.conflict_detector.detect_conflicts(existing_df, final_questions)
-
-    # Calculate statistics
-    existing_count = len(existing_df) if existing_df is not None else 0
-    new_count = len(new_questions)
-    final_count = self._estimate_final_count(existing_count, new_count, conflicts)
-
-    return MergePreview(
-        strategy=self.strategy,
-        existing_count=existing_count,
-        new_count=new_count,
-        final_count=final_count,
-        conflicts=conflicts,
-        auto_renumbered=auto_renumbered,
-        merge_summary=self._generate_merge_summary(conflicts, auto_renumbered),
-        warnings=self._generate_warnings(conflicts)
-    )
-
-def auto_renumber_questions(self, existing_df: pd.DataFrame, 
-                           new_questions: List[Dict]) -> List[Dict]:
-    """
-    Automatically renumber questions to avoid ID conflicts
-
-    Args:
-        existing_df: Current database
-        new_questions: Questions to renumber
-
-    Returns:
-        List[Dict]: Questions with new IDs assigned
-    """
-    if existing_df is None or len(existing_df) == 0:
-        return new_questions
-
-    # Find next available ID
-    next_id = self._get_next_available_id(existing_df)
-
-    # Renumber questions
-    renumbered_questions = []
-    for i, question in enumerate(new_questions):
-        new_question = question.copy()
-        new_id = next_id + i
-
-        # Update all possible ID fields
-        for id_field in ['id', 'question_id', 'ID', 'Question_ID']:
-            if id_field in new_question:
-                new_question[id_field] = str(new_id)
-
-        # Add ID if none exists
-        if not any(field in new_question for field in ['id', 'question_id']):
-            new_question['id'] = str(new_id)
-
-        renumbered_questions.append(new_question)
-
-    return renumbered_questions
-
-```
-Merge Strategies
-```python
-class MergeStrategy(Enum):
-    """Enumeration of available merge strategies"""
-    APPEND_ALL = "append_all"
-    SKIP_DUPLICATES = "skip_duplicates"
-    REPLACE_DUPLICATES = "replace_duplicates"
-    RENAME_DUPLICATES = "rename_duplicates"
-class ConflictType(Enum):
-    """Types of conflicts that can be detected"""
-    QUESTION_ID = "question_id"
-    CONTENT_DUPLICATE = "content_duplicate"
-    METADATA_CONFLICT = "metadata_conflict"
-    LATEX_CONFLICT = "latex_conflict"
-@dataclass
-class MergePreview:
-    """Data structure for merge preview information"""
-    strategy: MergeStrategy
-    existing_count: int
-    new_count: int
-    final_count: int
-    conflicts: List[Conflict]
-    auto_renumbered: bool
-    merge_summary: Dict[str, Any]
-    warnings: List[str]
-def get_conflict_summary(self) -> Dict[str, int]:
-    """Generate summary of conflicts by type"""
-    summary = {}
-    for conflict in self.conflicts:
-        key = f"{conflict.type}_{conflict.severity}"
-        summary[key] = summary.get(key, 0) + 1
-    return summary
-
-```
-
-Database Processing
-modules/database_processor.py
-Purpose: Core database processing, validation, and transformation functions
-Location: /modules/database_processor.py
-Core Processing Functions
-```python
-def load_database_from_json(json_content: str) -> Tuple[Optional[pd.DataFrame], Dict, List, List]:
-    """
-    Load and process JSON database content with automatic LaTeX processing
-Args:
-    json_content: Raw JSON string content
-
-Returns:
-    Tuple containing:
-    - pd.DataFrame: Processed questions as DataFrame
-    - dict: Metadata from original JSON
-    - list: Original questions list
-    - list: Cleanup reports from processing
-"""
-try:
-    data = json.loads(json_content)
-
-    # Handle both formats: {"questions": [...]} or direct [...]
-    if isinstance(data, dict) and 'questions' in data:
-        questions = data['questions']
-        metadata = data.get('metadata', {})
-    elif isinstance(data, list):
-        questions = data
-        metadata = {}
-    else:
-        raise ValueError("Unexpected JSON structure")
-
-    # Convert to standardized DataFrame format
-    df = _convert_questions_to_dataframe(questions)
-
-    return df, metadata, questions, []
-
-except json.JSONDecodeError as e:
-    st.error(f"Invalid JSON: {e}")
-    return None, None, None, None
-except Exception as e:
-    st.error(f"Error processing database: {e}")
-    return None, None, None, None
-
-def _convert_questions_to_dataframe(questions: List[Dict]) -> pd.DataFrame:
-    """
-    Convert questions list to standardized DataFrame format
-Args:
-    questions: List of question dictionaries
-
-Returns:
-    pd.DataFrame: Standardized question DataFrame
-"""
-rows = []
-
-for i, q in enumerate(questions):
-    # Generate question ID
-    question_id = q.get('id', q.get('question_id', f"Q_{i+1:05d}"))
-
-    # Extract and normalize fields
-    question_type = q.get('type', 'multiple_choice')
-    title = q.get('title', f"Question {i+1}")
-    question_text = q.get('question_text', '')
-
-    # Handle choices for multiple choice questions
-    choices = q.get('choices', [])
-    if not isinstance(choices, list):
-        choices = []
-
-    # Ensure exactly 4 choices (pad with empty strings)
-    while len(choices) < 4:
-        choices.append('')
-
-    # Process correct answer
-    original_correct_answer = q.get('correct_answer', '')
-    if question_type == 'multiple_choice':
-        correct_answer = _find_correct_letter(original_correct_answer, choices[:4])
-    else:
-        correct_answer = str(original_correct_answer)
-
-    # Extract metadata with defaults
-    points = _safe_float(q.get('points', 1))
-    tolerance = _safe_float(q.get('tolerance', 0.05))
-    topic = q.get('topic', 'General')
-    subtopic = q.get('subtopic', '')
-    difficulty = q.get('difficulty', 'Easy')
-
-    # Handle feedback
-    feedback_correct = q.get('feedback_correct', '')
-    feedback_incorrect = q.get('feedback_incorrect', '')
-
-    # Create standardized row
-    row = {
-        'ID': question_id,
-        'Type': question_type,
-        'Title': title,
-        'Question_Text': question_text,
-        'Choice_A': choices[0] if len(choices) > 0 else '',
-        'Choice_B': choices[1] if len(choices) > 1 else '',
-        'Choice_C': choices[2] if len(choices) > 2 else '',
-        'Choice_D': choices[3] if len(choices) > 3 else '',
-        'Correct_Answer': correct_answer,
-        'Points': points,
-        'Tolerance': tolerance,
-        'Feedback': feedback_correct,
-        'Correct_Feedback': feedback_correct,
-        'Incorrect_Feedback': feedback_incorrect,
-        'Topic': topic,
-        'Subtopic': subtopic,
-        'Difficulty': difficulty
-    }
-
-    rows.append(row)
-
-return pd.DataFrame(rows)
-
-def _find_correct_letter(correct_text: str, choices: List[str]) -> str:
-    """
-    Convert correct answer text to letter designation (A, B, C, D)
-Args:
-    correct_text: Text of correct answer
-    choices: List of available choices
-
-Returns:
-    str: Letter designation (A-D)
-"""
-if not correct_text:
-    return 'A'
-
-correct_clean = str(correct_text).strip().lower()
-
-# Check if already a letter
-if correct_clean.upper() in ['A', 'B', 'C', 'D']:
-    return correct_clean.upper()
-
-# Match against choices
-for i, choice in enumerate(choices):
-    if choice and str(choice).strip().lower() == correct_clean:
-        return ['A', 'B', 'C', 'D'][i]
-
-return 'A'  # Fallback
-
-def _safe_float(value: Any, default: float = 0.0) -> float:
-    """
-    Safely convert value to float with fallback
-Args:
-    value: Value to convert
-    default: Default value if conversion fails
-
-Returns:
-    float: Converted value or default
-"""
-try:
-    return float(value) if value is not None else default
-except (ValueError, TypeError):
-    return default
-
-```
-Validation System
-```python
-def validate_question_database(df: pd.DataFrame) -> Dict[str, Any]:
-    """
-    Comprehensive validation of question database
-Args:
-    df: Question database DataFrame
-
-Returns:
-    dict: Validation results with errors, warnings, and status
-"""
-errors = []
-warnings = []
-
-required_fields = ['ID', 'Type', 'Question_Text', 'Correct_Answer']
-
-for idx, row in df.iterrows():
-    # Check required fields
-    for field in required_fields:
-        if pd.isna(row[field]) or str(row[field]).strip() == '':
-            errors.append(f"Question {row['ID']}: Missing {field}")
-
-    # Type-specific validation
-    if row['Type'] == 'multiple_choice':
-        choices = [row.get(f'Choice_{c}', '') for c in ['A', 'B', 'C', 'D']]
-        non_empty_choices = [c for c in choices if str(c).strip()]
-
-        if len(non_empty_choices) < 2:
-            warnings.append(f"Question {row['ID']}: Insufficient choices for multiple choice")
-
-        if row['Correct_Answer'] not in ['A', 'B', 'C', 'D']:
-            errors.append(f"Question {row['ID']}: Invalid correct answer for multiple choice")
-
-    elif row['Type'] == 'numerical':
-        try:
-            float(row['Correct_Answer'])
-        except (ValueError, TypeError):
-            errors.append(f"Question {row['ID']}: Correct answer must be numeric for numerical type")
-
-    # Validate points
-    try:
-        points = float(row.get('Points', 0))
-        if points <= 0:
-            warnings.append(f"Question {row['ID']}: Points should be positive")
-    except (ValueError, TypeError):
-        errors.append(f"Question {row['ID']}: Points must be numeric")
-
-    # Check for LaTeX syntax issues
-    question_text = str(row.get('Question_Text', ''))
-    if ' in question_text:
-        dollar_count = question_text.count(')
-        if dollar_count % 2 != 0:
-            warnings.append(f"Question {row['ID']}: Unmatched LaTeX delimiters")
-
-return {
-    'errors': errors,
-    'warnings': warnings,
-    'is_valid': len(errors) == 0,
-    'question_count': len(df),
-    'validation_summary': {
-        'total_questions': len(df),
-        'error_count': len(errors),
-        'warning_count': len(warnings),
-        'success_rate': (len(df) - len(errors)) / len(df) if len(df) > 0 else 0
-    }
-}
-
-def validate_single_question(question_row: Dict) -> Dict[str, Any]:
-    """
-    Validate individual question for editing operations
-Args:
-    question_row: Single question data (dict or Series)
-
-Returns:
-    dict: Validation results for single question
-"""
-errors = []
-warnings = []
-
-# Convert Series to dict if needed
-if hasattr(question_row, 'to_dict'):
-    question_data = question_row.to_dict()
-else:
-    question_data = question_row
-
-# Check required fields
-required_fields = ['Title', 'Type', 'Question_Text', 'Correct_Answer']
-for field in required_fields:
-    value = question_data.get(field, '')
-    if not value or str(value).strip() == '' or str(value).lower() == 'nan':
-        errors.append(f"Missing {field}")
-
-# Type-specific validation
-question_type = question_data.get('Type', '')
-if question_type == 'multiple_choice':
-    choices = [question_data.get(f'Choice_{c}', '') for c in ['A', 'B', 'C', 'D']]
-    valid_choices = [c for c in choices if str(c).strip()]
-
-    if len(valid_choices) < 2:
-        warnings.append("Fewer than 2 choices for multiple choice")
-
-    correct_answer = question_data.get('Correct_Answer', '')
-    if correct_answer not in ['A', 'B', 'C', 'D']:
-        errors.append("Correct answer must be A, B, C, or D for multiple choice")
-
-elif question_type == 'numerical':
-    try:
-        float(question_data.get('Correct_Answer', ''))
-    except (ValueError, TypeError):
-        errors.append("Correct answer must be numeric for numerical questions")
-
-# Validate points
-try:
-    points = float(question_data.get('Points', 0))
-    if points <= 0:
-        warnings.append("Points should be positive")
-except (ValueError, TypeError):
-    errors.append("Points must be numeric")
-
-return {
-    'errors': errors,
-    'warnings': warnings,
-    'is_valid': len(errors) == 0
-}
-
-```
-Question Editing Operations
-```python
-def save_question_changes(question_index: int, changes: Dict[str, Any]) -> bool:
-    """
-    Save changes to both DataFrame and original_questions
-Args:
-    question_index: Index of question to update
-    changes: Dictionary of field changes
-
-Returns:
-    bool: Success status of save operation
-"""
-try:
-    # Get current data
-    df = st.session_state['df'].copy()
-    original_questions = st.session_state['original_questions'].copy()
-
-    # Validate index bounds
-    if question_index >= len(df) or question_index >= len(original_questions):
-        st.error("Invalid question index")
-        return False
-
-    # Update DataFrame
-    update_fields = [
-        'Title', 'Type', 'Difficulty', 'Points', 'Topic', 'Subtopic',
-        'Question_Text', 'Choice_A', 'Choice_B', 'Choice_C', 'Choice_D',
-        'Correct_Answer', 'Tolerance', 'Correct_Feedback', 'Incorrect_Feedback'
-    ]
-
-    for field in update_fields:
-        if field.lower() in changes:
-            df.loc[question_index, field] = changes[field.lower()]
-
-    # Update feedback field (for compatibility)
-    df.loc[question_index, 'Feedback'] = changes.get('correct_feedback', '')
-
-    # Update original_questions for QTI export compatibility
-    if question_index < len(original_questions):
-        q = original_questions[question_index]
-
-        # Map changes to original format
-        field_mapping = {
-            'title': 'title',
-            'question_type': 'type',
-            'difficulty': 'difficulty',
-            'points': 'points',
-            'topic': 'topic',
-            'subtopic': 'subtopic',
-            'question_text': 'question_text',
-            'correct_answer': 'correct_answer',
-            'tolerance': 'tolerance',
-            'correct_feedback': 'feedback_correct',
-            'incorrect_feedback': 'feedback_incorrect'
-        }
-
-        for change_key, orig_key in field_mapping.items():
-            if change_key in changes:
-                q[orig_key] = changes[change_key]
-
-        # Update choices for multiple choice
-        if changes.get('question_type') == 'multiple_choice':
-            q['choices'] = [
-                changes.get('choice_a', ''),
-                changes.get('choice_b', ''),
-                changes.get('choice_c', ''),
-                changes.get('choice_d', '')
-            ]
-
-    # Validate changes
-    validation_results = validate_single_question(df.iloc[question_index])
-
-    # Update session state
-    st.session_state['df'] = df
-    st.session_state['original_questions'] = original_questions
-
-    # Provide feedback
-    if validation_results['is_valid']:
-        st.success("✅ Question updated successfully!")
-    else:
-        st.warning("⚠️ Question saved but has validation issues:")
-        for error in validation_results['errors']:
-            st.write(f"• {error}")
-
-    return True
-
-except Exception as e:
-    st.error(f"Error saving changes: {str(e)}")
-    return False
-
-def delete_question(question_index: int) -> bool:
-    """
-    Delete question from both DataFrame and original_questions
-Args:
-    question_index: Index of question to delete
-
-Returns:
-    bool: Success status of delete operation
-"""
-try:
-    # Get current data
-    df = st.session_state['df']
-    original_questions = st.session_state['original_questions']
-
-    # Validate index
-    if question_index >= len(df) or question_index >= len(original_questions):
-        st.error("Invalid question index")
-        return False
-
-    # Remove from DataFrame and reset index
-    df_updated = df.drop(df.index[question_index]).reset_index(drop=True)
-
-    # Remove from original_questions
-    original_questions_updated = original_questions.copy()
-    original_questions_updated.pop(question_index)
-
-    # Regenerate sequential IDs
-    df_updated['ID'] = [f"Q_{i+1:05d}" for i in range(len(df_updated))]
-
-    # Update session state
-    st.session_state['df'] = df_updated
-    st.session_state['original_questions'] = original_questions_updated
-
-    # Clear related session state
-    keys_to_remove = [key for key in st.session_state.keys() 
-                     if key.endswith(f"_{question_index}")]
-    for key in keys_to_remove:
-        del st.session_state[key]
-
-    return True
-API.md - JSON Export Integration Updates
-Sections to Add/Update
-1. Export System Section - Add JSON Export Module
-Add after existing export system documentation:
-```markdown
-JSON Export Module
-modules/exporter.py - Enhanced with JSON Support
-New JSON Export Methods:
-```python
-def _render_json_export(self, df: pd.DataFrame, original_questions: List[Dict[str, Any]]):
-    """
-    Render JSON export interface with complete configuration options
-Args:
-    df: Filtered DataFrame containing questions to export
-    original_questions: Original question data with LaTeX preserved
-"""
-
-def _export_json(self, df: pd.DataFrame, 
-                original_questions: List[Dict[str, Any]], 
-                filename: str,
-                include_metadata: bool = True,
-                format_style: str = "Pretty (indented)",
-                preserve_ids: bool = True) -> None:
-    """
-    Export filtered questions to JSON format with comprehensive options
-Args:
-    df: Filtered DataFrame
-    original_questions: Original question data  
-    filename: Output filename
-    include_metadata: Whether to include metadata section
-    format_style: JSON formatting style ("Compact" or "Pretty (indented)")
-    preserve_ids: Whether to preserve original IDs
-"""
-
-def _create_export_metadata(self, df: pd.DataFrame, 
-                           questions: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Create comprehensive metadata section for JSON export
-Returns:
-    Dictionary containing export statistics, analytics, and metadata
-"""
-
-```
-JSON Export Configuration
-```python
-Export type selection enhancement
-export_type = st.radio(
-    "Choose Export Format:",
-    [
-        "📊 CSV Export", 
-        "📦 QTI Package for Canvas",
-        "📄 JSON Database (Native Format)"  # NEW OPTION
-    ],
-    key="export_type_selection"
-)
-```
-JSON Export Options Interface
-```python
-JSON-specific configuration options
-with st.expander("⚙️ JSON Export Options"):
-    include_metadata = st.checkbox(
-        "Include metadata section",
-        value=True,
-        help="Include course/instructor metadata in the JSON file"
-    )
-format_style = st.selectbox(
-    "JSON formatting:",
-    ["Compact", "Pretty (indented)"],
-    index=1,
-    help="Choose formatting style for the JSON output"
-)
-
-preserve_ids = st.checkbox(
-    "Preserve original question IDs",
-    value=True,
-    help="Keep original question ID numbering from source"
-)
-
-
-2. Data Flow Architecture - Update with JSON Export
-Add to existing data flow section:
-```markdown
-Enhanced Data Flow with JSON Export
-JSON Input → FileProcessor → ConflictResolver → 
-DatabaseMerger → SessionManager → UIComponents → 
-Multi-Format Exporter → (QTI/JSON/CSV) Output
-                  ↑
-            JSON Re-import Loop
-JSON Export Pipeline
-DataFrame Filter → Original Data Sync → JSON Structure Creation → 
-Metadata Generation → Format Selection → File Generation → Download
-Round-Trip JSON Workflow
-Original JSON → Q2LMS Processing → Edit/Filter → JSON Export → 
-Version Control → Collaboration → JSON Re-import → Q2LMS
-```
-3. Module Integration - Update Import Patterns
-Add to existing module integration section:
-```python
-Enhanced import pattern with JSON export support
-try:
-    from modules.exporter import (
-        QuestionExporter, 
-        integrate_with_existing_ui,
-        export_to_csv,           # Legacy
-        export_to_json,          # NEW
-        create_qti_package       # Legacy
-    )
-    EXPORT_SYSTEM_AVAILABLE = True
-    JSON_EXPORT_AVAILABLE = True
-except ImportError as e:
-    st.error(f"Export system unavailable: {e}")
-    EXPORT_SYSTEM_AVAILABLE = False
-    JSON_EXPORT_AVAILABLE = False
-Feature flags update
-FEATURE_FLAGS = {
-    'advanced_upload': UPLOAD_SYSTEM_AVAILABLE,
-    'question_editor': QUESTION_EDITOR_AVAILABLE,
-    'export_system': EXPORT_SYSTEM_AVAILABLE,
-    'json_export': JSON_EXPORT_AVAILABLE,        # NEW FLAG
-    'latex_processor': LATEX_PROCESSOR_AVAILABLE
-}
-```
-4. API Endpoints Section - Add JSON Export Endpoints
-Add new section:
-```markdown
-JSON Export API Endpoints
-Export Question Database
-```python
-def export_questions_json(df: pd.DataFrame, 
-                         original_questions: List[Dict[str, Any]],
-                         export_config: Dict[str, Any]) -> bytes:
-    """
-    API endpoint for JSON export functionality
-Args:
-    df: Filtered question DataFrame
-    original_questions: Original question data with LaTeX
-    export_config: Export configuration options
-        - include_metadata: bool
-        - format_style: str ("compact" | "pretty")
-        - preserve_ids: bool
-        - filename: str
-
-Returns:
-    JSON data as bytes for download
-
-Raises:
-    ValueError: If export configuration is invalid
-    ProcessingError: If question processing fails
-"""
-
-```
-Metadata Generation API
-```python
-def generate_export_metadata(questions: List[Dict[str, Any]], 
-                           df: pd.DataFrame) -> Dict[str, Any]:
-    """
-    Generate comprehensive metadata for JSON export
-Args:
-    questions: Processed question data
-    df: Source DataFrame
-
-Returns:
-    Metadata dictionary containing:
-    - export_statistics
-    - question_analytics
-    - latex_analysis
-    - topic_distribution
-    - difficulty_metrics
-"""
-
-```
-Validation API
-```python
-def validate_json_export_config(config: Dict[str, Any]) -> Tuple[bool, List[str]]:
-    """
-    Validate JSON export configuration
-Args:
-    config: Export configuration dictionary
-
-Returns:
-    Tuple of (is_valid, error_messages)
-"""
-
-
-5. Integration Patterns - Add JSON Export Pattern
-Add to existing integration patterns:
-```markdown
-JSON Export Integration Pattern
-Standard JSON Export Workflow
-```python
-In main application
-if selected_tab == "Export":
-    # Check if JSON export is available
-    if FEATURE_FLAGS['json_export']:
-        # Render enhanced export interface with JSON option
-        from modules.exporter import integrate_with_existing_ui
-        integrate_with_existing_ui(st.session_state.df, 
-                                 st.session_state.original_questions)
-    else:
-        # Fallback to legacy export options
-        st.warning("JSON export not available - using legacy export")
-        legacy_export_interface()
-```
-Direct JSON Export Usage
-```python
-Direct usage for custom workflows
-from modules.exporter import QuestionExporter
-exporter = QuestionExporter()
-json_data = exporter._export_json(
-    df=filtered_questions_df,
-    original_questions=original_question_data,
-    filename="course_questions.json",
-    include_metadata=True,
-    format_style="Pretty (indented)",
-    preserve_ids=True
-)
-```
-Batch JSON Export
-```python
-Export multiple filtered sets
-topics = ['Calculus', 'Linear Algebra', 'Numerical Methods']
-for topic in topics:
-    topic_df = df[df['Topic'] == topic]
-    topic_questions = filter_original_questions(original_questions, topic_df)
-exporter._export_json(
-    df=topic_df,
-    original_questions=topic_questions,
-    filename=f"{topic.lower().replace(' ', '_')}_questions.json"
-)
-
-
-6. Error Handling - Add JSON Export Error Handling
-Add to existing error handling section:
-```python
-JSON Export Error Handling
-class JSONExportError(Exception):
-    """Custom exception for JSON export failures"""
-    pass
-def handle_json_export_errors(func):
-    """Decorator for JSON export error handling"""
-    def wrapper(args, kwargs):
-        try:
-            return func(args, **kwargs)
-        except JSONExportError as e:
-            st.error(f"JSON Export Error: {str(e)}")
-            logger.error(f"JSON export failed: {str(e)}", exc_info=True)
-        except ValueError as e:
-            st.error(f"Invalid export configuration: {str(e)}")
-        except Exception as e:
-            st.error(f"Unexpected error during JSON export: {str(e)}")
-            logger.exception("Unexpected JSON export error")
-    return wrapper
-Usage
-@handle_json_export_errors
-def export_json_with_error_handling(df, original_questions, config):
-    """JSON export with comprehensive error handling"""
-    # Export logic here
-    pass
-```
-Summary of API Changes
-New Functions Added:
-
-_render_json_export() - JSON export UI
-_export_json() - Core JSON export functionality  
-_create_export_metadata() - Metadata generation
-export_to_json() - Legacy compatibility function
-
-Enhanced Functions:
-
-render_export_interface() - Now includes JSON option
-integrate_with_existing_ui() - Enhanced with JSON support
-
-New Configuration Options:
-
-JSON export formatting (compact/pretty)
-Metadata inclusion toggle
-ID preservation options
-Custom filename validation
-
-API Compatibility:
-
-✅ Backward Compatible - All existing API functions unchanged
-✅ Progressive Enhancement - New features available when enabled
-✅ Graceful Degradation - Fallback to existing functionality if JSON export unavailable
-
-## Deployment Updates
-
-# DEPLOYMENT.md Update Instructions
-
-## 1. Update "Production Readiness Checklist"
-
-**Location**: In the existing "Production Readiness Checklist" section, add these items:
-
-```markdown
-### Enhanced Production Readiness Checklist (Phase 8)
-
-#### Phase 8 Feature Verification
-- [ ] **Multi-topic filtering interface** appears in sidebar above existing filters
-- [ ] **Topic selection dropdown** functions with multiple selection capability
-- [ ] **"X of Y topics selected" feedback** displays correctly
-- [ ] **OR logic filtering** works (questions from ANY selected topics appear)
-- [ ] **Graceful exit button** appears at bottom of sidebar under "Application" section
-- [ ] **Exit interface** displays session information accurately
-- [ ] **Session cleanup** completes without errors
-- [ ] **Data backup options** function during exit process
-
-#### Phase 8 Integration Testing
-- [ ] **Multi-topic filtering** integrates seamlessly with existing difficulty/type filters
-- [ ] **Session management** works across different user workflows
-- [ ] **Memory cleanup** prevents resource leaks during extended sessions
-- [ ] **Professional exit messaging** appropriate for educational environments
-```
-
-## 2. Add Phase 8 Testing Section
-
-**Location**: Add new subsection after existing deployment verification:
-
-```markdown
-### Phase 8 Feature Testing
-
-#### Multi-Topic Filtering Validation
-
-**Basic Functionality Test**:
+**Step 1: Clone and Install**
 ```bash
-# Test multi-topic filtering interface
-python -c "
+# Clone the repository
+git clone https://github.com/aknoesen/q2lms.git
+cd q2lms
+
+# Create virtual environment (recommended)
+python -m venv q2lms-env
+source q2lms-env/bin/activate  # On Windows: q2lms-env\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+**Step 2: Launch Application**
+```bash
+# Start Q2LMS
+python -m streamlit run streamlit_app.py
+
+# Access application
+# Browser will automatically open to: http://localhost:8501
+```
+
+**Step 3: Initial Setup**
+1. **Upload Sample Data**: Use files from `examples/` directory
+2. **Test Features**: Try question editing, filtering, and export
+3. **Verify LaTeX**: Check mathematical notation rendering
+4. **Test Export**: Generate QTI package for Canvas
+
+### Streamlit Cloud Deployment
+
+**Step 1: Prepare Repository**
+```bash
+# Ensure your repository has:
+├── streamlit_app.py       # Main application
+├── requirements.txt       # Dependencies
+├── modules/              # Core modules
+├── utilities/            # Helper functions
+└── examples/             # Sample data
+```
+
+**Step 2: Deploy to Streamlit Cloud**
+1. **Connect Repository**: Link your GitHub repository
+2. **Configure Settings**: 
+   - Main file: `streamlit_app.py`
+   - Python version: 3.9+
+3. **Deploy**: Streamlit Cloud handles the rest
+4. **Access**: Your app at `https://[your-app-name].streamlit.app`
+
+---
+
+## Production Deployments
+
+### Department-Level Docker Deployment
+
+**Step 1: Create Dockerfile**
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user for security
+RUN useradd -m -u 1000 q2lms && chown -R q2lms:q2lms /app
+USER q2lms
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+```
+
+**Step 2: Docker Compose for Department**
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  q2lms:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - Q2LMS_ENV=production
+      - Q2LMS_DATA_DIR=/app/data
+      - Q2LMS_LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - q2lms
+    restart: unless-stopped
+```
+
+**Step 3: Deploy Department Setup**
+```bash
+# Deploy with Docker Compose
+docker-compose up -d
+
+# Verify deployment
+docker-compose ps
+docker-compose logs q2lms
+
+# Access application
+# http://your-server-ip or https://your-domain.edu
+```
+
+### Enterprise Kubernetes Deployment
+
+**Step 1: Kubernetes Manifests**
+```yaml
+# k8s/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: q2lms
+
+---
+# k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: q2lms
+  namespace: q2lms
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: q2lms
+  template:
+    metadata:
+      labels:
+        app: q2lms
+    spec:
+      containers:
+      - name: q2lms
+        image: your-registry/q2lms:latest
+        ports:
+        - containerPort: 8501
+        env:
+        - name: Q2LMS_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+---
+# k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: q2lms-service
+  namespace: q2lms
+spec:
+  selector:
+    app: q2lms
+  ports:
+  - port: 80
+    targetPort: 8501
+  type: ClusterIP
+
+---
+# k8s/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: q2lms-ingress
+  namespace: q2lms
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - q2lms.your-institution.edu
+    secretName: q2lms-tls
+  rules:
+  - host: q2lms.your-institution.edu
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: q2lms-service
+            port:
+              number: 80
+```
+
+**Step 2: Deploy to Kubernetes**
+```bash
+# Apply Kubernetes manifests
+kubectl apply -f k8s/
+
+# Verify deployment
+kubectl get pods -n q2lms
+kubectl get services -n q2lms
+kubectl get ingress -n q2lms
+
+# Check application logs
+kubectl logs -f deployment/q2lms -n q2lms
+```
+
+### Institution-Level Cloud Deployment
+
+**AWS ECS with Fargate**
+```yaml
+# aws/task-definition.json
+{
+  "family": "q2lms",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::account:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::account:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "q2lms",
+      "image": "your-account.dkr.ecr.region.amazonaws.com/q2lms:latest",
+      "portMappings": [
+        {
+          "containerPort": 8501,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "Q2LMS_ENV",
+          "value": "production"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/q2lms",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Azure Container Instances**
+```yaml
+# azure/container-group.yaml
+apiVersion: 2019-12-01
+location: eastus
+name: q2lms-container-group
+properties:
+  containers:
+  - name: q2lms
+    properties:
+      image: your-registry.azurecr.io/q2lms:latest
+      resources:
+        requests:
+          cpu: 1
+          memoryInGb: 1.5
+      ports:
+      - port: 8501
+        protocol: TCP
+  osType: Linux
+  ipAddress:
+    type: Public
+    ports:
+    - protocol: tcp
+      port: '8501'
+    dnsNameLabel: q2lms-institution
+```
+
+---
+
+## Configuration Management
+
+### Environment Variables
+```bash
+# Core Configuration
+export Q2LMS_ENV=production                    # Environment: development, staging, production
+export Q2LMS_DATA_DIR=/app/data               # Data storage directory
+export Q2LMS_LOG_LEVEL=info                  # Logging: debug, info, warning, error
+export Q2LMS_PORT=8501                       # Application port
+
+# Feature Flags
+export Q2LMS_ADVANCED_UPLOAD=true            # Enable advanced upload features
+export Q2LMS_QUESTION_EDITOR=true            # Enable question editing
+export Q2LMS_EXPORT_SYSTEM=true              # Enable export functionality
+export Q2LMS_LATEX_PROCESSOR=true            # Enable LaTeX processing
+
+# Phase 8 Features
+export Q2LMS_MULTI_TOPIC_ENABLED=true        # Multi-topic filtering
+export Q2LMS_GRACEFUL_EXIT_ENABLED=true      # Enhanced exit system
+export Q2LMS_SESSION_TRACKING=true           # Session management
+
+# Performance Tuning
+export Q2LMS_MAX_UPLOAD_SIZE=200             # Max file size MB
+export Q2LMS_SESSION_TIMEOUT=3600            # Session timeout seconds
+export Q2LMS_MEMORY_LIMIT=1024               # Memory limit MB
+
+# Security
+export Q2LMS_ENABLE_CORS=false               # CORS settings
+export Q2LMS_TRUSTED_HOSTS=localhost         # Trusted host list
+export Q2LMS_SECURE_COOKIES=true             # Secure cookie settings
+```
+
+### Configuration Files
+```toml
+# config/q2lms.toml
+[application]
+name = "Q2LMS"
+version = "1.0.0"
+debug = false
+
+[server]
+host = "0.0.0.0"
+port = 8501
+max_upload_size = 200
+
+[features]
+advanced_upload = true
+question_editor = true
+export_system = true
+latex_processor = true
+multi_topic_filtering = true
+graceful_exit = true
+
+[database]
+type = "file"  # file, postgresql
+data_directory = "/app/data"
+backup_enabled = true
+backup_interval = 3600
+
+[logging]
+level = "info"
+file = "/app/logs/q2lms.log"
+max_size = "100MB"
+retention_days = 30
+
+[monitoring]
+enabled = true
+metrics_port = 9090
+health_check_enabled = true
+```
+
+---
+
+## Monitoring and Maintenance
+
+### Health Checks
+```python
+# health_check.py
 import streamlit as st
 import pandas as pd
-import sys
-import os
-sys.path.append('.')
-
-# Create test data
-test_data = pd.DataFrame([
-    {'Title': 'Q1', 'Topic': 'Circuit Analysis', 'Type': 'multiple_choice'},
-    {'Title': 'Q2', 'Topic': 'MATLAB Programming', 'Type': 'numerical'},
-    {'Title': 'Q3', 'Topic': 'Linear Algebra', 'Type': 'multiple_choice'},
-    {'Title': 'Q4', 'Topic': 'Circuit Analysis', 'Type': 'true_false'}
-])
-
-# Test topic extraction
-topics = test_data['Topic'].unique().tolist()
-print(f'Available topics: {topics}')
-print(f'Topic count: {len(topics)}')
-
-# Test filtering logic
-selected_topics = ['Circuit Analysis', 'MATLAB Programming']
-filtered = test_data[test_data['Topic'].isin(selected_topics)]
-print(f'Filtered questions: {len(filtered)} (expected: 3)')
-
-print('✅ Multi-topic filtering logic validated')
-"
-```
-
-**Integration Test**:
-```bash
-# Test with actual Q2LMS interface
-python -c "
-# Start Q2LMS and test:
-# 1. Load sample question database
-# 2. Access multi-topic dropdown in sidebar
-# 3. Select 2-3 topics
-# 4. Verify 'X of Y topics selected' message
-# 5. Confirm filtered questions display correctly
-# 6. Test combination with difficulty filters
-print('Manual integration test required - see checklist above')
-"
-```
-
-#### Graceful Exit System Validation
-
-**Session Management Test**:
-```bash
-# Test session tracking and cleanup
-python -c "
-import streamlit as st
+import requests
 from datetime import datetime
-import sys
-sys.path.append('.')
-
-# Test session state management
-session_keys = [
-    'session_start_time',
-    'exit_interface_active', 
-    'selected_topics',
-    'topic_filter_count'
-]
-
-print('Testing Phase 8 session state keys:')
-for key in session_keys:
-    print(f'  - {key}: Ready for tracking')
-
-print('✅ Session management structure validated')
-"
-```
-
-**Memory Cleanup Test**:
-```bash
-# Test memory management during exit
-python -c "
 import psutil
-import gc
 
-# Monitor memory before simulated session
-initial_memory = psutil.virtual_memory().percent
-print(f'Initial memory usage: {initial_memory:.1f}%')
-
-# Simulate session cleanup
-gc.collect()
-final_memory = psutil.virtual_memory().percent
-print(f'Post-cleanup memory usage: {final_memory:.1f}%')
-
-if final_memory <= initial_memory + 5:  # Allow 5% variance
-    print('✅ Memory cleanup validation passed')
-else:
-    print('⚠️ Memory cleanup may need optimization')
-"
-```
-```
-
-## 3. Update Environment Variables Section
-
-**Location**: Add to existing environment configuration:
-
-```bash
-# Phase 8 Feature Configuration
-export Q2LMS_MULTI_TOPIC_ENABLED=true
-export Q2LMS_GRACEFUL_EXIT_ENABLED=true
-export Q2LMS_SESSION_TRACKING=true
-
-# Optional: Phase 8 Customization
-export Q2LMS_MAX_TOPIC_SELECTIONS=10
-export Q2LMS_SESSION_TIMEOUT_MINUTES=480
-export Q2LMS_EXIT_CONFIRMATION_REQUIRED=true
-
-# Development/Testing
-export Q2LMS_PHASE8_DEBUG=false
-export Q2LMS_SESSION_LOGGING=info
-```
-
-## 4. Update Monitoring Section
-
-**Location**: Add to existing monitoring configuration:
-
-```python
-# Phase 8 Enhanced Monitoring
-class Phase8Monitor:
-    """Monitor Phase 8 feature usage and performance"""
+def check_application_health():
+    """Comprehensive health check for Q2LMS"""
+    health_status = {
+        'timestamp': datetime.now().isoformat(),
+        'status': 'healthy',
+        'checks': {}
+    }
     
+    # Check core dependencies
+    try:
+        import streamlit
+        import pandas
+        health_status['checks']['dependencies'] = 'ok'
+    except ImportError as e:
+        health_status['checks']['dependencies'] = f'error: {e}'
+        health_status['status'] = 'unhealthy'
+    
+    # Check system resources
+    memory_usage = psutil.virtual_memory().percent
+    cpu_usage = psutil.cpu_percent()
+    disk_usage = psutil.disk_usage('/').percent
+    
+    health_status['checks']['memory'] = f'{memory_usage:.1f}%'
+    health_status['checks']['cpu'] = f'{cpu_usage:.1f}%'
+    health_status['checks']['disk'] = f'{disk_usage:.1f}%'
+    
+    # Resource warnings
+    if memory_usage > 80 or cpu_usage > 80 or disk_usage > 90:
+        health_status['status'] = 'warning'
+    
+    # Check application features
+    try:
+        # Test data processing
+        test_df = pd.DataFrame({'test': [1, 2, 3]})
+        health_status['checks']['data_processing'] = 'ok'
+        
+        # Test file operations
+        import os
+        test_file = '/tmp/q2lms_health_test.txt'
+        with open(test_file, 'w') as f:
+            f.write('health check')
+        os.remove(test_file)
+        health_status['checks']['file_operations'] = 'ok'
+        
+    except Exception as e:
+        health_status['checks']['application_features'] = f'error: {e}'
+        health_status['status'] = 'unhealthy'
+    
+    return health_status
+
+# Health endpoint for load balancers
+@st.cache_data(ttl=30)  # Cache for 30 seconds
+def health_endpoint():
+    return check_application_health()
+```
+
+### Performance Monitoring
+```python
+# monitoring.py
+import time
+import logging
+from functools import wraps
+
+class PerformanceMonitor:
     def __init__(self):
         self.metrics = {
-            'multi_topic_sessions': 0,
-            'graceful_exits': 0,
-            'avg_session_duration': 0,
-            'topics_per_session': [],
-            'exit_with_backup': 0
+            'request_count': 0,
+            'response_times': [],
+            'error_count': 0,
+            'active_sessions': 0
         }
     
-    def record_multi_topic_usage(self, topic_count):
-        """Record multi-topic filtering usage"""
-        self.metrics['multi_topic_sessions'] += 1
-        self.metrics['topics_per_session'].append(topic_count)
-    
-    def record_graceful_exit(self, session_duration, backup_used=False):
-        """Record graceful exit usage"""
-        self.metrics['graceful_exits'] += 1
-        if backup_used:
-            self.metrics['exit_with_backup'] += 1
+    def track_performance(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time.time()
+            try:
+                result = func(*args, **kwargs)
+                self.metrics['request_count'] += 1
+                return result
+            except Exception as e:
+                self.metrics['error_count'] += 1
+                logging.error(f"Error in {func.__name__}: {e}")
+                raise
+            finally:
+                response_time = time.time() - start_time
+                self.metrics['response_times'].append(response_time)
+                # Keep only last 1000 response times
+                if len(self.metrics['response_times']) > 1000:
+                    self.metrics['response_times'] = self.metrics['response_times'][-1000:]
         
-        # Update average session duration
-        total_sessions = self.metrics['graceful_exits']
-        current_avg = self.metrics['avg_session_duration']
-        self.metrics['avg_session_duration'] = (
-            (current_avg * (total_sessions - 1) + session_duration) / total_sessions
-        )
+        return wrapper
     
-    def get_phase8_health_metrics(self):
-        """Get Phase 8 feature health status"""
+    def get_metrics_summary(self):
+        if self.metrics['response_times']:
+            avg_response_time = sum(self.metrics['response_times']) / len(self.metrics['response_times'])
+            max_response_time = max(self.metrics['response_times'])
+        else:
+            avg_response_time = 0
+            max_response_time = 0
+        
         return {
-            'multi_topic_adoption': self.metrics['multi_topic_sessions'],
-            'graceful_exit_usage': self.metrics['graceful_exits'],
-            'avg_session_minutes': self.metrics['avg_session_duration'] / 60,
-            'backup_usage_rate': (
-                self.metrics['exit_with_backup'] / 
-                max(self.metrics['graceful_exits'], 1) * 100
-            ),
-            'avg_topics_per_session': (
-                sum(self.metrics['topics_per_session']) / 
-                max(len(self.metrics['topics_per_session']), 1)
-            )
+            'total_requests': self.metrics['request_count'],
+            'total_errors': self.metrics['error_count'],
+            'error_rate': self.metrics['error_count'] / max(self.metrics['request_count'], 1) * 100,
+            'avg_response_time': avg_response_time,
+            'max_response_time': max_response_time,
+            'active_sessions': self.metrics['active_sessions']
         }
 
-# Integration with existing monitoring
-app_monitor = ApplicationMonitor()
-phase8_monitor = Phase8Monitor()
-
-def enhanced_monitoring():
-    """Enhanced monitoring including Phase 8 features"""
-    standard_metrics = app_monitor.get_metrics_summary()
-    phase8_metrics = phase8_monitor.get_phase8_health_metrics()
-    
-    return {
-        **standard_metrics,
-        'phase8_features': phase8_metrics
-    }
+# Global monitor instance
+app_monitor = PerformanceMonitor()
 ```
 
-## 5. Update Health Checks Section
-
-**Location**: Add to existing health check configuration:
-
-```python
-# Enhanced Health Checks for Phase 8
-async def check_phase8_features(self) -> Dict[str, Any]:
-    """Check Phase 8 feature availability and functionality"""
-    checks = {}
-    
-    # Test multi-topic filtering availability
-    try:
-        # Simulate topic extraction and filtering
-        test_topics = ['Test Topic 1', 'Test Topic 2']
-        # This would test the enhanced_subject_filtering function
-        checks['multi_topic_filtering'] = {
-            'healthy': True,
-            'feature_available': True,
-            'test_topics': len(test_topics)
-        }
-    except Exception as e:
-        checks['multi_topic_filtering'] = {
-            'healthy': False,
-            'error': str(e)
-        }
-    
-    # Test graceful exit system
-    try:
-        # Test session state management
-        session_state_keys = [
-            'session_start_time', 'exit_interface_active',
-            'selected_topics', 'topic_filter_count'
-        ]
-        checks['graceful_exit'] = {
-            'healthy': True,
-            'session_keys_available': len(session_state_keys),
-            'cleanup_functional': True
-        }
-    except Exception as e:
-        checks['graceful_exit'] = {
-            'healthy': False,
-            'error': str(e)
-        }
-    
-    # Overall Phase 8 health
-    all_healthy = all(check.get('healthy', False) for check in checks.values())
-    
-    return {
-        'phase8_overall_status': 'healthy' if all_healthy else 'degraded',
-        'feature_checks': checks
-    }
-
-# Add to main health check
-async def check_application_health(self) -> Dict[str, Any]:
-    """Enhanced health check including Phase 8 features"""
-    # ... existing health checks ...
-    
-    # Add Phase 8 checks
-    checks['phase8_features'] = await self.check_phase8_features()
-    
-    return {
-        'overall_status': 'healthy' if all_healthy else 'unhealthy',
-        'timestamp': datetime.utcnow().isoformat(),
-        'checks': checks
-    }
-```
-
-## 6. Update Backup Strategy Section
-
-**Location**: Add to existing backup procedures:
-
+### Automated Maintenance
 ```bash
-# Enhanced backup with Phase 8 awareness
-backup_q2lms_with_phase8() {
-    local backup_dir="/var/backups/q2lms"
-    local timestamp=$(date +%Y%m%d_%H%M%S)
-    
-    log "Starting Q2LMS backup with Phase 8 features: $timestamp"
-    
-    # ... existing backup logic ...
-    
-    # Test Phase 8 functionality during backup
-    echo "Testing Phase 8 feature availability..." | tee -a "$backup_dir/backup.log"
-    
-    python3 -c "
-    import sys
-    sys.path.append('/app')
-    
-    try:
-        # Test multi-topic filtering components
-        import pandas as pd
-        test_df = pd.DataFrame([
-            {'Title': 'Test', 'Topic': 'Circuit Analysis', 'Type': 'multiple_choice'},
-            {'Title': 'Test2', 'Topic': 'MATLAB Programming', 'Type': 'numerical'}
-        ])
-        
-        # Test topic extraction
-        topics = test_df['Topic'].unique().tolist()
-        assert len(topics) == 2, 'Topic extraction failed'
-        
-        # Test filtering logic
-        selected = ['Circuit Analysis']
-        filtered = test_df[test_df['Topic'].isin(selected)]
-        assert len(filtered) == 1, 'Topic filtering failed'
-        
-        print('✅ Multi-topic filtering functional in backup environment')
-        
-        # Test session management components
-        from datetime import datetime
-        session_start = datetime.now().isoformat()
-        assert session_start, 'Session tracking failed'
-        
-        print('✅ Session management functional in backup environment')
-        print('✅ Phase 8 features validated during backup')
-        
-    except ImportError as e:
-        print(f'⚠️ Phase 8 import issue: {e}')
-        print('Application may still function with reduced features')
-    except Exception as e:
-        print(f'⚠️ Phase 8 functionality test failed: {e}')
-        print('Review Phase 8 configuration before restore')
-    " || echo "⚠️ Phase 8 feature test encountered issues"
-    
-    # Create Phase 8 feature status report
-    cat > "$backup_dir/phase8_status.txt" << EOF
-Phase 8 Features Backup Report
-Generated: $(date)
+#!/bin/bash
+# maintenance.sh - Automated maintenance script
 
-Multi-Topic Filtering:
-- Feature implementation: Enhanced subject filtering with OR logic
-- UI Location: Sidebar above existing filters
-- Session Integration: Topic selections preserved during session
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
 
-Graceful Exit System:
-- Feature implementation: Professional session management
-- UI Location: Bottom of sidebar under 'Application' section
-- Cleanup Integration: Memory and resource management
+log "Starting Q2LMS maintenance routine"
 
-Backup Verification:
-- Configuration files: Included
-- Feature dependencies: Validated
-- Integration status: $(python3 -c "print('✅ Functional')" 2>/dev/null || echo "⚠️ Needs verification")
+# Check disk space
+DISK_USAGE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+if [ $DISK_USAGE -gt 80 ]; then
+    log "WARNING: Disk usage is ${DISK_USAGE}%"
+    # Clean old logs
+    find /app/logs -name "*.log" -mtime +30 -delete
+    log "Cleaned old log files"
+fi
+
+# Backup configuration
+BACKUP_DIR="/app/backups/$(date +%Y%m%d)"
+mkdir -p $BACKUP_DIR
+cp -r /app/config $BACKUP_DIR/
+cp -r /app/data $BACKUP_DIR/
+log "Configuration and data backed up to $BACKUP_DIR"
+
+# Check application health
+python3 -c "
+import sys
+sys.path.append('/app')
+from health_check import check_application_health
+
+health = check_application_health()
+if health['status'] != 'healthy':
+    print(f'Application health check failed: {health}')
+    exit(1)
+else:
+    print('Application health check passed')
+"
+
+# Restart if needed
+if [ $? -ne 0 ]; then
+    log "Health check failed, restarting application"
+    docker-compose restart q2lms
+fi
+
+log "Maintenance routine completed"
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+**Issue: Application won't start**
+```bash
+# Check Python version
+python --version  # Should be 3.8+
+
+# Check dependencies
+pip list | grep streamlit
+pip list | grep pandas
+
+# Reinstall dependencies
+pip install -r requirements.txt --force-reinstall
+
+# Check for missing files
+ls -la streamlit_app.py modules/ utilities/
+
+# Check logs
+tail -f logs/q2lms.log
+```
+
+**Issue: Memory usage high**
+```bash
+# Monitor memory usage
+ps aux | grep streamlit
+free -h
+
+# Check for memory leaks
+python3 -c "
+import psutil
+process = psutil.Process()
+print(f'Memory usage: {process.memory_info().rss / 1024 / 1024:.1f} MB')
+"
+
+# Restart application
+docker-compose restart q2lms
+```
+
+**Issue: Upload failures**
+```bash
+# Check file permissions
+ls -la data/
+chmod 755 data/
+
+# Check disk space
+df -h
+
+# Test file upload manually
+python3 -c "
+import json
+test_data = {'questions': [{'title': 'test'}]}
+with open('/tmp/test.json', 'w') as f:
+    json.dump(test_data, f)
+print('Test file created successfully')
+"
+```
+
+**Issue: Export not working**
+```bash
+# Check LaTeX dependencies
+python3 -c "
+try:
+    import modules.export.qti_generator
+    print('QTI generator available')
+except ImportError as e:
+    print(f'QTI generator error: {e}')
+"
+
+# Verify export directory
+mkdir -p /app/exports
+chmod 755 /app/exports
+
+# Test export functionality
+python3 -c "
+import pandas as pd
+test_df = pd.DataFrame([
+    {'Title': 'Test', 'Type': 'multiple_choice', 'Question_Text': 'Test question'}
+])
+print(f'Test export data ready: {len(test_df)} questions')
+"
+```
+
+### Log Analysis
+```bash
+# View recent errors
+grep ERROR /app/logs/q2lms.log | tail -20
+
+# Monitor real-time logs
+tail -f /app/logs/q2lms.log | grep -E "(ERROR|WARNING)"
+
+# Analyze performance
+grep "response_time" /app/logs/q2lms.log | awk '{print $3}' | sort -n | tail -10
+
+# Check user activity
+grep "session_start" /app/logs/q2lms.log | wc -l
+```
+
+### Debug Mode
+```python
+# Enable debug mode
+export Q2LMS_DEBUG=true
+export Q2LMS_LOG_LEVEL=debug
+
+# Debug configuration
+[logging]
+level = "debug"
+show_sql = true
+show_performance = true
+```
+
+---
+
+## Backup and Recovery
+
+### Automated Backup Strategy
+```bash
+#!/bin/bash
+# backup.sh - Comprehensive backup script
+
+BACKUP_ROOT="/backups/q2lms"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="$BACKUP_ROOT/$DATE"
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$BACKUP_ROOT/backup.log"
+}
+
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
+
+log "Starting Q2LMS backup: $DATE"
+
+# Backup application data
+log "Backing up application data"
+cp -r /app/data "$BACKUP_DIR/"
+
+# Backup configuration
+log "Backing up configuration"
+cp -r /app/config "$BACKUP_DIR/"
+
+# Backup logs (last 7 days)
+log "Backing up recent logs"
+find /app/logs -name "*.log" -mtime -7 -exec cp {} "$BACKUP_DIR/logs/" \;
+
+# Backup database state
+if [ -f /app/data/current_database.json ]; then
+    log "Backing up current database state"
+    cp /app/data/current_database.json "$BACKUP_DIR/"
+fi
+
+# Create backup metadata
+cat > "$BACKUP_DIR/backup_info.txt" << EOF
+Q2LMS Backup Information
+========================
+Backup Date: $(date)
+Backup Directory: $BACKUP_DIR
+Application Version: $(grep version /app/config/q2lms.toml | cut -d'"' -f2)
+Data Size: $(du -sh /app/data | cut -f1)
+Configuration Files: $(ls /app/config | wc -l)
+Log Files Included: $(find /app/logs -name "*.log" -mtime -7 | wc -l)
+
+Backup Contents:
+- Application data directory
+- Configuration files
+- Recent log files (7 days)
+- Current database state
+- System metadata
 
 Restore Instructions:
-1. Deploy standard Q2LMS application
-2. Verify Phase 8 functions are available
-3. Test multi-topic filtering in sidebar
-4. Test graceful exit functionality
-5. Monitor session management performance
+1. Stop Q2LMS application
+2. Restore data: cp -r $BACKUP_DIR/data/* /app/data/
+3. Restore config: cp -r $BACKUP_DIR/config/* /app/config/
+4. Restart application
+5. Verify functionality
 EOF
 
-    log "Phase 8 backup validation completed"
+# Compress backup
+log "Compressing backup"
+cd "$BACKUP_ROOT"
+tar -czf "q2lms_backup_$DATE.tar.gz" "$DATE/"
+
+# Cleanup old backups (keep 30 days)
+log "Cleaning up old backups"
+find "$BACKUP_ROOT" -name "q2lms_backup_*.tar.gz" -mtime +30 -delete
+find "$BACKUP_ROOT" -maxdepth 1 -type d -mtime +30 -exec rm -rf {} \;
+
+# Backup verification
+if [ -f "$BACKUP_ROOT/q2lms_backup_$DATE.tar.gz" ]; then
+    BACKUP_SIZE=$(du -sh "$BACKUP_ROOT/q2lms_backup_$DATE.tar.gz" | cut -f1)
+    log "Backup completed successfully: q2lms_backup_$DATE.tar.gz ($BACKUP_SIZE)"
+else
+    log "ERROR: Backup failed - archive not created"
+    exit 1
+fi
+
+log "Backup process completed"
+```
+
+### Disaster Recovery Procedures
+```bash
+#!/bin/bash
+# disaster_recovery.sh - Q2LMS disaster recovery
+
+BACKUP_ROOT="/backups/q2lms"
+RESTORE_POINT="$1"
+
+if [ -z "$RESTORE_POINT" ]; then
+    echo "Usage: $0 <backup_date_time>"
+    echo "Available backups:"
+    ls -la "$BACKUP_ROOT"/q2lms_backup_*.tar.gz
+    exit 1
+fi
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+log "Starting Q2LMS disaster recovery"
+log "Restore point: $RESTORE_POINT"
+
+# Stop application
+log "Stopping Q2LMS application"
+docker-compose down || systemctl stop q2lms
+
+# Backup current state before restore
+CURRENT_BACKUP="/tmp/q2lms_pre_restore_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$CURRENT_BACKUP"
+cp -r /app/data "$CURRENT_BACKUP/" 2>/dev/null
+cp -r /app/config "$CURRENT_BACKUP/" 2>/dev/null
+log "Current state backed up to $CURRENT_BACKUP"
+
+# Extract backup
+BACKUP_FILE="$BACKUP_ROOT/q2lms_backup_$RESTORE_POINT.tar.gz"
+if [ ! -f "$BACKUP_FILE" ]; then
+    log "ERROR: Backup file not found: $BACKUP_FILE"
+    exit 1
+fi
+
+log "Extracting backup: $BACKUP_FILE"
+cd "$BACKUP_ROOT"
+tar -xzf "q2lms_backup_$RESTORE_POINT.tar.gz"
+
+# Restore data
+log "Restoring application data"
+rm -rf /app/data/*
+cp -r "$BACKUP_ROOT/$RESTORE_POINT/data/"* /app/data/
+
+# Restore configuration
+log "Restoring configuration"
+cp -r "$BACKUP_ROOT/$RESTORE_POINT/config/"* /app/config/
+
+# Set proper permissions
+log "Setting file permissions"
+chown -R q2lms:q2lms /app/data /app/config
+chmod -R 755 /app/data /app/config
+
+# Start application
+log "Starting Q2LMS application"
+docker-compose up -d || systemctl start q2lms
+
+# Wait for application to start
+sleep 30
+
+# Verify restoration
+log "Verifying restoration"
+python3 -c "
+import sys
+sys.path.append('/app')
+try:
+    from health_check import check_application_health
+    health = check_application_health()
+    if health['status'] == 'healthy':
+        print('✅ Application restored successfully')
+    else:
+        print('⚠️ Application started but health check shows issues')
+        print(health)
+except Exception as e:
+    print(f'❌ Restoration verification failed: {e}')
+"
+
+log "Disaster recovery completed"
+log "Verify application functionality at your Q2LMS URL"
+```
+
+### Backup Monitoring
+```python
+# backup_monitor.py
+import os
+import json
+from datetime import datetime, timedelta
+import smtplib
+from email.mime.text import MIMEText
+
+class BackupMonitor:
+    def __init__(self, backup_dir="/backups/q2lms"):
+        self.backup_dir = backup_dir
+        self.max_backup_age_hours = 24
+        self.min_backup_size_mb = 1
+    
+    def check_backup_health(self):
+        """Check backup health and alert if issues found"""
+        issues = []
+        
+        # Check if backup directory exists
+        if not os.path.exists(self.backup_dir):
+            issues.append("Backup directory not found")
+            return {'status': 'critical', 'issues': issues}
+        
+        # Find latest backup
+        backup_files = [f for f in os.listdir(self.backup_dir) 
+                       if f.startswith('q2lms_backup_') and f.endswith('.tar.gz')]
+        
+        if not backup_files:
+            issues.append("No backup files found")
+            return {'status': 'critical', 'issues': issues}
+        
+        # Check latest backup age
+        latest_backup = max(backup_files)
+        backup_path = os.path.join(self.backup_dir, latest_backup)
+        backup_time = datetime.fromtimestamp(os.path.getmtime(backup_path))
+        age_hours = (datetime.now() - backup_time).total_seconds() / 3600
+        
+        if age_hours > self.max_backup_age_hours:
+            issues.append(f"Latest backup is {age_hours:.1f} hours old")
+        
+        # Check backup size
+        backup_size_mb = os.path.getsize(backup_path) / (1024 * 1024)
+        if backup_size_mb < self.min_backup_size_mb:
+            issues.append(f"Backup size ({backup_size_mb:.1f}MB) seems too small")
+        
+        # Determine status
+        if issues:
+            status = 'warning' if age_hours < 48 else 'critical'
+        else:
+            status = 'healthy'
+        
+        return {
+            'status': status,
+            'latest_backup': latest_backup,
+            'backup_age_hours': age_hours,
+            'backup_size_mb': backup_size_mb,
+            'total_backups': len(backup_files),
+            'issues': issues
+        }
+    
+    def send_alert(self, backup_status):
+        """Send email alert for backup issues"""
+        if backup_status['status'] == 'healthy':
+            return
+        
+        # Email configuration (customize for your environment)
+        smtp_server = os.getenv('SMTP_SERVER', 'localhost')
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        email_user = os.getenv('EMAIL_USER', 'alerts@your-institution.edu')
+        email_password = os.getenv('EMAIL_PASSWORD', '')
+        alert_recipients = os.getenv('ALERT_RECIPIENTS', 'admin@your-institution.edu').split(',')
+        
+        subject = f"Q2LMS Backup Alert - {backup_status['status'].upper()}"
+        
+        body = f"""
+Q2LMS Backup Monitoring Alert
+
+Status: {backup_status['status'].upper()}
+Timestamp: {datetime.now().isoformat()}
+
+Backup Details:
+- Latest Backup: {backup_status.get('latest_backup', 'N/A')}
+- Age: {backup_status.get('backup_age_hours', 0):.1f} hours
+- Size: {backup_status.get('backup_size_mb', 0):.1f} MB
+- Total Backups: {backup_status.get('total_backups', 0)}
+
+Issues Found:
+{chr(10).join(f"- {issue}" for issue in backup_status['issues'])}
+
+Action Required:
+1. Check backup system functionality
+2. Verify disk space in backup directory
+3. Review backup logs for errors
+4. Consider manual backup if needed
+
+Backup Directory: {self.backup_dir}
+        """
+        
+        try:
+            msg = MIMEText(body)
+            msg['Subject'] = subject
+            msg['From'] = email_user
+            msg['To'] = ', '.join(alert_recipients)
+            
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(email_user, email_password)
+                server.send_message(msg)
+            
+            print(f"Alert sent to {alert_recipients}")
+            
+        except Exception as e:
+            print(f"Failed to send alert: {e}")
+
+# Usage in cron job
+if __name__ == "__main__":
+    monitor = BackupMonitor()
+    status = monitor.check_backup_health()
+    print(json.dumps(status, indent=2))
+    monitor.send_alert(status)
+```
+
+---
+
+## Security Considerations
+
+### Production Security Checklist
+```bash
+# Security Configuration Checklist
+
+# 1. Network Security
+- [ ] Application runs behind reverse proxy (nginx/Apache)
+- [ ] HTTPS enabled with valid SSL certificates
+- [ ] Firewall configured to block unnecessary ports
+- [ ] VPN access for administrative functions
+
+# 2. Application Security
+- [ ] Debug mode disabled in production
+- [ ] Secure headers configured in reverse proxy
+- [ ] File upload restrictions enforced
+- [ ] Input validation on all user inputs
+
+# 3. System Security
+- [ ] Application runs as non-root user
+- [ ] File permissions properly configured
+- [ ] Regular security updates applied
+- [ ] System monitoring and logging enabled
+
+# 4. Data Security
+- [ ] Sensitive data encrypted at rest
+- [ ] Backup encryption enabled
+- [ ] Access logs maintained
+- [ ] Data retention policies implemented
+```
+
+### SSL/TLS Configuration
+```nginx
+# nginx-ssl.conf - Production SSL configuration
+server {
+    listen 80;
+    server_name q2lms.your-institution.edu;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name q2lms.your-institution.edu;
+
+    # SSL Configuration
+    ssl_certificate /etc/nginx/ssl/q2lms.crt;
+    ssl_certificate_key /etc/nginx/ssl/q2lms.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=63072000" always;
+    add_header X-Frame-Options DENY always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer-when-downgrade always;
+
+    # File upload limits
+    client_max_body_size 200M;
+
+    location / {
+        proxy_pass http://q2lms:8501;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket support for Streamlit
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    
+    # Security scanning endpoint
+    location /_health {
+        proxy_pass http://q2lms:8501/_stcore/health;
+        access_log off;
+    }
 }
 ```
 
-## 7. Update Disaster Recovery Section
+---
 
-**Location**: Add to existing disaster recovery procedures:
+## Performance Optimization
 
-```yaml
-# disaster_recovery.yml - Phase 8 Feature Recovery
-recovery_procedures:
-  phase8_feature_failure:
-    symptoms:
-      - "Multi-topic dropdown missing from sidebar"
-      - "Exit button not visible in sidebar"
-      - "Topic filtering not working correctly"
-      - "Session management errors"
-    
-    diagnosis:
-      - "Check streamlit_app.py for Phase 8 functions"
-      - "Verify enhanced_subject_filtering() availability"
-      - "Test add_exit_button_to_sidebar() function"
-      - "Validate session state management"
-    
-    resolution:
-      - "Restore streamlit_app.py from backup"
-      - "Verify Phase 8 function integration"
-      - "Restart application services"
-      - "Clear browser cache for users"
-      - "Test Phase 8 functionality with sample data"
-    
-    validation:
-      - "Multi-topic dropdown appears in sidebar"
-      - "Topic selection with feedback works"
-      - "Exit button visible and functional"
-      - "Session information displays correctly"
-      - "Graceful exit completes successfully"
+### Production Performance Tuning
+```toml
+# config/performance.toml
+[streamlit]
+# Streamlit-specific optimizations
+maxUploadSize = 200  # MB
+maxMessageSize = 200  # MB
+enableCORS = false
+enableXsrfProtection = true
 
-  phase8_performance_issues:
-    symptoms:
-      - "Multi-topic filtering slow with large datasets"
-      - "Session cleanup takes excessive time"
-      - "Memory usage increases during extended sessions"
-      - "Exit process hangs or fails"
-    
-    diagnosis:
-      - "Monitor memory usage during multi-topic operations"
-      - "Check session state size and complexity"
-      - "Verify cleanup_session_state() efficiency"
-      - "Test with various dataset sizes"
-    
-    resolution:
-      - "Restart application to clear memory"
-      - "Optimize session state management"
-      - "Implement memory monitoring"
-      - "Consider session timeout settings"
-      - "Review Phase 8 performance configurations"
-    
-    validation:
-      - "Multi-topic filtering responsive with 100+ questions"
-      - "Session cleanup completes within 5 seconds"
-      - "Memory usage stable during extended sessions"
-      - "Exit process completes reliably"
+[caching]
+# Enable aggressive caching for production
+enable_data_caching = true
+cache_ttl_seconds = 300
+max_cache_entries = 1000
 
-  phase8_integration_conflicts:
-    symptoms:
-      - "Phase 8 features interfere with existing functionality"
-      - "Filter combinations produce unexpected results"
-      - "Session management conflicts with other features"
-      - "UI layout issues with new components"
-    
-    resolution:
-      - "Review integration points in main() function"
-      - "Verify filter logic compatibility"
-      - "Test all feature combinations"
-      - "Validate UI component positioning"
-      - "Check session state key conflicts"
-    
-    validation:
-      - "All existing features work with Phase 8 enabled"
-      - "Filter combinations produce expected results"
-      - "Session management integrates smoothly"
-      - "UI layout remains professional and functional"
+[concurrency]
+# Handle multiple users
+max_concurrent_sessions = 50
+session_timeout_minutes = 60
+memory_cleanup_interval = 300
+
+[database]
+# Optimize database operations
+enable_query_caching = true
+batch_size = 100
+connection_pool_size = 10
 ```
 
-## 8. Update Load Testing Section
-
-**Location**: Add Phase 8 load testing procedures:
-
+### Load Testing
 ```python
-# load_test_phase8.py
+# load_test.py - Q2LMS load testing
 import asyncio
+import aiohttp
 import time
 from datetime import datetime
-import concurrent.futures
 
-async def test_phase8_load():
-    """Load test Phase 8 features under concurrent usage"""
+async def load_test_q2lms():
+    """Simulate concurrent user load on Q2LMS"""
     
-    print("Starting Phase 8 load testing...")
+    base_url = "http://localhost:8501"
+    concurrent_users = 20
+    test_duration = 300  # 5 minutes
     
-    # Test multi-topic filtering performance
-    def multi_topic_simulation():
-        """Simulate multi-topic filtering operations"""
+    async def simulate_user_session(session, user_id):
+        """Simulate a typical user session"""
         start_time = time.time()
+        requests_made = 0
         
-        # Simulate topic selection and filtering
-        topics = ['Circuit Analysis', 'MATLAB Programming', 'Linear Algebra', 'Numerical Methods']
-        selected_topics = topics[:2]  # Select first 2 topics
-        
-        # Simulate DataFrame filtering (would be actual filtering in real test)
-        question_count = 237  # Test dataset size from transition document
-        filtered_count = int(question_count * 0.6)  # Simulate OR logic result
-        
-        end_time = time.time()
-        
+        while time.time() - start_time < test_duration:
+            try:
+                # Simulate main page load
+                async with session.get(f"{base_url}/") as response:
+                    await response.text()
+                    requests_made += 1
+                
+                # Simulate health check
+                async with session.get(f"{base_url}/_stcore/health") as response:
+                    await response.text()
+                    requests_made += 1
+                
+                # Wait between requests
+                await asyncio.sleep(2)
+                
+            except Exception as e:
+                print(f"User {user_id} error: {e}")
+            
         return {
-            'operation': 'multi_topic_filtering',
-            'selected_topics': len(selected_topics),
-            'questions_processed': question_count,
-            'filtered_result': filtered_count,
-            'processing_time': end_time - start_time,
-            'success': True
+            'user_id': user_id,
+            'requests_made': requests_made,
+            'duration': time.time() - start_time
         }
     
-    def graceful_exit_simulation():
-        """Simulate graceful exit operations"""
-        start_time = time.time()
+    # Run concurrent user sessions
+    async with aiohttp.ClientSession() as session:
+        print(f"Starting load test with {concurrent_users} concurrent users")
+        print(f"Test duration: {test_duration} seconds")
         
-        # Simulate session information gathering
-        session_duration = 3600  # 1 hour session
-        questions_loaded = 237
-        active_filters = 3
-        
-        # Simulate cleanup operations
-        time.sleep(0.1)  # Simulate cleanup time
-        
-        end_time = time.time()
-        
-        return {
-            'operation': 'graceful_exit',
-            'session_duration': session_duration,
-            'questions_loaded': questions_loaded,
-            'cleanup_time': end_time - start_time,
-            'success': True
-        }
-    
-    # Run concurrent tests
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        # Test multi-topic filtering with multiple concurrent users
-        filtering_futures = [
-            executor.submit(multi_topic_simulation) 
-            for _ in range(20)  # 20 concurrent filtering operations
+        tasks = [
+            simulate_user_session(session, i) 
+            for i in range(concurrent_users)
         ]
         
-        # Test graceful exit with multiple concurrent sessions
-        exit_futures = [
-            executor.submit(graceful_exit_simulation)
-            for _ in range(10)  # 10 concurrent exit operations
-        ]
-        
-        # Collect results
-        filtering_results = [future.result() for future in filtering_futures]
-        exit_results = [future.result() for future in exit_futures]
+        results = await asyncio.gather(*tasks)
     
     # Analyze results
-    filtering_success_rate = sum(1 for r in filtering_results if r['success']) / len(filtering_results) * 100
-    filtering_avg_time = sum(r['processing_time'] for r in filtering_results) / len(filtering_results)
-    
-    exit_success_rate = sum(1 for r in exit_results if r['success']) / len(exit_results) * 100
-    exit_avg_time = sum(r['cleanup_time'] for r in exit_results) / len(exit_results)
+    total_requests = sum(r['requests_made'] for r in results)
+    avg_requests_per_user = total_requests / len(results)
+    requests_per_second = total_requests / test_duration
     
     print(f"""
-Phase 8 Load Test Results:
-==========================
+Load Test Results:
+==================
+Total Requests: {total_requests}
+Requests per User: {avg_requests_per_user:.1f}
+Requests per Second: {requests_per_second:.1f}
+Test Duration: {test_duration} seconds
+Concurrent Users: {concurrent_users}
 
-Multi-Topic Filtering:
-- Concurrent Operations: {len(filtering_results)}
-- Success Rate: {filtering_success_rate:.1f}%
-- Average Processing Time: {filtering_avg_time:.3f}s
-- Questions per Operation: {filtering_results[0]['questions_processed']}
-
-Graceful Exit System:
-- Concurrent Operations: {len(exit_results)}
-- Success Rate: {exit_success_rate:.1f}%
-- Average Cleanup Time: {exit_avg_time:.3f}s
-- Session Duration Handled: {exit_results[0]['session_duration']}s
-
-Overall Phase 8 Performance: {'✅ PASSED' if min(filtering_success_rate, exit_success_rate) >= 95 else '⚠️ NEEDS ATTENTION'}
+Performance Assessment: {'✅ GOOD' if requests_per_second > 10 else '⚠️ NEEDS OPTIMIZATION'}
     """)
 
 if __name__ == "__main__":
-    asyncio.run(test_phase8_load())
+    asyncio.run(load_test_q2lms())
 ```
 
-## 9. Update Configuration Management
+---
 
-**Location**: Add to deployment configuration templates:
+## Appendix
 
+### Quick Reference Commands
 ```bash
-# Phase 8 Configuration Template
-# /app/config/phase8.conf
+# Development
+python -m streamlit run streamlit_app.py
+pip install -r requirements.txt
 
-[phase8_features]
-multi_topic_filtering_enabled = true
-graceful_exit_enabled = true
-session_tracking_enabled = true
+# Docker
+docker-compose up -d
+docker-compose logs -f q2lms
+docker-compose restart q2lms
 
-[multi_topic_settings]
-max_topic_selections = 10
-topic_selection_feedback = true
-or_logic_filtering = true
+# Kubernetes
+kubectl apply -f k8s/
+kubectl get pods -n q2lms
+kubectl logs -f deployment/q2lms -n q2lms
 
-[session_management]
-session_timeout_minutes = 480
-auto_cleanup_enabled = true
-exit_confirmation_required = true
-backup_prompt_enabled = true
+# Maintenance
+bash backup.sh
+bash maintenance.sh
+python3 backup_monitor.py
 
-[performance_tuning]
-large_dataset_threshold = 500
-memory_cleanup_interval = 300
-session_state_optimization = true
-
-[monitoring]
-phase8_metrics_enabled = true
-session_duration_tracking = true
-feature_usage_analytics = true
+# Monitoring
+curl http://localhost:8501/_stcore/health
+python3 health_check.py
+tail -f /app/logs/q2lms.log
 ```
 
-## Summary of Deployment Changes
+### Support Resources
+- **Documentation**: Complete guides available in repository `/docs` folder
+- **Issues**: Report issues at [GitHub Issues](https://github.com/aknoesen/q2lms/issues)
+- **Discussions**: Community support at [GitHub Discussions](https://github.com/aknoesen/q2lms/discussions)
+- **Updates**: Follow repository for latest releases and security updates
 
-### New Testing Requirements:
-1. **Phase 8 functionality validation** during deployment
-2. **Multi-topic filtering performance** testing
-3. **Session management integration** verification
-4. **Memory cleanup effectiveness** monitoring
+### Version Compatibility
+| Q2LMS Version | Python | Streamlit | Pandas | Status |
+|---------------|--------|-----------|--------|---------|
+| 1.0.x | 3.8+ | 1.20.0+ | 1.5.0+ | Current |
+| 0.9.x | 3.8+ | 1.18.0+ | 1.4.0+ | Legacy Support |
 
-### Enhanced Monitoring:
-1. **Phase 8 feature usage** metrics
-2. **Session duration tracking** analytics
-3. **Multi-topic adoption** statistics
-4. **Graceful exit usage** monitoring
+---
 
-### Updated Recovery Procedures:
-1. **Phase 8 feature failure** recovery steps
-2. **Performance degradation** resolution
-3. **Integration conflict** troubleshooting
-4. **Load testing** for Phase 8 scalability
-
-### Configuration Enhancements:
-1. **Phase 8 feature flags** management
-2. **Performance tuning** parameters
-3. **Session management** settings
-4. **Monitoring configuration** for new features
+**Built for educators by educators** - Q2LMS provides robust, scalable question database management for educational institutions of all sizes.
