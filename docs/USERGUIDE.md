@@ -107,18 +107,54 @@ This ensures compatibility across platforms while maintaining mathematical preci
 - Ability to upload/download files
 
 ### Deployment Options
+Local Development
+Prerequisites:
 
-#### Local Development
-```bash
-# Clone repository
-git clone [https://github.com/your-org/q2lms.git](https://github.com/your-org/q2lms.git)
+Python 3.8 or higher
+Git (optional, for cloning)
+
+Installation Steps:
+bash# Option 1: Clone repository (recommended)
+git clone https://github.com/aknoesen/q2lms.git
 cd q2lms
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Launch application
-streamlit run streamlit_app.py
+python -m streamlit run streamlit_app.py
+Alternative Installation:
+bash# Option 2: Download and extract ZIP file
+# Download from GitHub and extract to a folder, then navigate to it
+# cd path/to/q2lms
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch application
+python -m streamlit run streamlit_app.py
+Virtual Environment Setup (Recommended for Development):
+bash# Create and activate virtual environment
+python -m venv q2lms-env
+
+# Activate virtual environment
+# On Windows:
+q2lms-env\Scripts\activate
+# On macOS/Linux:
+source q2lms-env/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch application
+python -m streamlit run streamlit_app.py
+Troubleshooting:
+
+If streamlit run streamlit_app.py doesn't work, use python -m streamlit run streamlit_app.py
+Ensure you're in the q2lms directory when running the command
+Check that Python and pip are properly installed: python --version and pip --version
+If you encounter permission issues, try using pip install --user -r requirements.txt
+
 ````
 
 #### Streamlit Cloud (Recommended)
