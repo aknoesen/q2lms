@@ -1,5 +1,11 @@
 # Q2LMS Documentation
-Web Interface for Educational Question Database Management
+
+<div align="center">
+  <img src="../assets/q2lms_icon.svg" alt="Q2LMS Logo" width="120" height="120">
+  <br>
+  <strong>Web Interface for Educational Question Database Management</strong>
+</div>
+
 
 ## Quick Navigation
 
