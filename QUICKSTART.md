@@ -45,6 +45,24 @@ streamlit run streamlit_app.py
 - ✅ Export Center functional
 - ✅ No error messages in terminal
 
+### 4. Test with Example Data
+```bash
+# Q2LMS includes sample data for testing
+# Navigate to Upload Interface in the browser
+# Upload: examples/sample_questions.json
+
+# You should see sample questions load successfully
+# Try editing a question in Question Editor
+# Test export functionality with the sample data
+```
+
+**Quick Test Workflow:**
+1. Go to **Upload Interface** tab
+2. Click "Browse files" and select `examples/sample_questions.json`
+3. Upload and verify questions appear
+4. Switch to **Question Editor** to see loaded questions
+5. Try **Export Center** to generate a test export
+
 ---
 
 ## 🛠️ Development Setup (Additional 5 minutes)
@@ -160,6 +178,11 @@ QUESTION_TYPES = {
 - `modules/question_editor.py` - Question editing UI
 - `modules/export/` - Export system
 
+### Example Data & Testing
+- `examples/sample_questions.json` - Sample question database for testing
+- `examples/templates/` - Export templates (if available)
+- `examples/test_data/` - Additional test datasets
+
 ### Utilities
 - `utilities/json_handler.py` - JSON processing
 - `utilities/latex_processor.py` - LaTeX handling
@@ -167,7 +190,6 @@ QUESTION_TYPES = {
 
 ### Configuration
 - `requirements.txt` - Dependencies
-- `examples/` - Sample data for testing
 
 ---
 
