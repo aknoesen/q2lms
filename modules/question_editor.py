@@ -1,16 +1,17 @@
 # modules/question_editor.py
 
 import streamlit as st
+import streamlit.components.v1 as components  # NEW: Added for LaTeX fix
 import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from .utils import render_latex_in_text
-# Note: CanvasLaTeXConverter is not used directly for display logic in this rollback version
-# from .export.latex_converter import CanvasLaTeXConverter 
+# RESTORED: Re-enable LaTeX converter for the fix
+from .export.latex_converter import CanvasLaTeXConverter 
 
-# _latex_converter_instance is not instantiated in this rollback version
-# _latex_converter_instance = CanvasLaTeXConverter() 
+# RESTORED: Instantiate the LaTeX converter
+_latex_converter_instance = CanvasLaTeXConverter() 
 
 # Import from other modules
 from .database_processor import save_question_changes, delete_question, validate_single_question
@@ -37,7 +38,7 @@ def determine_correct_answer_letter(correct_answer_text, choice_texts):
 
 def display_live_question_preview(question_data):
     """
-    Display with basic LaTeX handling (relying on st.markdown's default behavior).
+    Display with proper LaTeX handling using st.markdown for LaTeX content.
     """
     
     # Header with metadata (standard markdown)
@@ -66,13 +67,16 @@ def display_live_question_preview(question_data):
     
     st.markdown("---")
     
-    # Question text: Rely on st.markdown's native LaTeX detection.
-    # Pass latex_converter=None for this rollback.
-    st.markdown(f"**Question:** {render_latex_in_text(question_data.get('question_text', ''), latex_converter=None)}") 
+    # Question text: Use st.markdown for LaTeX content
+    question_text_html = render_latex_in_text(
+        question_data.get('question_text', ''), 
+        latex_converter=_latex_converter_instance
+    )
+    st.markdown(f"**Question:** {question_text_html}")
     
     # Handle different question types
     if question_data.get('question_type') == 'multiple_choice':
-        st.markdown("**Choices:**") 
+        st.markdown("**Choices:**")
         
         choices_list = ['A', 'B', 'C', 'D']
         correct_answer = question_data.get('correct_answer', 'A')
@@ -91,52 +95,60 @@ def display_live_question_preview(question_data):
         for choice_letter in choices_list:
             if choice_letter in choice_texts:
                 choice_text_clean = choice_texts[choice_letter]
-                # Pass latex_converter=None for this rollback.
-                choice_text_rendered = render_latex_in_text(choice_text_clean, latex_converter=None)
+                choice_text_html = render_latex_in_text(
+                    choice_text_clean, 
+                    latex_converter=_latex_converter_instance
+                )
                 
                 is_correct = (choice_letter == correct_letter)
                 
-                # Standard markdown output
+                # Use st.markdown for choice content with LaTeX
                 if is_correct:
-                    st.markdown(f"• **{choice_letter}:** {choice_text_rendered} ✅ ← Correct Answer") 
+                    st.markdown(f"• **{choice_letter}:** {choice_text_html} ✅ ← Correct Answer")
                 else:
-                    st.markdown(f"• **{choice_letter}:** {choice_text_rendered}")
+                    st.markdown(f"• **{choice_letter}:** {choice_text_html}")
     
     elif question_data.get('question_type') == 'numerical':
-        correct_answer_rendered = render_latex_in_text(str(question_data.get('correct_answer', '')), latex_converter=None)
-        st.markdown(f"**Correct Answer:** {correct_answer_rendered} ✅")
+        correct_answer_html = render_latex_in_text(
+            str(question_data.get('correct_answer', '')), 
+            latex_converter=_latex_converter_instance
+        )
+        st.markdown(f"**Correct Answer:** {correct_answer_html} ✅")
         
         tolerance = question_data.get('tolerance', 0)
         if tolerance and float(tolerance) > 0:
-            st.markdown(f"**Tolerance:** ±{tolerance}") 
+            st.markdown(f"**Tolerance:** ±{tolerance}")
     
     elif question_data.get('question_type') == 'true_false':
         correct_answer = str(question_data.get('correct_answer', '')).strip()
-        st.markdown(f"**Correct Answer:** {correct_answer} ✅") 
+        st.markdown(f"**Correct Answer:** {correct_answer} ✅")
     
     elif question_data.get('question_type') == 'fill_in_blank':
-        correct_answer_rendered = render_latex_in_text(str(question_data.get('correct_answer', '')), latex_converter=None)
-        st.markdown(f"**Correct Answer:** {correct_answer_rendered} ✅")
+        correct_answer_html = render_latex_in_text(
+            str(question_data.get('correct_answer', '')), 
+            latex_converter=_latex_converter_instance
+        )
+        st.markdown(f"**Correct Answer:** {correct_answer_html} ✅")
     
-    # Feedback (standard markdown)
+    # Feedback
     correct_feedback = question_data.get('correct_feedback', '')
     incorrect_feedback = question_data.get('incorrect_feedback', '')
     
     if correct_feedback or incorrect_feedback:
         with st.expander("💡 View Feedback"):
             if correct_feedback:
-                rendered_correct = render_latex_in_text(str(correct_feedback), latex_converter=None)
-                st.markdown(f"**Correct:** {rendered_correct}")
+                rendered_correct_html = render_latex_in_text(
+                    str(correct_feedback), 
+                    latex_converter=_latex_converter_instance
+                )
+                st.markdown(f"**Correct:** {rendered_correct_html}")
             
             if incorrect_feedback:
-                rendered_incorrect = render_latex_in_text(str(incorrect_feedback), latex_converter=None)
-                st.markdown(f"**Incorrect:** {rendered_incorrect}")
-    
-    # Removed explicit closing div (which was causing issues). Streamlit handles this for top-level markdown.
-    pass 
-
-# Import from other modules (placed here to resolve potential circular imports during rollback)
-# from .database_processor import save_question_changes, delete_question, validate_single_question
+                rendered_incorrect_html = render_latex_in_text(
+                    str(incorrect_feedback), 
+                    latex_converter=_latex_converter_instance
+                )
+                st.markdown(f"**Incorrect:** {rendered_incorrect_html}")
 
 def side_by_side_question_editor(filtered_df):
     """Enhanced Browse & Edit with side-by-side live preview"""
@@ -224,7 +236,7 @@ def side_by_side_question_editor(filtered_df):
                 edit_question_form(actual_index, question)
             
             st.markdown("---")
-            st.markdown("<br>", unsafe_allow_html=True) # Added unsafe_allow_html=True here
+            st.markdown("<br>")
         
         # Navigation at bottom
         if total_pages > 1:

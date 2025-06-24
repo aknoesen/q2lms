@@ -5,6 +5,33 @@ Web-based interface for managing educational question databases and generating L
 """
 
 import streamlit as st
+
+
+# Page configuration with new branding
+st.set_page_config(
+    page_title="Q2LMS - Question Database Manager",
+    page_icon="assets/favicon.ico",  # ← Your browser tab icon
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+
+# Add MathJax configuration
+st.markdown("""
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+  }
+};
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+""", unsafe_allow_html=True)
+
+
+
 import pandas as pd
 import json
 import plotly.express as px
@@ -21,13 +48,6 @@ import re
 # Import modules
 import sys
 
-# Page configuration with new branding
-st.set_page_config(
-    page_title="Q2LMS - Question Database Manager",
-    page_icon="assets/favicon.ico",  # ← Your browser tab icon
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 
 
@@ -812,6 +832,9 @@ def main():
         tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📋 Browse Questions", "📝 Browse & Edit", "📥 Export"])
         
         with tab1:
+
+            st.markdown("**LaTeX Test:** $x^2 + y^2 = z^2$")
+            st.markdown("**Another test:** $\\alpha + \\beta = \\gamma$")
             display_database_summary(df, metadata)
             st.markdown("---")
             create_summary_charts(df)

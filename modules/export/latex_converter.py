@@ -80,7 +80,7 @@ class LaTeXProcessor:
 
 
 class CanvasLaTeXConverter(LaTeXProcessor):
-    """Converts LaTeX for Canvas LMS compatibility"""
+    """Converts LaTeX for Canvas LMS compatibility and Streamlit display"""
     
     def __init__(self):
         super().__init__()
@@ -92,8 +92,8 @@ class CanvasLaTeXConverter(LaTeXProcessor):
     
     def convert_for_canvas(self, text: str) -> str:
         """
-        Converts LaTeX delimiters to \(...\) or \[...\] for Streamlit display or QTI.
-        Returns a plain string with these delimiters, no <script> tags or div wrappers here.
+        Converts LaTeX delimiters to \\(...\\) or \\[...\\] for Canvas/QTI export.
+        This method is used for QTI generation and should NOT be changed.
         """
         print(f"DEBUG (converter): convert_for_canvas called with: '{text[:100]}...'")
         
@@ -112,26 +112,17 @@ class CanvasLaTeXConverter(LaTeXProcessor):
         for i, expr in enumerate(expressions):
             text_before = text[last_end:expr['start']]
             if text_before:
-                # Add literal spaces, HTML escape for QTI (if called for QTI)
-                # For Streamlit display, st.markdown will do final HTML escape.
+                # Add literal spaces for Canvas format
                 spaced_text_before = self._add_space_before_latex(text_before) 
                 result_parts.append(spaced_text_before)
             
-            # Add the converted LaTeX expression (e.g., \(content\))
+            # Add the converted LaTeX expression for Canvas (e.g., \(content\))
             if expr['type'] == 'block':
                 latex_output = f"{self.canvas_block_start}{expr['content']}{self.canvas_block_end}"
             else: # Inline math
                 latex_output = f"{self.canvas_inline_start}{expr['content']}{self.canvas_inline_end}"
             
             result_parts.append(latex_output) 
-            
-            if i < len(expressions) - 1:
-                text_after_peek = text[expr['end']:expressions[i + 1]['start']]
-            else:
-                text_after_peek = text[expr['end']:]
-            
-            spaced_text_after = self._add_space_after_latex('', text_after_peek) 
-            result_parts.append(spaced_text_after)
             last_end = expr['end']
         
         remaining_text = text[last_end:]
@@ -140,7 +131,58 @@ class CanvasLaTeXConverter(LaTeXProcessor):
         
         final_content = ''.join(result_parts)
         print(f"DEBUG (converter): Final content from converter: '{final_content}'")
-        return final_content # Returns string with \(...\) and literal spaces
+        return final_content # Returns string with \(...\) for Canvas/QTI
+    
+    def convert_for_streamlit(self, text: str) -> str:
+        """
+        NEW METHOD: Converts LaTeX delimiters to \\(...\\) format for Streamlit display.
+        Streamlit's markdown with MathJax should be able to process these.
+        """
+        print(f"DEBUG (converter): convert_for_streamlit called with: '{text[:100]}...'")
+        
+        if not text:
+            return ""
+        
+        expressions = self.find_latex_expressions(text)
+        print(f"DEBUG (converter): Found {len(expressions)} LaTeX expressions")
+        
+        if not expressions:
+            return text 
+        
+        result_parts = []
+        last_end = 0
+        
+        for i, expr in enumerate(expressions):
+            text_before = text[last_end:expr['start']]
+            if text_before:
+                # Add literal spaces for the text before LaTeX
+                spaced_text_before = self._add_space_before_latex(text_before)
+                result_parts.append(spaced_text_before)
+            
+            # FIXED: Convert LaTeX to \\(...\\) format that Streamlit can handle
+            if expr['type'] == 'block':
+                latex_output = f"\\[{expr['content']}\\]"
+            else: # Inline math
+                latex_output = f"\\({expr['content']}\\)"
+            
+            result_parts.append(latex_output)
+            last_end = expr['end']
+        
+        # Add any remaining text after the last LaTeX expression
+        remaining_text = text[last_end:]
+        if remaining_text:
+            result_parts.append(remaining_text)
+        
+        final_content = ''.join(result_parts)
+        print(f"DEBUG (converter): Final Streamlit content: '{final_content}'")
+        return final_content
+    
+    def convert_for_qti(self, text: str) -> str:
+        """
+        Converts LaTeX delimiters to \\(...\\) or \\[...\\] for QTI/Canvas export.
+        This is the same as convert_for_canvas but with a clearer name.
+        """
+        return self.convert_for_canvas(text)
 
 
 class StandardQTILaTeXConverter(LaTeXProcessor):
@@ -148,6 +190,11 @@ class StandardQTILaTeXConverter(LaTeXProcessor):
     
     def __init__(self):
         super().__init__()
+        # Use same Canvas-style delimiters
+        self.canvas_inline_start = r'\(' 
+        self.canvas_inline_end = r'\)'   
+        self.canvas_block_start = r'\['  
+        self.canvas_block_end = r'\]'
     
     def convert_for_qti(self, text: str) -> str:
         """
@@ -257,9 +304,9 @@ class LaTeXConverterFactory:
 
 # Convenience functions for backward compatibility
 def convert_latex_for_canvas(text: str) -> str:
-    # This legacy function will still do the full Canvas conversion (for QTI)
+    # This legacy function will use the QTI format for exports
     converter = CanvasLaTeXConverter()
-    return converter.convert_for_canvas(text)
+    return converter.convert_for_qti(text)
 
 
 def count_latex_questions(questions: List[Dict[str, Any]]) -> int:
