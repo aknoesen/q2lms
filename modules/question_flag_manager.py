@@ -239,13 +239,27 @@ class QuestionFlagManager:
             else:
                 checkbox_label = f"Flag as {flag_type}"
             
+            # Dynamic help text based on current state and mode
+            if mode_context == 'select':
+                if current_flag:
+                    help_text = "Check to exclude this question from export"
+                else:
+                    help_text = "Check to include this question in export"
+            elif mode_context == 'delete':
+                if current_flag:
+                    help_text = "Uncheck to keep this question (remove from deletion)"
+                else:
+                    help_text = "Check to mark this question for deletion"
+            else:
+                help_text = f"Toggle {flag_type} flag for this question"
+            
             # Render checkbox
             checkbox_key = f"flag_{flag_type}_{question_index}"
             new_flag_state = st.checkbox(
                 checkbox_label,
                 value=current_flag,
                 key=checkbox_key,
-                help=f"Toggle {flag_type} flag for this question"
+                help=help_text
             )
             
             # Update flag if changed
