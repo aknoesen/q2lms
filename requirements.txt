@@ -1,0 +1,19 @@
+# Q2LMS - Question Database Manager
+# Core Dependencies
+
+# Web Framework
+streamlit>=1.28.0
+
+# Data Processing
+pandas>=1.5.0
+
+# Visualization
+plotly>=5.15.0
+
+# Optional Dependencies for Enhanced Functionality
+numpy>=1.21.0
+python-dateutil>=2.8.0
+
+# Development/Testing (optional)
+# pytest>=7.0.0
+# black>=22.0.0
