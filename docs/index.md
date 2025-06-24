@@ -1,7 +1,7 @@
 # Q2LMS Documentation
 
 <div align="center">
-  <img src="../assets/q2lms_icon.svg" alt="Q2LMS Logo" width="120" height="120">
+  <img src="https://raw.githubusercontent.com/aknoesen/q2lms/main/assets/q2lms_icon.svg" alt="Q2LMS Logo" width="120" height="120">
   <br>
   <strong>Web Interface for Educational Question Database Management</strong>
 </div>
