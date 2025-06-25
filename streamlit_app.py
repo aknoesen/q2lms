@@ -141,7 +141,7 @@ def main():
                 has_mode = mode_manager.has_mode_been_chosen()
                 
                 if not has_mode:
-                    st.info("🎯 **Choose your workflow mode:**")
+                    
                     
                     # Show fork decision
                     mode_manager.render_mode_selection()
@@ -173,9 +173,9 @@ def main():
                 with tab1:
                     if app_config.is_available('ui_components'):
                         ui_components = app_config.get_feature('ui_components')
-                        ui_components['display_database_summary'](df, metadata)
+                        #ui_components['display_database_summary'](df, metadata)
                         st.markdown("---")
-                        ui_components['create_summary_charts'](df)
+                        #ui_components['create_summary_charts'](df)
                 
                 with tab2:
                     if app_config.is_available('ui_components'):
@@ -228,10 +228,12 @@ def main():
                 st.error(f"Fork workflow error: {e}")
                 st.info("Continuing with standard interface...")
                 # Fall back to standard interface
+                ui_manager._render_stats_summary_before_tabs(df, metadata)  # ADD THIS LINE
                 ui_manager.render_main_tabs(df, metadata, original_questions)
         
         else:
             # No fork feature - use standard interface
+            ui_manager._render_stats_summary_before_tabs(df, metadata)  # ADD THIS LINE
             ui_manager.render_main_tabs(df, metadata, original_questions)
         
         # Exit button at bottom
