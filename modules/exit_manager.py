@@ -249,21 +249,55 @@ class ExitManager:
             st.markdown("💡 **Tip:** Use the sidebar exit button anytime")
     
     def add_exit_button_to_sidebar(self):
-        """Add an exit button to the sidebar with improved UX"""
+        """Add a prominent exit button at the very bottom of sidebar"""
         
-        # Add exit button at bottom of sidebar
+        # This will be called at the END of sidebar content to ensure it's at bottom
+        # The topic filter and other content should be rendered first
+        pass  # We'll add content in a separate method
+    
+    def render_exit_section_at_bottom(self):
+        """Render the exit section at the very bottom of the sidebar"""
+        
+        # Force this to bottom with spacer if needed
         st.sidebar.markdown("---")
-        st.sidebar.markdown("### 🚪 Application")
         
-        # Make the exit button more prominent in sidebar
+        # Clear, user-friendly section title
+        st.sidebar.markdown("### 🚪 Exit Application")
+        
+        # Add helpful description
+        st.sidebar.markdown("**Safe exit** with option to save your work")
+        
+        # Make the exit button prominent and red
+        exit_button_style = """
+        <style>
+        div[data-testid="stSidebar"] .element-container:last-child .stButton > button {
+            background: linear-gradient(135deg, #dc3545, #c82333) !important;
+            color: white !important;
+            font-weight: bold !important;
+            border: 2px solid #bd2130 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3) !important;
+            width: 100% !important;
+        }
+        div[data-testid="stSidebar"] .element-container:last-child .stButton > button:hover {
+            background: linear-gradient(135deg, #c82333, #bd2130) !important;
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4) !important;
+            transform: translateY(-1px) !important;
+        }
+        </style>
+        """
+        st.sidebar.markdown(exit_button_style, unsafe_allow_html=True)
+        
         if st.sidebar.button("🚪 Exit Q2LMS", 
-                            key="sidebar_exit_button", 
-                            help="Safely exit the application with data preservation options",
+                            key="bottom_exit_button", 
+                            help="Safely exit with option to save your current work",
                             use_container_width=True):
             st.session_state['show_exit_interface'] = True
-            # Clear any existing error messages
             st.session_state['exit_message'] = "Preparing exit interface..."
             st.rerun()
+        
+        # Add helpful tip at very bottom
+        st.sidebar.caption("💡 Your work will be preserved if you choose to save it")
     
     def check_for_exit_request(self):
         """Check if exit interface should be shown and handle it"""

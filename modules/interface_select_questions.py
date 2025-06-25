@@ -714,10 +714,7 @@ class SelectQuestionsInterface:
                         unique_types = selected_df['Type'].nunique()
                         st.metric("Question Types", unique_types)
                 
-                # Export button (integrates with your existing export system)
-                if st.button("📥 Go to Export Tab", type="primary", key="goto_export"):
-                    st.info("💡 **Tip:** Switch to the Export tab to download your selected questions in CSV, QTI, or JSON format")
-                    st.balloons()
+                # Note: Export functionality is available in the Export tab
                 
             else:
                 # No questions selected

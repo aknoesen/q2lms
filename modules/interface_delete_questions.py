@@ -747,10 +747,7 @@ class DeleteQuestionsInterface:
                         unique_types = remaining_df['Type'].nunique()
                         st.metric("Question Types", unique_types)
                 
-                # Export button (integrates with existing export system)
-                if st.button("📥 Go to Export Tab", type="primary", key="goto_export_delete"):
-                    st.info("💡 **Tip:** Switch to the Export tab to download your remaining questions in CSV, QTI, or JSON format")
-                    st.balloons()
+                # Note: Export functionality is available in the Export tab
                 
             else:
                 # All questions marked for deletion

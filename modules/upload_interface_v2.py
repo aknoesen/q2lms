@@ -1,9 +1,12 @@
-# upload_interface_v2.py - Clean Production Version
+# upload_interface_v2.py - Clean Production Version with Output Management
 import streamlit as st
 import json
 import pandas as pd
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
+import contextlib
+import io
+import sys
 
 @dataclass
 class MergePreviewData:
@@ -16,7 +19,7 @@ class MergePreviewData:
     merge_ready: bool
 
 class UploadInterfaceV2:
-    """Simplified upload interface with clear state management"""
+    """Simplified upload interface with clear state management and clean output"""
     
     def __init__(self):
         self._initialize_session_state()
@@ -45,9 +48,54 @@ class UploadInterfaceV2:
                     'final_database': None
                 }
     
+    @contextlib.contextmanager
+    def _clean_operation(self, operation_name: str):
+        """Context manager for clean operations without verbose output"""
+        # Create progress placeholder
+        progress_placeholder = st.empty()
+        progress_placeholder.info(f"🔄 **{operation_name}...**")
+        
+        # Capture stdout to prevent verbose logging
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        stdout_buffer = io.StringIO()
+        stderr_buffer = io.StringIO()
+        
+        try:
+            # Redirect output during processing
+            sys.stdout = stdout_buffer
+            sys.stderr = stderr_buffer
+            
+            yield progress_placeholder
+            
+            # Success message
+            progress_placeholder.success(f"✅ **{operation_name} completed successfully**")
+            
+        except Exception as e:
+            progress_placeholder.error(f"❌ **{operation_name} failed:** {str(e)}")
+            
+            # Show captured output only on error for debugging
+            stdout_content = stdout_buffer.getvalue()
+            stderr_content = stderr_buffer.getvalue()
+            
+            if stdout_content.strip() or stderr_content.strip():
+                with st.expander(f"🔍 Debug Output for {operation_name}", expanded=False):
+                    if stdout_content.strip():
+                        st.text("Processing Output:")
+                        st.code(stdout_content, language="text")
+                    if stderr_content.strip():
+                        st.text("Error Output:")
+                        st.code(stderr_content, language="text")
+            
+            raise
+            
+        finally:
+            # Always restore original stdout/stderr
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+    
     def render_upload_section(self):
-        """Render file upload with immediate processing"""
-        st.header("📁 Upload Question Database Files")
+        """Render file upload with immediate processing - no redundant title"""
         
         uploaded_files = st.file_uploader(
             "Select files to merge (1 or more files)",
@@ -66,13 +114,13 @@ class UploadInterfaceV2:
                 self._process_uploaded_files(uploaded_files)
     
     def _process_uploaded_files(self, files) -> None:
-        """Process uploaded files and generate preview data"""
+        """Process uploaded files and generate preview data with clean output"""
         try:
-            with st.spinner("Processing files and generating preview..."):
+            with self._clean_operation("Processing files and generating preview"):
                 # Step 1: Load and validate files
                 file_data = self._load_files(files)
                 
-                # Step 2: Create merge preview with auto-renumbering
+                # Step 2: Create merge preview with auto-renumbering (this is where the verbose output was)
                 preview_data = self._create_clean_preview(file_data)
                 
                 # Step 3: Store in session state
@@ -85,14 +133,11 @@ class UploadInterfaceV2:
                     'final_database': None
                 }
                 
-                st.success(f"Preview generated: {preview_data.total_questions} questions, {preview_data.conflict_count} conflicts")
-                
         except Exception as e:
             upload_state = st.session_state.get('upload_state', {})
             if isinstance(upload_state, dict):
                 upload_state['error_message'] = str(e)
                 st.session_state.upload_state = upload_state
-            st.error(f"Error processing files: {e}")
     
     def _load_files(self, files) -> List[Dict]:
         """Load and parse uploaded files"""
@@ -129,7 +174,7 @@ class UploadInterfaceV2:
             return []
     
     def _create_clean_preview(self, file_data: List[Dict]) -> MergePreviewData:
-        """Create merge preview with clean data structure"""
+        """Create merge preview with clean data structure - NO VERBOSE OUTPUT"""
         all_questions = []
         conflicts = []
         seen_ids = set()
@@ -143,6 +188,7 @@ class UploadInterfaceV2:
             renumbered_count = 0
         else:
             # Multiple files - merge with conflict resolution
+            # THIS IS WHERE THE VERBOSE OUTPUT WAS COMING FROM
             for file_info in file_data:
                 for question in file_info['questions']:
                     q_id = question.get('id', question.get('ID', ''))
@@ -157,6 +203,7 @@ class UploadInterfaceV2:
                         new_id = f"{q_id}_{counter}"
                         question['id'] = new_id
                         renumbered_count += 1
+                        # REMOVED: The print/st.write that was causing verbose output
                         conflicts.append({
                             'id': original_id,
                             'description': f"ID {original_id} renamed to {new_id}"
@@ -202,7 +249,7 @@ class UploadInterfaceV2:
             st.info("Upload files above to see results")
             return
         
-        # Display preview summary
+        # Display preview summary with clean styling
         st.header("🔍 File Processing Results")
         
         col1, col2, col3 = st.columns(3)
@@ -213,15 +260,20 @@ class UploadInterfaceV2:
         with col3:
             st.metric("Auto-Renumbered", preview.renumbered_count)
         
-        # Show conflicts if any, or single file message
+        # Show conflicts summary in a clean, condensed format
         if preview.conflict_count == 0 and preview.renumbered_count == 0:
-            st.success("✅ File processed successfully - ready to load!")
+            st.success("✅ **File processed successfully - ready to load!**")
         elif preview.conflicts:
-            st.warning("⚠️ Conflicts detected and resolved:")
-            for conflict in preview.conflicts:
-                st.write(f"- {conflict['description']}")
+            # CLEAN CONFLICT DISPLAY - No verbose list
+            st.warning(f"⚠️ **Conflicts detected and resolved:** {preview.conflict_count} questions auto-renumbered")
+            
+            # Optional: Show conflicts in a collapsible section instead of main interface
+            if st.checkbox("📋 Show conflict details", key="show_conflicts"):
+                with st.expander("Conflict Resolution Details", expanded=True):
+                    for conflict in preview.conflicts:
+                        st.caption(f"• {conflict['description']}")
         else:
-            st.success("✅ No conflicts detected - ready to merge!")
+            st.success("✅ **No conflicts detected - ready to merge!**")
         
         # Preview questions
         with st.expander("Preview First 10 Questions"):
@@ -237,9 +289,9 @@ class UploadInterfaceV2:
                 self._execute_merge(preview)
     
     def _execute_merge(self, preview: MergePreviewData):
-        """Execute the final merge operation"""
+        """Execute the final merge operation with clean output"""
         try:
-            with st.spinner("Completing merge..."):
+            with self._clean_operation("Completing merge and loading database"):
                 upload_state = st.session_state.get('upload_state', {})
                 
                 if isinstance(upload_state, dict) and 'current_preview' in upload_state:
@@ -332,11 +384,11 @@ class UploadInterfaceV2:
                         'conflicts_resolved': preview.conflict_count
                     }
                 
-                st.success(f"✅ Merge completed! {preview.total_questions} questions in final database")
-                st.success("🚀 Database is now available in the main application!")
+                # Show clean success message
+                st.success(f"✅ **Database loaded successfully!** {preview.total_questions} questions ready.")
                 st.balloons()
                 
-                # Force a rerun to trigger the main app detection
+                # Force a rerun to trigger the main app detection and fork decision
                 st.rerun()
                 
         except Exception as e:
@@ -387,7 +439,7 @@ class UploadInterfaceV2:
         }
     
     def render_complete_interface(self):
-        """Render the complete upload interface"""
+        """Render the complete upload interface with clean output"""
         st.title("Question Database Merger")
         
         # Main workflow sections
@@ -397,8 +449,8 @@ class UploadInterfaceV2:
         st.divider()
         self.render_results_section()
         
-        # Debug section (optional)
-        if st.checkbox("Show Debug Info"):
+        # Debug section (optional, hidden by default)
+        if st.checkbox("Show Debug Info", value=False):
             upload_state = st.session_state.get('upload_state', {})
             st.json(upload_state if isinstance(upload_state, dict) else str(upload_state))
 

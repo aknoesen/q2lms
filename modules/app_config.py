@@ -13,6 +13,17 @@ class AppConfig:
     
     def __init__(self):
         self.feature_status = {}
+        # Initialize all feature attributes first
+        self.session_manager = None
+        self.upload_system = None
+        self.question_editor = None
+        self.latex_processor = None
+        self.export_system = None
+        self.ui_components = None
+        self.fork_feature = None
+        self.output_manager = None
+        
+        # Then detect features
         self._detect_all_features()
     
     def _detect_all_features(self):
@@ -107,8 +118,14 @@ class AppConfig:
             self.feature_status['ui_components'] = False
             self.ui_components = None
 
-        # Fork Feature - NEW!
+        # Import output manager for clean operations
         try:
+            from modules.output_manager import get_output_manager
+            self.feature_status['output_manager'] = True
+            self.output_manager = {'get_output_manager': get_output_manager}
+        except ImportError:
+            self.feature_status['output_manager'] = False
+            self.output_manager = None
             from modules.operation_mode_manager import OperationModeManager, get_operation_mode_manager
             from modules.interface_select_questions import SelectQuestionsInterface
             from modules.interface_delete_questions import DeleteQuestionsInterface
@@ -138,59 +155,17 @@ class AppConfig:
             'latex_processor': self.latex_processor,
             'export_system': self.export_system,
             'ui_components': self.ui_components,
-            'fork_feature': self.fork_feature
+            'fork_feature': self.fork_feature,
+            'output_manager': self.output_manager
         }
         return feature_map.get(feature_name)
     
-    def render_sidebar_status(self):
-        """Render system status in sidebar"""
+    def render_sidebar_header(self):
+        """Render clean sidebar header with logo only"""
         with st.sidebar:
             # Add logo at top of sidebar
             st.image("assets/q2lms_icon.svg", width=120)
             st.markdown("---")
-            
-            st.markdown("### 🔧 System Status")
-            
-            # Core systems
-            if self.is_available('session_manager'):
-                st.success("✅ Session Management")
-            else:
-                st.error("❌ Session Management")
-            
-            # Upload system
-            if self.is_available('upload_system'):
-                st.success("✅ Advanced Upload System")
-            elif self.is_available('basic_upload'):
-                st.info("📤 Basic Upload System")
-            else:
-                st.error("❌ Upload System")
-            
-            # Export system
-            if self.is_available('export_system'):
-                st.success("✅ Export System")
-                st.caption("• Custom filenames\n• LMS compatibility\n• LaTeX optimization")
-            else:
-                st.error("❌ Export System")
-            
-            # Question editor
-            if self.is_available('question_editor'):
-                st.success("✅ Question Editor")
-            else:
-                st.error("❌ Question Editor")
-            
-            # LaTeX processor
-            if self.is_available('latex_processor'):
-                st.success("✅ LaTeX Processor")
-            else:
-                st.warning("⚠️ LaTeX Processor")
-
-            # Fork feature
-            if self.is_available('fork_feature'):
-                st.success("✅ Question Selection Fork")
-                st.caption("• Select Questions mode\n• Delete Questions mode\n• Dynamic help text")
-            else:
-                st.warning("⚠️ Question Selection Fork")
-                st.caption("Standard editor mode")
     
     def get_system_health(self):
         """Get overall system health status"""

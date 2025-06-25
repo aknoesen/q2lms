@@ -15,7 +15,7 @@ class UIManager:
         self.app_config = app_config
     
     def enhanced_subject_filtering(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Multi-subject filter using the correct 'Topic' column"""
+        """Multi-subject filter using the correct 'Topic' column with clear instructions"""
         
         if df.empty:
             return df
@@ -29,32 +29,42 @@ class UIManager:
         if not topics:
             return df
         
-        # Add topic filter to sidebar
+        # Add topic filter to sidebar with clear instructions
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 📚 Topic Filter")
         
+        # Clear instructions for users
+        st.sidebar.markdown("""
+        **Instructions:**
+        - ✅ **Selected topics** will be included
+        - ❌ **Uncheck topics** to exclude them  
+        - 🔄 **Use this to focus** on specific subjects
+        """)
+        
         selected_topics = st.sidebar.multiselect(
-            "Choose topics:",
+            "Choose topics to include:",
             options=topics,
             default=topics,  # Start with all topics selected
             key="topic_filter_multi",
-            help="Select multiple topics to include questions from any chosen topic"
+            help="💡 Tip: Uncheck topics you want to exclude from the current view"
         )
         
-        # Apply filtering
+        # Apply filtering with clear feedback
         if selected_topics:
             filtered_df = df[df['Topic'].isin(selected_topics)]
-            st.sidebar.success(f"✅ {len(selected_topics)} of {len(topics)} topics selected")
+            excluded_count = len(topics) - len(selected_topics)
+            if excluded_count > 0:
+                st.sidebar.info(f"✅ {len(selected_topics)} topics selected\n📋 {excluded_count} topics excluded")
+            else:
+                st.sidebar.success(f"✅ All {len(topics)} topics selected")
         else:
             filtered_df = pd.DataFrame()  # Empty if nothing selected
-            st.sidebar.warning("⚠️ No topics selected")
-        
-        st.sidebar.markdown("---")
+            st.sidebar.warning("⚠️ No topics selected - showing no questions")
         
         return filtered_df
     
     def render_upload_interface(self):
-        """Render the upload interface"""
+        """Render clean upload interface"""
         
         st.markdown("### 📁 Upload Question Database Files")
         st.markdown('<div class="upload-container">', unsafe_allow_html=True)
@@ -64,7 +74,13 @@ class UIManager:
             try:
                 upload_system = self.app_config.get_feature('upload_system')
                 upload_interface = upload_system['UploadInterfaceV2']()
-                upload_interface.render_complete_interface()
+                
+                # Render individual sections directly to avoid duplicate headers
+                upload_interface.render_upload_section()
+                st.divider()
+                upload_interface.render_preview_section()
+                st.divider()
+                upload_interface.render_results_section()
                 
                 # Check if we have a DataFrame loaded
                 has_database = (
@@ -124,16 +140,9 @@ class UIManager:
         st.markdown('</div>', unsafe_allow_html=True)
     
     def render_system_status(self):
-        """Render overall system status"""
-        
-        health_level, health_message = self.app_config.get_system_health()
-        
-        if health_level == "excellent":
-            st.success(health_message)
-        elif health_level == "good":
-            st.warning(health_message)
-        else:
-            st.error(health_message)
+        """Render overall system status - REMOVED for clean interface"""
+        # This method is no longer needed - keeping empty for compatibility
+        pass
     
     def render_branding_header(self):
         """Render the Q2LMS branding header"""
