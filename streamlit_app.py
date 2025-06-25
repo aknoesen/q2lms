@@ -165,6 +165,9 @@ def main():
                 
                 # Apply topic filtering
                 filtered_df = ui_manager.enhanced_subject_filtering(df)
+
+                # ADD STATS SUMMARY BEFORE TABS
+                ui_manager._render_stats_summary_before_tabs(df, metadata)
                 
                 # Create tabs with mode-specific edit tab
                 edit_tab_label = f"📝 {mode_name}"

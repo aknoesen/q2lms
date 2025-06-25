@@ -419,12 +419,11 @@ class UIManager:
             )
 
     def _render_stats_summary_before_tabs(self, df, metadata):
-        """Render quick stats summary before tabs - key metrics only"""
-        st.error("🚨 STATS METHOD IS BEING CALLED!")  # Add this test line
+        """Render quick stats summary before tabs - key metrics only with expandable details"""
         
         st.markdown("---")
         
-        # Quick stats in a compact format
+        # Quick stats in a compact format (keep existing)
         total_questions = len(df)
         
         col1, col2, col3, col4 = st.columns(4)
@@ -457,6 +456,23 @@ class UIManager:
         if metadata and 'source' in metadata:
             source = metadata.get('source', 'Unknown')
             st.caption(f"📁 **Source:** {source}")
+        
+        # ADD: Expandable detailed analysis
+        with st.expander("📊 **View Detailed Analysis**", expanded=False):
+            if self.app_config.is_available('ui_components'):
+                ui_components = self.app_config.get_feature('ui_components')
+                
+                # Detailed database summary
+                st.markdown("#### 📋 Database Details")
+                ui_components['display_database_summary'](df, metadata)
+                
+                st.markdown("---")
+                
+                # Charts and visualizations
+                st.markdown("#### 📈 Visual Analysis")
+                ui_components['create_summary_charts'](df)
+            else:
+                st.error("❌ Detailed analysis components not available")
         
         st.markdown("---")
 
