@@ -96,22 +96,25 @@ class UploadInterfaceV2:
     
     def render_upload_section(self):
         """Render file upload with immediate processing - no redundant title"""
-        
-        uploaded_files = st.file_uploader(
-            "Select files to merge (1 or more files)",
-            accept_multiple_files=True,
-            type=['json', 'csv', 'xlsx'],
-            key="file_uploader"
-        )
-        
-        if uploaded_files and len(uploaded_files) >= 1:
-            if len(uploaded_files) == 1:
-                st.info("📄 Single file selected - will load directly without merging")
-            else:
-                st.info(f"📁 {len(uploaded_files)} files selected - will merge with conflict resolution")
+    
+        # Create container for all upload content
+        with st.container():
+            uploaded_files = st.file_uploader(
+                "Drag and drop files here or click Browse",
+                accept_multiple_files=True,
+                type=['json', 'csv', 'xlsx'],
+                key="file_uploader",
+                help="Select 1 or more JSON, CSV, or Excel files to merge"
+            )
             
-            if st.button("Process Files", type="primary"):
-                self._process_uploaded_files(uploaded_files)
+            if uploaded_files and len(uploaded_files) >= 1:
+                if len(uploaded_files) == 1:
+                    st.info("📄 Single file selected - will load directly without merging")
+                else:
+                    st.info(f"📁 {len(uploaded_files)} files selected - will merge with conflict resolution")
+                
+                if st.button("Process Files", type="primary"):
+                    self._process_uploaded_files(uploaded_files)
     
     def _process_uploaded_files(self, files) -> None:
         """Process uploaded files and generate preview data with clean output"""
@@ -285,7 +288,7 @@ class UploadInterfaceV2:
         # Load/Merge action
         if preview.merge_ready:
             button_text = "Load Database" if preview.conflict_count == 0 else "Complete Merge"
-            if st.button(button_text, type="primary", key="complete_merge"):
+            if st.button(button_text, type="primary", key="complete_merge", use_container_width=True):
                 self._execute_merge(preview)
     
     def _execute_merge(self, preview: MergePreviewData):

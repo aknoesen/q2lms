@@ -297,64 +297,75 @@ class SelectQuestionsInterface:
                 st.warning("🔍 No questions match your current filters.")
                 return
             
-            # Pagination controls
-            items_per_page = st.selectbox(
+            # Pagination controls - with "Show All" option as default
+            page_options = ["Show All", 5, 10, 20]
+            items_per_page_selection = st.selectbox(
                 "Questions per page", 
-                [5, 10, 20], 
-                index=1,
+                page_options, 
+                index=0,  # Default to "Show All"
                 key="select_mode_pagination"
             )
             
-            total_pages = (len(filtered_df) - 1) // items_per_page + 1
-            
-            if total_pages > 1:
-                # Pagination UI
-                col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
-                
-                if 'select_current_page' not in st.session_state:
-                    st.session_state['select_current_page'] = 1
-                
-                with col1:
-                    if st.button("⬅️ Previous", key="select_prev") and st.session_state['select_current_page'] > 1:
-                        st.session_state['select_current_page'] -= 1
-                        st.rerun()
-                
-                with col2:
-                    if st.button("⏪ First", key="select_first"):
-                        st.session_state['select_current_page'] = 1
-                        st.rerun()
-                
-                with col3:
-                    page = st.selectbox(
-                        "Page", 
-                        range(1, total_pages + 1), 
-                        index=st.session_state['select_current_page'] - 1, 
-                        key="select_page_selector"
-                    )
-                    if page != st.session_state['select_current_page']:
-                        st.session_state['select_current_page'] = page
-                        st.rerun()
-                
-                with col4:
-                    if st.button("⏩ Last", key="select_last"):
-                        st.session_state['select_current_page'] = total_pages
-                        st.rerun()
-                
-                with col5:
-                    if st.button("Next ➡️", key="select_next") and st.session_state['select_current_page'] < total_pages:
-                        st.session_state['select_current_page'] += 1
-                        st.rerun()
-                
-                st.info(f"Page {st.session_state['select_current_page']} of {total_pages}")
-                
-                # Calculate page bounds
-                start_idx = (st.session_state['select_current_page'] - 1) * items_per_page
-                end_idx = start_idx + items_per_page
-                page_df = filtered_df.iloc[start_idx:end_idx]
-                page_offset = start_idx
-            else:
+            # Handle "Show All" vs numeric pagination
+            if items_per_page_selection == "Show All":
+                # Show all questions without pagination
                 page_df = filtered_df
                 page_offset = 0
+                total_pages = 1  # Define total_pages for "Show All"
+                st.info(f"Showing all {len(filtered_df)} questions")
+            else:
+                items_per_page = items_per_page_selection     
+                total_pages = (len(filtered_df) - 1) // items_per_page + 1
+            
+                if total_pages > 1:
+                    # Pagination UI
+                    col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+                    
+                    if 'select_current_page' not in st.session_state:
+                        st.session_state['select_current_page'] = 1
+                    
+                    with col1:
+                        if st.button("⬅️ Previous", key="select_prev") and st.session_state['select_current_page'] > 1:
+                            st.session_state['select_current_page'] -= 1
+                            st.rerun()
+                    
+                    with col2:
+                        if st.button("⏪ First", key="select_first"):
+                            st.session_state['select_current_page'] = 1
+                            st.rerun()
+                    
+                    with col3:
+                        page = st.selectbox(
+                            "Page", 
+                            range(1, total_pages + 1), 
+                            index=st.session_state['select_current_page'] - 1, 
+                            key="select_page_selector"
+                        )
+                        if page != st.session_state['select_current_page']:
+                            st.session_state['select_current_page'] = page
+                            st.rerun()
+                    
+                    with col4:
+                        if st.button("⏩ Last", key="select_last"):
+                            st.session_state['select_current_page'] = total_pages
+                            st.rerun()
+                    
+                    with col5:
+                        if st.button("Next ➡️", key="select_next") and st.session_state['select_current_page'] < total_pages:
+                            st.session_state['select_current_page'] += 1
+                            st.rerun()
+                    
+                    st.info(f"Page {st.session_state['select_current_page']} of {total_pages}")
+                    
+                    # Calculate page bounds
+                    start_idx = (st.session_state['select_current_page'] - 1) * items_per_page
+                    end_idx = start_idx + items_per_page
+                    page_df = filtered_df.iloc[start_idx:end_idx]
+                    page_offset = start_idx
+                else:
+                    # Single page - show all
+                    page_df = filtered_df
+                    page_offset = 0
             
             st.markdown("---")
             
@@ -365,6 +376,33 @@ class SelectQuestionsInterface:
                     question, original_idx, actual_display_index + 1
                 )
                 st.markdown("---")
+            
+            # Export completion notice for Select mode (AFTER the loop!)
+            st.markdown("### 🎯 Ready to Export?")
+            
+            # Get current export statistics
+            selected_df, selected_original = self.flag_manager.get_filtered_questions_for_export(
+                st.session_state.df, 
+                st.session_state.get('original_questions', []), 
+                'select'
+            )
+            
+            selected_count = len(selected_df)
+            
+            if selected_count > 0:
+                st.success(f"✅ **{selected_count} questions ready for export**")
+                st.info("📤 **Next Step:** Click the **Export** tab above to download your questions!")
+                
+                # Prominent call-to-action box
+                st.markdown("""
+                <div style="background-color: #ffeaea; border: 2px solid #dc3545; border-radius: 10px; padding: 15px; margin: 10px 0;">
+                    <h4 style="color: #dc3545; margin: 0;">📥 Complete Your Export</h4>
+                    <p style="margin: 5px 0 0 0;">Go to the <strong>Export</strong> tab at the top of the page to download your selected questions in CSV, JSON, or QTI format.</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.warning("⚠️ **No questions selected** - Nothing to export!")
+                st.info("💡 **Tip:** Use the checkboxes above to select questions for export.")
                 
         except Exception as e:
             st.error(f"❌ Error rendering question list: {e}")

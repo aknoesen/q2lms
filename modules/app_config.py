@@ -164,7 +164,7 @@ class AppConfig:
         """Render clean sidebar header with logo only"""
         with st.sidebar:
             # Add logo at top of sidebar
-            st.image("assets/q2lms_icon.svg", width=120)
+            st.image("https://raw.githubusercontent.com/aknoesen/q2lms/main/assets/q2lms_icon.svg", width=240)
             st.markdown("---")
     
     def get_system_health(self):

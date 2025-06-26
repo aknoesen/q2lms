@@ -87,17 +87,14 @@ class OperationModeManager:
         Render the fork decision UI for choosing between Select and Delete modes
         This is the main decision point after successful file upload
         """
-        # Clear visual space and make mode selection prominent
-        st.markdown("---")
-        st.markdown("# 🎯 Choose Your Operation Mode")
-        st.markdown("**Select how you want to work with your questions:**")
+
         
-        # Show current database info
+        # Database summary section - show this FIRST, right after the header
         if 'df' in st.session_state and st.session_state.df is not None:
             df = st.session_state.df
             total_questions = len(df)
             
-            # Database summary
+            # Database summary with metrics
             col1, col2, col3 = st.columns([2, 1, 1])
             
             with col1:
@@ -128,24 +125,13 @@ class OperationModeManager:
         
         st.markdown("---")
         
-        # Mode selection cards
-        st.markdown("### 🛤️ Choose Your Path")
+        # Mode selection section - same font size as main header
+        st.markdown("# 🛤️ Choose Your Path")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            # Select Questions Mode Card
-            st.markdown("""
-            <div style="
-                background: linear-gradient(135deg, #e3f2fd, #f0f8ff);
-                padding: 2rem;
-                border-radius: 1rem;
-                border: 2px solid #2196f3;
-                margin: 1rem 0;
-                text-align: center;
-            ">
-            """, unsafe_allow_html=True)
-            
+            # Clean Select Questions section - NO colored boxes
             st.markdown("### 🎯 Select Questions")
             st.markdown("""
             **Purpose:** Choose specific questions to export
@@ -167,22 +153,9 @@ class OperationModeManager:
                         use_container_width=True,
                         help="Flag questions you want to INCLUDE in export"):
                 self._handle_mode_selection('select')
-            
-            st.markdown("</div>", unsafe_allow_html=True)
         
         with col2:
-            # Delete Questions Mode Card  
-            st.markdown("""
-            <div style="
-                background: linear-gradient(135deg, #fff3e0, #fff8f0);
-                padding: 2rem;
-                border-radius: 1rem;
-                border: 2px solid #ff9800;
-                margin: 1rem 0;
-                text-align: center;
-            ">
-            """, unsafe_allow_html=True)
-            
+            # Clean Delete Questions section - NO colored boxes
             st.markdown("### 🗑️ Delete Questions")
             st.markdown("""
             **Purpose:** Remove unwanted questions from export
@@ -204,10 +177,8 @@ class OperationModeManager:
                         use_container_width=True,
                         help="Flag questions you want to EXCLUDE from export"):
                 self._handle_mode_selection('delete')
-            
-            st.markdown("</div>", unsafe_allow_html=True)
         
-        # Help section
+        # Help section at the bottom
         with st.expander("ℹ️ Need Help Choosing?"):
             st.markdown("""
             **Choose Select Mode if:**
