@@ -18,9 +18,12 @@ Q2LMS (Question Database to Learning Management System) is a comprehensive web-b
 
 ### Key Capabilities
 - **Smart Upload System**: Process single or multiple question files with intelligent conflict resolution
+- **Instructor-Optimized Interface**: Clean, professional design focused on educational workflows
+- **Flexible Question Management**: Choose between Select Mode (curate specific questions) or Delete Mode (remove unwanted questions)
+- **Complete Question Overview**: "Show All" interface displays entire question banks for comprehensive course planning
 - **Live Question Editor**: Real-time LaTeX preview and editing capabilities
-- **Multi-Format Export**: Generate Canvas QTI packages, native JSON, and CSV exports
-- **Analytics Dashboard**: Monitor question distribution and performance insights
+- **Multi-Format Export**: Generate Canvas QTI packages, native JSON, and CSV exports with guided completion process
+- **Analytics Dashboard**: Monitor question distribution and performance insights with immediate stats visibility
 - **LaTeX Excellence**: Full mathematical notation support with automatic optimization
 - **Version Control Integration**: Complete JSON export/import workflow for collaboration
 
@@ -29,6 +32,9 @@ Q2LMS (Question Database to Learning Management System) is a comprehensive web-b
 - Academic departments managing question banks
 - Educational content developers
 - LMS administrators deploying assessments
+
+### Interface Design Philosophy
+Q2LMS prioritizes instructor efficiency with a clean, professional interface that eliminates visual clutter and provides clear guidance throughout the question management workflow. The platform displays essential information immediately and guides users seamlessly from upload to export completion.
 
 ---
 
@@ -53,11 +59,12 @@ Q2LMS (Question Database to Learning Management System) is a comprehensive web-b
    - Or run locally: `streamlit run streamlit_app.py`
 
 2. **Interface Overview**
-   The main interface consists of four primary sections:
-   - **Upload Panel**: File management and import tools
-   - **Question Editor**: Real-time editing workspace
-   - **Export Center**: Multi-format export options
-   - **Analytics Dashboard**: Question database insights
+   The Q2LMS interface features a clean, instructor-focused design:
+   - **Upload Panel**: Prominent file management and import tools
+   - **Operation Mode Selection**: Choose between Select Questions or Delete Questions workflows
+   - **Question Management Interface**: Complete question overview with "Show All" default view
+   - **Export Completion Guidance**: Clear next-step instructions throughout the process
+   - **Analytics Summary**: Key database statistics displayed immediately upon upload
 
 3. **Initial Setup**
    - No user registration required
@@ -72,6 +79,22 @@ Q2LMS (Question Database to Learning Management System) is a comprehensive web-b
 ---
 
 ## Core Workflows
+
+### New in Q2LMS: Operation Mode Selection
+
+After uploading your question database, Q2LMS presents a clear choice between two instructor-optimized workflows:
+
+**🎯 Select Questions Mode**
+- **Purpose**: Curate specific questions for targeted assessments
+- **Best for**: Building focused quizzes, topic-specific exams, or custom question sets
+- **Workflow**: Review all questions, select desired ones, export selected set
+
+**🗑️ Delete Questions Mode**  
+- **Purpose**: Clean and refine existing question banks
+- **Best for**: Removing outdated questions, cleaning large databases, or filtering content
+- **Workflow**: Review all questions, mark unwanted ones for removal, export remaining set
+
+Both modes provide complete question visibility by default, allowing instructors to see their entire question bank for comprehensive course planning.
 
 ### Workflow 1: Creating Questions from Scratch
 
@@ -99,65 +122,110 @@ Q2LMS (Question Database to Learning Management System) is a comprehensive web-b
 
 > **💡 Pro Tip**: Q2Prompt streamlines bulk question creation by generating structured prompts that produce Q2LMS-compatible JSON output. This approach is especially efficient for creating large question banks or when working with specific learning objectives.
 
-### Workflow 2: Importing Existing Question Banks
+### Workflow 2: Importing and Managing Question Banks
 
-**Purpose**: Integrate existing question collections into Q2LMS
+**Purpose**: Integrate existing question collections into Q2LMS with instructor-friendly management
 
 **Steps**:
-1. Go to **Upload Interface**
-2. Choose upload method:
-   - Single file upload for individual question banks
-   - Multi-file upload for batch processing
-3. Select supported file formats:
-   - **JSON** (native Q2LMS format - recommended)
-   - **CSV** (requires format conversion)
-   - **QTI packages** (imported from other LMS platforms)
-4. Review conflict resolution options if duplicate questions detected
-5. Confirm import settings and process files
-6. Verify imported questions in the Question Editor
+1. **Upload Questions**
+   - Go to **Upload Interface**
+   - Choose upload method (single file or multi-file upload)
+   - Select supported file formats (JSON, CSV, QTI packages)
+   - Review upload summary with automatic statistics display
 
-**Expected Outcome**: Existing questions integrated into Q2LMS with preserved formatting and metadata
+2. **Choose Operation Mode**
+   - **Select Questions Mode**: For curating specific questions
+   - **Delete Questions Mode**: For removing unwanted content
+   - Clear mode descriptions help you choose the right approach
 
-> **📋 Note**: Q2LMS works best with JSON-formatted input files. If you have questions in other formats, consider using Q2Prompt to help convert and structure them properly, or use the built-in format conversion tools in the Upload Interface.
+3. **Review Complete Question Set**
+   - Q2LMS displays **all questions by default** for comprehensive overview
+   - Use topic filtering in sidebar to focus on specific subjects
+   - No pagination barriers - see entire question bank at once
 
-> **🎯 Quick Start**: Try uploading `examples/sample_questions.json` first to familiarize yourself with the import process before working with your own data.
+4. **Manage Questions**
+   - Use checkboxes to select/mark questions according to chosen mode
+   - Bulk controls available for efficient mass operations
+   - Edit questions inline with live preview capabilities
+
+5. **Complete Export Process**
+   - Prominent **red completion notices** guide you to the Export tab
+   - Clear statistics show exactly what will be exported
+   - Multiple format options available (Canvas QTI, JSON, CSV)
+
+**Expected Outcome**: Efficiently managed question database ready for deployment
+
+> **📋 New Feature**: The instructor-optimized interface shows all questions by default, eliminating the need to navigate through pagination to see your complete question bank.
 
 ### Workflow 3: Editing and Refining Questions
 
 **Purpose**: Modify existing questions with advanced editing features
 
 **Steps**:
-1. Access **Question Editor**
-2. Browse or search existing questions using filters
-3. Select question for editing
-4. Use live preview to see LaTeX rendering
-5. Modify question text, answers, or metadata
-6. Apply bulk edits if working with multiple questions
-7. Save changes to database
+1. Access your chosen **Operation Mode** (Select or Delete)
+2. Browse complete question set with **"Show All" default view**
+3. Use sidebar topic filters to focus on specific content areas
+4. Select questions for editing with inline preview capabilities
+5. Modify question text, answers, or metadata with live LaTeX rendering
+6. Apply bulk edits using efficient bulk control tools
+7. Save changes and proceed to export with guided completion
 
 **Expected Outcome**: Updated questions with improved formatting and content accuracy
 
+> **🎯 Interface Enhancement**: All questions are displayed simultaneously by default, allowing instructors to see the complete scope of their question bank and make informed editing decisions.
+
 ### Workflow 4: Exporting for LMS Deployment
 
-**Purpose**: Generate LMS-compatible question packages for deployment
+**Purpose**: Generate LMS-compatible question packages for deployment with clear guidance
 
 **Steps**:
-1. Navigate to **Export Center**
-2. Select questions for export (individual, filtered set, or entire database)
-3. Choose export format:
-   - **Canvas QTI**: For Canvas LMS deployment
-   - **Generic QTI**: For other QTI-compatible systems
-   - **Native JSON**: For backup and version control
-   - **CSV**: For data analysis and reporting
-4. Configure export settings (question randomization, answer shuffling, etc.)
-5. Generate and download export package
-6. Deploy to target LMS following platform-specific instructions
+1. **Complete Question Management**
+   - Finish selecting or marking questions in your chosen mode
+   - Review **completion statistics** displayed throughout the interface
 
-**Expected Outcome**: LMS-ready question packages optimized for your target platform
+2. **Navigate to Export**
+   - **Red completion notices** at the bottom of question lists provide clear guidance
+   - "Complete Your Export" call-to-action directs you to the Export tab
+   - No guesswork about next steps
+
+3. **Configure Export Settings**
+   - Choose export format (Canvas QTI, Generic QTI, JSON, CSV)
+   - Review export preview showing exactly what will be included
+   - Configure format-specific options as needed
+
+4. **Generate and Download**
+   - Download export package optimized for your target platform
+   - Receive confirmation of successful export completion
+
+**Expected Outcome**: LMS-ready question packages with clear completion guidance throughout the process
+
+> **🚀 New Enhancement**: Prominent export completion guidance eliminates confusion about finishing the export process, ensuring instructors can confidently complete their question management workflow.
 
 ---
 
 ## Question Management
+
+### Enhanced Question Interface
+
+**Complete Question Visibility**
+- **"Show All" Default**: See entire question bank without pagination barriers
+- **Comprehensive Overview**: Make informed decisions about question selection
+- **Topic Filtering**: Use sidebar controls to focus on specific subject areas
+- **Instant Statistics**: Key metrics displayed immediately upon database load
+
+**Streamlined Operation Modes**
+
+**Select Questions Mode Interface**:
+- ✅ Checkboxes to include questions in export
+- 📊 Real-time selection statistics
+- 🔧 Bulk selection controls for efficiency
+- 📋 Clear export preview with selected question counts
+
+**Delete Questions Mode Interface**:
+- 🗑️ Checkboxes to mark questions for removal
+- 📊 Statistics showing remaining question counts
+- 🔧 Bulk deletion controls for mass operations
+- ✅ Clear indication of questions that will be exported
 
 ### Question Types Supported
 
@@ -209,24 +277,41 @@ Each question in Q2LMS includes comprehensive metadata:
   - LaTeX optimization status
   - Version control metadata
 
-### Search and Filter Capabilities
+### Enhanced Search and Filter Capabilities
 
-**Advanced Search Features**:
-- Full-text search across question content
-- Metadata filtering (author, date, difficulty)
-- Topic and subject area filtering
-- Question type filtering
-- Export status filtering
+**Immediate Statistics Display**:
+- Total question count, topics, points, and question types shown immediately
+- Real-time updates as you apply filters
+- Clear indication of database scope and content
+
+**Advanced Filtering**:
+- **Topic Filtering**: Sidebar multi-select with clear instructions
+- **Subject Area Focus**: Easily include/exclude specific topics
+- **Visual Feedback**: Clear indication of active filters and excluded content
 
 **Bulk Operations**:
-- Mass editing of question attributes
-- Batch export selection
-- Bulk categorization updates
-- Group deletion with confirmation
+- **Database-wide Controls**: Affect entire question bank
+- **View-specific Controls**: Target only currently filtered questions
+- **Progress Indicators**: Visual feedback showing selection progress
+- **Invert Operations**: Quickly reverse selection patterns
 
 ---
 
 ## Export and Deployment
+
+### Enhanced Export Process
+
+**Guided Export Completion**
+- **Completion Notices**: Prominent red call-to-action boxes appear at the bottom of question lists
+- **Clear Next Steps**: "Click the Export tab above to download your questions"
+- **Export Statistics**: Real-time display of questions ready for export
+- **Format Options**: Clear indication of available export formats (CSV, JSON, QTI)
+
+**Export Preview and Statistics**
+- **Select Mode**: Shows "X of Y selected questions" with export readiness
+- **Delete Mode**: Shows "X remaining questions (Y excluded)" for clarity
+- **Points Calculation**: Automatic total points calculation for selected questions
+- **Topic Breakdown**: Expandable view of questions by topic area
 
 ### Export Formats
 
@@ -268,23 +353,26 @@ Each question in Q2LMS includes comprehensive metadata:
 ### Deployment Process
 
 **Pre-Deployment Checklist**:
-- [ ] Questions reviewed and finalized
-- [ ] LaTeX formatting verified
+- [ ] Questions reviewed using complete overview interface
+- [ ] Operation mode chosen and questions selected/marked appropriately
+- [ ] Export completion notice confirms readiness
+- [ ] LaTeX formatting verified in preview
 - [ ] Answer keys validated
 - [ ] Export format selected
 - [ ] Target LMS compatibility confirmed
 
 **Canvas LMS Deployment**:
-1. Export questions as Canvas QTI package
-2. Log into Canvas course
-3. Navigate to Settings → Import Course Content
-4. Select "QTI .zip file" as import type
-5. Upload Q2LMS-generated package
-6. Review import summary and confirm
-7. Verify questions in Canvas question bank
+1. Complete question management in Q2LMS with guided export process
+2. Export questions as Canvas QTI package following completion notices
+3. Log into Canvas course
+4. Navigate to Settings → Import Course Content
+5. Select "QTI .zip file" as import type
+6. Upload Q2LMS-generated package
+7. Review import summary and confirm
+8. Verify questions in Canvas question bank
 
 **Other LMS Platforms**:
-1. Export as Generic QTI package
+1. Export as Generic QTI package using guided completion process
 2. Consult LMS-specific import documentation
 3. Follow platform import procedures
 4. Validate question rendering and functionality
@@ -293,21 +381,12 @@ Each question in Q2LMS includes comprehensive metadata:
 
 ## Advanced Features
 
-### LaTeX Integration
+### Enhanced Analytics Dashboard
 
-**Mathematical Notation Support**:
-- Inline math expressions: `$equation$`
-- Display math blocks: `$$equation$$`
-- Complex formulas and symbols
-- Automatic optimization for web display
-
-**Best Practices for LaTeX**:
-- Use standard LaTeX mathematical notation
-- Preview all equations before finalizing
-- Test rendering across different export formats
-- Utilize Q2LMS LaTeX validation tools
-
-### Analytics Dashboard
+**Immediate Statistics Display**:
+- **Database Overview**: Total questions, topics, points, and question types displayed immediately upon upload
+- **Real-time Updates**: Statistics update automatically as you apply filters or make selections
+- **Export Readiness**: Clear indication of questions ready for export in chosen mode
 
 **Question Database Insights**:
 - Total question count by type
@@ -321,6 +400,21 @@ Each question in Q2LMS includes comprehensive metadata:
 - Question usage statistics
 - Popular question identification
 - Database growth trends
+
+### LaTeX Integration
+
+**Mathematical Notation Support**:
+- Inline math expressions: `$equation$`
+- Display math blocks: `$$equation$$`
+- Complex formulas and symbols
+- Automatic optimization for web display
+- Live preview in question editing interface
+
+**Best Practices for LaTeX**:
+- Use standard LaTeX mathematical notation
+- Preview all equations before finalizing using built-in preview
+- Test rendering across different export formats
+- Utilize Q2LMS LaTeX validation tools
 
 ### Collaboration Features
 
@@ -346,13 +440,20 @@ Each question in Q2LMS includes comprehensive metadata:
 
 ## Best Practices
 
-### Question Development
+### Instructor-Friendly Workflow Optimization
 
-**Content Quality**:
-- Write clear, unambiguous question stems
-- Ensure single correct answers for objective questions
-- Provide meaningful distractors for multiple choice
-- Include explanatory feedback where appropriate
+**Interface Usage**:
+- **Take advantage of "Show All" default**: Review complete question sets for comprehensive course planning
+- **Use topic filtering strategically**: Focus on specific subject areas when working with large databases
+- **Leverage completion guidance**: Follow red completion notices to ensure successful export completion
+- **Choose appropriate operation mode**: Use Select Mode for curation, Delete Mode for cleaning
+
+**Question Development**:
+- **Content Quality**:
+  - Write clear, unambiguous question stems
+  - Ensure single correct answers for objective questions
+  - Provide meaningful distractors for multiple choice
+  - Include explanatory feedback where appropriate
 
 **AI-Assisted Development with Q2Prompt**:
 - Use Q2Prompt to generate consistent, high-quality question prompts
@@ -361,10 +462,10 @@ Each question in Q2LMS includes comprehensive metadata:
 - Scale question creation while preserving educational quality
 
 **Technical Optimization**:
-- Test LaTeX rendering across all export formats
+- Test LaTeX rendering using live preview capabilities
 - Validate question metadata completeness
 - Use consistent formatting and style
-- Implement regular backup procedures
+- Implement regular backup procedures using JSON export
 
 > **💡 Best Practice**: When using Q2Prompt for question generation, always review and refine AI-generated content in Q2LMS to ensure alignment with your specific learning objectives and institutional standards.
 
@@ -372,19 +473,20 @@ Each question in Q2LMS includes comprehensive metadata:
 
 **Organization Strategies**:
 - Implement consistent naming conventions
-- Maintain detailed subject categorization
+- Maintain detailed subject categorization using topic filters
 - Document learning objective alignments
-- Regular database cleanup and maintenance
+- Regular database cleanup using Delete Mode workflow
 
 **Quality Assurance**:
-- Peer review processes for new questions
-- Regular validation of existing content
-- Performance monitoring and optimization
-- Backup and recovery procedures
+- Use complete question overview for comprehensive peer review
+- Leverage bulk controls for efficient quality assurance processes
+- Regular validation using guided export previews
+- Backup and recovery using JSON export format
 
 ### LMS Integration
 
 **Deployment Planning**:
+- Use export completion guidance to ensure thorough preparation
 - Test imports in LMS development environments
 - Coordinate with LMS administrators
 - Plan deployment schedules
@@ -402,15 +504,30 @@ Each question in Q2LMS includes comprehensive metadata:
 
 ### Common Issues and Solutions
 
+**Interface and Navigation**
+- **Issue**: Cannot see all questions in database
+- **Solution**: Q2LMS now defaults to "Show All" - if you see pagination controls, select "Show All" from the dropdown
+- **Prevention**: Use topic filtering to focus on specific content areas if working with very large databases
+
 **Upload Problems**
 - **Issue**: File format not recognized
 - **Solution**: Verify file format compatibility; convert to supported format if necessary
 - **Prevention**: Use recommended file formats (JSON, CSV, QTI)
 
+**Mode Selection Confusion**
+- **Issue**: Unsure which operation mode to choose
+- **Solution**: Use Select Mode for building targeted question sets; use Delete Mode for cleaning and refining existing banks
+- **Prevention**: Review mode descriptions in the interface and consider your end goal
+
+**Export Process Issues**
+- **Issue**: Unclear how to complete export process
+- **Solution**: Look for red completion notices at the bottom of question lists providing clear guidance to Export tab
+- **Prevention**: Follow the guided workflow and completion statistics throughout the process
+
 **LaTeX Rendering Issues**
 - **Issue**: Mathematical expressions not displaying correctly
-- **Solution**: Check LaTeX syntax; use Q2LMS preview feature for validation
-- **Prevention**: Follow LaTeX best practices; test expressions before finalizing
+- **Solution**: Check LaTeX syntax; use Q2LMS live preview feature for validation
+- **Prevention**: Follow LaTeX best practices; test expressions using built-in preview before finalizing
 
 **Export Failures**
 - **Issue**: Export process fails or produces corrupted files
@@ -425,10 +542,16 @@ Each question in Q2LMS includes comprehensive metadata:
 ### Getting Help
 
 **Self-Service Resources**:
-- Built-in help system and tooltips
+- Built-in help system and tooltips throughout the interface
 - Example question databases
 - Video tutorials and documentation
 - FAQ and knowledge base
+
+**Interface Guidance**:
+- Operation mode descriptions and guidance
+- Export completion notices and next-step instructions
+- Real-time statistics and progress indicators
+- Clear visual feedback throughout all workflows
 
 **Support Channels**:
 - GitHub Issues for bug reports
@@ -439,10 +562,10 @@ Each question in Q2LMS includes comprehensive metadata:
 ### Performance Optimization
 
 **Large Database Management**:
-- Implement database segmentation strategies
-- Use filtering to work with question subsets
-- Optimize export operations for large datasets
-- Monitor system performance metrics
+- Utilize "Show All" default view for comprehensive overview
+- Implement topic filtering for focused work sessions
+- Use bulk controls for efficient mass operations
+- Monitor export statistics for performance insights
 
 **Browser Optimization**:
 - Use modern, updated web browsers
@@ -454,10 +577,19 @@ Each question in Q2LMS includes comprehensive metadata:
 
 ## Conclusion
 
-Q2LMS provides a comprehensive solution for educational question database management and LMS integration. By following the workflows and best practices outlined in this guide, instructors can efficiently create, manage, and deploy high-quality assessments across multiple platforms.
+Q2LMS provides a comprehensive, instructor-optimized solution for educational question database management and LMS integration. The enhanced interface prioritizes educator efficiency with clean design, complete question visibility, and guided workflows that eliminate confusion throughout the question management process.
+
+By following the workflows and best practices outlined in this guide, instructors can efficiently create, manage, and deploy high-quality assessments across multiple platforms with confidence and clarity.
+
+**Key Interface Advantages**:
+- **Complete Visibility**: "Show All" default eliminates pagination barriers
+- **Clear Guidance**: Export completion notices provide step-by-step direction
+- **Flexible Workflows**: Choose between Select and Delete modes based on your needs
+- **Professional Design**: Clean interface focuses attention on educational content
+- **Immediate Feedback**: Real-time statistics and progress indicators throughout
 
 For additional support and resources, consult the project documentation, community forums, and institutional support channels.
 
 ---
 
-*This user guide is maintained as part of the Q2LMS project. For the most current version and updates, visit the project repository.*
+*This user guide reflects the enhanced Q2LMS interface with instructor-optimized design and workflows. For the most current version and updates, visit the project repository.*
