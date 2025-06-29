@@ -490,14 +490,17 @@ class QuestionExporter:
                 
                 if package_data:
                     # Provide download
-                    st.download_button(
+                    download_key = f"qti_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    downloaded = st.download_button(
                         label="📦 Download QTI Package",
                         data=package_data,
                         file_name=filename,
                         mime="application/zip",
-                        key=f"qti_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                        key=download_key
                     )
-                    
+                    if downloaded:
+                        st.session_state['qti_downloaded'] = True
+
                     # Show success details
                     total_points = sum(q.get('points', 1) for q in processed_questions)
                     latex_analysis = self.latex_analyzer.analyze_questions(processed_questions)
@@ -520,6 +523,22 @@ class QuestionExporter:
                     3. Upload your downloaded file
                     4. Verify questions import correctly
                     """)
+
+                    # --- Completion section: only after download ---
+                    if st.session_state.get('qti_downloaded', False):
+                        st.markdown("---")
+                        st.success("🎉 Export Complete!")
+                        st.markdown("### What's Next?")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="qti_exit_btn"):
+                                st.markdown("Thank you for using Q2LMS!")
+                                st.stop()
+                        with col2:
+                            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_startover_btn"):
+                                from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState
+                                UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                                st.rerun()
                 else:
                     st.error("❌ Failed to create QTI package")
                 

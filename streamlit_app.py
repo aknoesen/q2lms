@@ -198,8 +198,6 @@ def main():
                         delete_interface.render_deletion_interface(filtered_df)
                 
                 with tab4:
-                    # Update workflow state - user is now exporting
-                    UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
                     # Export with fork filtering
                     flag_manager = fork_components['flag_manager']
                     export_df, export_original = flag_manager.get_filtered_questions_for_export(

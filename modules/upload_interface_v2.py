@@ -42,49 +42,61 @@ class UploadInterfaceV2:
 
     @staticmethod
     def update_workflow_state(new_state: ProcessingState):
-        """Update workflow state only if not moving backwards - with debugging"""
-        # Initialize upload_state if it doesn't exist
-        if 'upload_state' not in st.session_state:
-            st.session_state.upload_state = {
-                'current_state': ProcessingState.WAITING_FOR_FILES,
-                'uploaded_files': None,
-                'preview_data': None,
-                'error_message': None,
-                'final_database': None,
-                'last_update': datetime.now()
-            }
-        
-        current_state = st.session_state.upload_state.get('current_state')
-        
-        # DEBUG: Log state transitions
-        st.sidebar.write(f"🔧 STATE CHANGE: {current_state} → {new_state}")
-        
-        # Define state progression order
-        state_order = [
-            ProcessingState.WAITING_FOR_FILES,
-            ProcessingState.FILES_READY,
-            ProcessingState.PROCESSING,
-            ProcessingState.PREVIEW_READY,
-            ProcessingState.DATABASE_LOADED,
-            ProcessingState.SELECTING_QUESTIONS,
-            ProcessingState.EXPORTING,
-            ProcessingState.FINISHED
-        ]
-        
+        """Update workflow state only if not moving backwards - with debugging and loop protection"""
+        # Loop protection: prevent recursive state updates
+        if getattr(st.session_state, "_state_updating", False):
+            return
+        st.session_state._state_updating = True
+
         try:
-            current_index = state_order.index(current_state) if current_state in state_order else -1
-            new_index = state_order.index(new_state) if new_state in state_order else -1
-        except (ValueError, AttributeError):
-            current_index = -1
-            new_index = -1
-        
-        # Only allow forward or same-state transitions
-        if new_index >= current_index:
-            st.session_state.upload_state['current_state'] = new_state
-            st.session_state.upload_state['last_update'] = datetime.now()
-            st.sidebar.write(f"✅ ACCEPTED: Now at {new_state}")
-        else:
-            st.sidebar.write(f"❌ BLOCKED: Can't go backwards from {current_state} to {new_state}")
+            # Initialize upload_state if it doesn't exist
+            if 'upload_state' not in st.session_state:
+                st.session_state.upload_state = {
+                    'current_state': ProcessingState.WAITING_FOR_FILES,
+                    'uploaded_files': None,
+                    'preview_data': None,
+                    'error_message': None,
+                    'final_database': None,
+                    'last_update': datetime.now()
+                }
+            
+            current_state = st.session_state.upload_state.get('current_state')
+            
+            # Prevent redundant state changes
+            if current_state == new_state:
+                return
+
+            # Define state progression order
+            state_order = [
+                ProcessingState.WAITING_FOR_FILES,
+                ProcessingState.FILES_READY,
+                ProcessingState.PROCESSING,
+                ProcessingState.PREVIEW_READY,
+                ProcessingState.DATABASE_LOADED,
+                ProcessingState.SELECTING_QUESTIONS,
+                ProcessingState.EXPORTING,
+                ProcessingState.FINISHED
+            ]
+            
+            try:
+                current_index = state_order.index(current_state) if current_state in state_order else -1
+                new_index = state_order.index(new_state) if new_state in state_order else -1
+            except (ValueError, AttributeError):
+                current_index = -1
+                new_index = -1
+
+            # Special case: allow EXPORTING -> SELECTING_QUESTIONS (tab switch)
+            if current_state == ProcessingState.EXPORTING and new_state == ProcessingState.SELECTING_QUESTIONS:
+                st.session_state.upload_state['current_state'] = new_state
+                st.session_state.upload_state['last_update'] = datetime.now()
+            # Only allow forward or same-state transitions otherwise
+            elif new_index >= current_index:
+                st.session_state.upload_state['current_state'] = new_state
+                st.session_state.upload_state['last_update'] = datetime.now()
+            else:
+                pass
+        finally:
+            st.session_state._state_updating = False
 
     @staticmethod
     def is_workflow_active() -> bool:
@@ -129,10 +141,6 @@ class UploadInterfaceV2:
         if 'upload_state' not in st.session_state:
             st.session_state.upload_state = {}
 
-        # DEBUG: Show what's happening in _set_state
-        current = st.session_state.upload_state.get('current_state', 'None')
-        st.sidebar.write(f"🔧 _SET_STATE: {current} → {new_state}")
-        
         # Use the protected bridge method instead of direct assignment
         UploadInterfaceV2.update_workflow_state(new_state)
         
@@ -144,14 +152,17 @@ class UploadInterfaceV2:
     @staticmethod
     def render_progress_indicator(current_state: ProcessingState = None):
         """Show clear progress through the workflow in the sidebar, always visible if workflow is active"""
-        # DEBUG: Show current state
-        upload_state = st.session_state.get('upload_state', {})
-        actual_state = upload_state.get('current_state', 'None')
-        st.sidebar.write(f"🎯 RENDERING PROGRESS: {actual_state}")
-
         # Always get the current state from session state, not from parameter
         upload_state = st.session_state.get('upload_state', {})
         current_state = upload_state.get('current_state', ProcessingState.WAITING_FOR_FILES)
+
+        # Map DATABASE_LOADED to SELECTING_QUESTIONS for visual display
+        if current_state == ProcessingState.DATABASE_LOADED:
+            current_state = ProcessingState.SELECTING_QUESTIONS
+
+        # Do NOT map EXPORTING to SELECTING_QUESTIONS; let EXPORTING highlight the Export stage
+        # if current_state == ProcessingState.EXPORTING:
+        #     current_state = ProcessingState.SELECTING_QUESTIONS
 
         if not UploadInterfaceV2.is_workflow_active():
             return
@@ -166,6 +177,7 @@ class UploadInterfaceV2:
                 (ProcessingState.FINISHED, "✅ Complete")
             ]
             current_index = None
+            # Highlight the current stage
             for i, (stage, label) in enumerate(stages):
                 if stage == current_state:
                     current_index = i
@@ -618,11 +630,82 @@ class UploadInterfaceV2:
         # Debug section (optional)
         if st.checkbox("🔧 Show Debug Info", value=False):
             st.json(upload_state if isinstance(upload_state, dict) else str(upload_state))
+    
+    def _render_basic_export_interface(self, export_df: pd.DataFrame, export_original: list) -> None:
+        """
+        Basic export interface fallback
 
-# Usage in your main app remains the same
-def main():
-    interface = UploadInterfaceV2()
-    interface.render_complete_interface()
-
-if __name__ == "__main__":
-    main()
+        Args:
+            export_df (pd.DataFrame): DataFrame to export
+            export_original (list): Original questions for export
+        """
+        st.subheader("📥 Export Options")
+        
+        if len(export_df) == 0:
+            st.warning("⚠️ No questions to export")
+            return
+        
+        st.success(f"✅ Ready to export {len(export_df)} questions")
+        
+        # Basic CSV download
+        csv_data = export_df.to_csv(index=False)
+        csv_downloaded = st.download_button(
+            label="📄 Download as CSV",
+            data=csv_data,
+            file_name="questions_export.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+        if csv_downloaded:
+            if 'upload_state' in st.session_state:
+                UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+            st.success("🎉 Export completed successfully!")
+            # --- Completion section ---
+            st.markdown("---")
+            st.success("🎉 Export Complete!")
+            st.markdown("### What's Next?")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
+                    st.markdown("Thank you for using Q2LMS!")
+                    st.stop()
+            with col2:
+                if st.button("🔄 Start Over", type="primary", use_container_width=True):
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                    st.rerun()
+        
+        # Basic JSON download
+        if export_original:
+            import json
+            json_data = json.dumps({
+                "questions": export_original,
+                "metadata": {
+                    "total_questions": len(export_original),
+                    "export_timestamp": pd.Timestamp.now().isoformat()
+                }
+            }, indent=2)
+            
+            json_downloaded = st.download_button(
+                label="📋 Download as JSON",
+                data=json_data,
+                file_name="questions_export.json",
+                mime="application/json",
+                use_container_width=True
+            )
+            if json_downloaded:
+                if 'upload_state' in st.session_state:
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                st.success("🎉 Export completed successfully!")
+                # --- Completion section ---
+                st.markdown("---")
+                st.success("🎉 Export Complete!")
+                st.markdown("### What's Next?")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
+                        st.markdown("Thank you for using Q2LMS!")
+                        st.stop()
+                with col2:
+                    if st.button("🔄 Start Over", type="primary", use_container_width=True):
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                        st.rerun()

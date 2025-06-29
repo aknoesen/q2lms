@@ -375,6 +375,17 @@ class UIManager:
             if 'upload_state' in st.session_state:
                 UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
             st.success("🎉 Export completed successfully!")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📁 Load New Database", key="csv_new_db"):
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                    # Optionally clear session state for a fresh start
+                    for key in ['df', 'original_questions', 'metadata']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+            with col2:
+                if st.button("✅ Finish Session", key="csv_finish"):
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
         
         # Basic JSON download
         if export_original:
@@ -398,6 +409,16 @@ class UIManager:
                 if 'upload_state' in st.session_state:
                     UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
                 st.success("🎉 Export completed successfully!")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("📁 Load New Database", key="json_new_db"):
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                        for key in ['df', 'original_questions', 'metadata']:
+                            if key in st.session_state:
+                                del st.session_state[key]
+                with col2:
+                    if st.button("✅ Finish Session", key="json_finish"):
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
 
     def _render_stats_summary_before_tabs(self, df, metadata):
         """Render quick stats summary before tabs - key metrics only with expandable details"""

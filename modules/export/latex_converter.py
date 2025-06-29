@@ -95,13 +95,13 @@ class CanvasLaTeXConverter(LaTeXProcessor):
         Converts LaTeX delimiters to \\(...\\) or \\[...\\] for Canvas/QTI export.
         This method is used for QTI generation and should NOT be changed.
         """
-        print(f"DEBUG (converter): convert_for_canvas called with: '{text[:100]}...'")
+        # print(f"DEBUG (converter): convert_for_canvas called with: '{text[:100]}...'")
         
         if not text:
             return ""
         
         expressions = self.find_latex_expressions(text)
-        print(f"DEBUG (converter): Found {len(expressions)} LaTeX expressions")
+        # print(f"DEBUG (converter): Found {len(expressions)} LaTeX expressions")
         
         if not expressions:
             return text 
@@ -130,7 +130,7 @@ class CanvasLaTeXConverter(LaTeXProcessor):
             result_parts.append(remaining_text)
         
         final_content = ''.join(result_parts)
-        print(f"DEBUG (converter): Final content from converter: '{final_content}'")
+        # print(f"DEBUG (converter): Final content from converter: '{final_content}'")
         return final_content # Returns string with \(...\) for Canvas/QTI
     
     def convert_for_streamlit(self, text: str) -> str:
@@ -138,13 +138,13 @@ class CanvasLaTeXConverter(LaTeXProcessor):
         NEW METHOD: Converts LaTeX delimiters to \\(...\\) format for Streamlit display.
         Streamlit's markdown with MathJax should be able to process these.
         """
-        print(f"DEBUG (converter): convert_for_streamlit called with: '{text[:100]}...'")
+        # print(f"DEBUG (converter): convert_for_streamlit called with: '{text[:100]}...'")
         
         if not text:
             return ""
         
         expressions = self.find_latex_expressions(text)
-        print(f"DEBUG (converter): Found {len(expressions)} LaTeX expressions")
+        # print(f"DEBUG (converter): Found {len(expressions)} LaTeX expressions")
         
         if not expressions:
             return text 
@@ -174,7 +174,7 @@ class CanvasLaTeXConverter(LaTeXProcessor):
             result_parts.append(remaining_text)
         
         final_content = ''.join(result_parts)
-        print(f"DEBUG (converter): Final Streamlit content: '{final_content}'")
+        # print(f"DEBUG (converter): Final Streamlit content: '{final_content}'")
         return final_content
     
     def convert_for_qti(self, text: str) -> str:
