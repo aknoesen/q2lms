@@ -9,6 +9,7 @@ import pandas as pd
 import sys
 import os
 from datetime import datetime
+from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Fixed import
 
 # Page configuration
 st.set_page_config(
@@ -104,7 +105,7 @@ def main():
     
     # Sidebar with logo
     app_config.render_sidebar_header()
-    
+
     # Check for exit request
     if exit_manager.check_for_exit_request():
         return
@@ -151,6 +152,8 @@ def main():
                     return
                 
                 # Mode has been chosen - get current mode
+                # Update workflow state - user is now selecting questions
+                UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
                 current_mode = mode_manager.get_current_mode()
                 mode_name, mode_icon, mode_description = mode_manager.get_mode_display_info()
                 
@@ -195,6 +198,8 @@ def main():
                         delete_interface.render_deletion_interface(filtered_df)
                 
                 with tab4:
+                    # Update workflow state - user is now exporting
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
                     # Export with fork filtering
                     flag_manager = fork_components['flag_manager']
                     export_df, export_original = flag_manager.get_filtered_questions_for_export(

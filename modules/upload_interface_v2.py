@@ -8,6 +8,7 @@ import contextlib
 import io
 import sys
 from enum import Enum, auto
+from datetime import datetime  # <-- Add this import
 
 class ProcessingState(Enum):
     """Clear states for the upload workflow"""
@@ -35,10 +36,64 @@ class MergePreviewData:
 
 class UploadInterfaceV2:
     """FIXED: Single action workflow - no multiple prompt bars"""
-    
+
     def __init__(self):
         self._initialize_session_state()
-    
+
+    @staticmethod
+    def update_workflow_state(new_state: ProcessingState):
+        """Update workflow state only if not moving backwards - with debugging"""
+        # Initialize upload_state if it doesn't exist
+        if 'upload_state' not in st.session_state:
+            st.session_state.upload_state = {
+                'current_state': ProcessingState.WAITING_FOR_FILES,
+                'uploaded_files': None,
+                'preview_data': None,
+                'error_message': None,
+                'final_database': None,
+                'last_update': datetime.now()
+            }
+        
+        current_state = st.session_state.upload_state.get('current_state')
+        
+        # DEBUG: Log state transitions
+        st.sidebar.write(f"🔧 STATE CHANGE: {current_state} → {new_state}")
+        
+        # Define state progression order
+        state_order = [
+            ProcessingState.WAITING_FOR_FILES,
+            ProcessingState.FILES_READY,
+            ProcessingState.PROCESSING,
+            ProcessingState.PREVIEW_READY,
+            ProcessingState.DATABASE_LOADED,
+            ProcessingState.SELECTING_QUESTIONS,
+            ProcessingState.EXPORTING,
+            ProcessingState.FINISHED
+        ]
+        
+        try:
+            current_index = state_order.index(current_state) if current_state in state_order else -1
+            new_index = state_order.index(new_state) if new_state in state_order else -1
+        except (ValueError, AttributeError):
+            current_index = -1
+            new_index = -1
+        
+        # Only allow forward or same-state transitions
+        if new_index >= current_index:
+            st.session_state.upload_state['current_state'] = new_state
+            st.session_state.upload_state['last_update'] = datetime.now()
+            st.sidebar.write(f"✅ ACCEPTED: Now at {new_state}")
+        else:
+            st.sidebar.write(f"❌ BLOCKED: Can't go backwards from {current_state} to {new_state}")
+
+    @staticmethod
+    def is_workflow_active() -> bool:
+        """Return True if workflow is active (not FINISHED), else False"""
+        upload_state = st.session_state.get('upload_state')
+        if upload_state and upload_state.get('current_state') != ProcessingState.FINISHED:
+            return True
+        return False
+
     def _initialize_session_state(self):
         """Initialize session state with clear workflow states"""
         if 'upload_state' not in st.session_state:
@@ -47,7 +102,8 @@ class UploadInterfaceV2:
                 'uploaded_files': None,
                 'preview_data': None,
                 'error_message': None,
-                'final_database': None
+                'final_database': None,
+                'last_update': datetime.now()
             }
         else:
             # Ensure it's the correct structure
@@ -57,29 +113,48 @@ class UploadInterfaceV2:
                     'uploaded_files': None,
                     'preview_data': None,
                     'error_message': None,
-                    'final_database': None
+                    'final_database': None,
+                    'last_update': datetime.now()
                 }
-    
+
     def _get_current_state(self) -> ProcessingState:
         """Get current processing state"""
         upload_state = st.session_state.get('upload_state', {})
         if isinstance(upload_state, dict):
             return upload_state.get('current_state', ProcessingState.WAITING_FOR_FILES)
         return ProcessingState.WAITING_FOR_FILES
-    
+
     def _set_state(self, new_state: ProcessingState, **kwargs):
-        """Update the current state and any additional data"""
+        """Update the current state and any additional data - with debugging"""
         if 'upload_state' not in st.session_state:
             st.session_state.upload_state = {}
+
+        # DEBUG: Show what's happening in _set_state
+        current = st.session_state.upload_state.get('current_state', 'None')
+        st.sidebar.write(f"🔧 _SET_STATE: {current} → {new_state}")
         
-        st.session_state.upload_state['current_state'] = new_state
+        # Use the protected bridge method instead of direct assignment
+        UploadInterfaceV2.update_workflow_state(new_state)
         
-        # Update any additional data
+        # Update any additional data (but don't overwrite the protected state)
         for key, value in kwargs.items():
-            st.session_state.upload_state[key] = value
-    
-    def _render_progress_indicator(self, current_state: ProcessingState):
-        """Show clear progress through the workflow in the sidebar"""
+            if key != 'current_state':  # Don't allow overriding the protected state
+                st.session_state.upload_state[key] = value
+
+    @staticmethod
+    def render_progress_indicator(current_state: ProcessingState = None):
+        """Show clear progress through the workflow in the sidebar, always visible if workflow is active"""
+        # DEBUG: Show current state
+        upload_state = st.session_state.get('upload_state', {})
+        actual_state = upload_state.get('current_state', 'None')
+        st.sidebar.write(f"🎯 RENDERING PROGRESS: {actual_state}")
+
+        # Always get the current state from session state, not from parameter
+        upload_state = st.session_state.get('upload_state', {})
+        current_state = upload_state.get('current_state', ProcessingState.WAITING_FOR_FILES)
+
+        if not UploadInterfaceV2.is_workflow_active():
+            return
         with st.sidebar:
             st.markdown("### 🔄 Workflow Progress")
             stages = [
@@ -106,7 +181,7 @@ class UploadInterfaceV2:
                 else:
                     st.markdown(f"<div style='color:gray;'>⏳ {label}</div>", unsafe_allow_html=True)
             st.markdown("---")
-    
+
     @contextlib.contextmanager
     def _clean_operation(self, operation_name: str):
         """Context manager for clean operations without verbose output"""
@@ -152,22 +227,18 @@ class UploadInterfaceV2:
         current_state = self._get_current_state()
         
         # Show progress
-        self._render_progress_indicator(current_state)
+        self.render_progress_indicator(current_state)
         st.divider()
         
         # State-specific rendering
         if current_state == ProcessingState.WAITING_FOR_FILES:
             self._render_file_upload_state()
-        
         elif current_state == ProcessingState.FILES_READY:
             self._render_process_files_state()
-        
         elif current_state == ProcessingState.PROCESSING:
             self._render_processing_state()
-        
         elif current_state == ProcessingState.PREVIEW_READY:
             self._render_preview_and_load_state()
-        
         elif current_state == ProcessingState.COMPLETED:
             self._render_completed_state()
     
@@ -296,11 +367,15 @@ class UploadInterfaceV2:
             with st.spinner("Loading database..."):
                 try:
                     self._execute_merge(preview_data)
-                    self._set_state(ProcessingState.COMPLETED)
+                    # Only set to COMPLETED if not already in a later state  
+                    current_state = st.session_state.upload_state.get('current_state')
+                    later_states = [ProcessingState.SELECTING_QUESTIONS, ProcessingState.EXPORTING, ProcessingState.FINISHED]
+                    if current_state not in later_states:
+                        self._set_state(ProcessingState.COMPLETED)
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Loading failed: {e}")
-    
+
     def _render_completed_state(self):
         """State 5: Process completed successfully"""
         st.header("✅ Database Loaded Successfully!")
@@ -444,11 +519,15 @@ class UploadInterfaceV2:
                 all_merged_questions = preview.preview_questions
             
             # Update upload state
-            self._set_state(
-                ProcessingState.COMPLETED,
-                final_database=all_merged_questions,
-                error_message=None
-            )
+            # Only set to COMPLETED if not already in a later state
+            current_state = st.session_state.upload_state.get('current_state')
+            later_states = [ProcessingState.SELECTING_QUESTIONS, ProcessingState.EXPORTING, ProcessingState.FINISHED]
+            if current_state not in later_states:
+                self._set_state(
+                    ProcessingState.COMPLETED,
+                    final_database=all_merged_questions,
+                    error_message=None
+                )
             
             # Transfer to main app session state
             df_data = []
@@ -511,12 +590,14 @@ class UploadInterfaceV2:
     def _reset_state(self):
         """Reset to initial state for new upload"""
         st.session_state.upload_state = {
-            'current_state': ProcessingState.WAITING_FOR_FILES,
             'uploaded_files': None,
             'preview_data': None,
             'error_message': None,
             'final_database': None
         }
+        
+        # Use bridge method for state reset
+        UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
         
         # Clear main session state
         for key in ['df', 'original_questions', 'metadata']:

@@ -7,6 +7,7 @@ Handles user interface coordination, tab management, and rendering
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Add this import here
 
 class UIManager:
     """Manages user interface coordination and rendering for Q2LMS"""
@@ -100,6 +101,10 @@ class UIManager:
     
     def render_main_tabs(self, df, metadata, original_questions):
         """Render the main application tabs with fork feature integration"""
+        
+        # Only update workflow state if upload interface is active
+        if 'upload_state' in st.session_state:
+            UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
         
         # Show success message
         st.success(f"✅ Database loaded successfully! {len(df)} questions ready.")
@@ -324,6 +329,10 @@ class UIManager:
             export_df (pd.DataFrame): Filtered DataFrame for export
             export_original (list): Original questions list for export
         """
+        # Only update workflow state if upload interface is active
+        if 'upload_state' in st.session_state:
+            UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
+
         try:
             if self.app_config.is_available('export_system'):
                 export_system = self.app_config.get_feature('export_system')
@@ -340,7 +349,7 @@ class UIManager:
     def _render_basic_export_interface(self, export_df: pd.DataFrame, export_original: list) -> None:
         """
         Basic export interface fallback
-        
+
         Args:
             export_df (pd.DataFrame): DataFrame to export
             export_original (list): Original questions for export
@@ -355,13 +364,17 @@ class UIManager:
         
         # Basic CSV download
         csv_data = export_df.to_csv(index=False)
-        st.download_button(
+        csv_downloaded = st.download_button(
             label="📄 Download as CSV",
             data=csv_data,
             file_name="questions_export.csv",
             mime="text/csv",
             use_container_width=True
         )
+        if csv_downloaded:
+            if 'upload_state' in st.session_state:
+                UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+            st.success("🎉 Export completed successfully!")
         
         # Basic JSON download
         if export_original:
@@ -374,13 +387,17 @@ class UIManager:
                 }
             }, indent=2)
             
-            st.download_button(
+            json_downloaded = st.download_button(
                 label="📋 Download as JSON",
                 data=json_data,
                 file_name="questions_export.json",
                 mime="application/json",
                 use_container_width=True
             )
+            if json_downloaded:
+                if 'upload_state' in st.session_state:
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                st.success("🎉 Export completed successfully!")
 
     def _render_stats_summary_before_tabs(self, df, metadata):
         """Render quick stats summary before tabs - key metrics only with expandable details"""
