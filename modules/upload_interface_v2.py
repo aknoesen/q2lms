@@ -7,15 +7,21 @@ from typing import Dict, List, Optional, Tuple
 import contextlib
 import io
 import sys
-from enum import Enum
+from enum import Enum, auto
 
 class ProcessingState(Enum):
     """Clear states for the upload workflow"""
-    WAITING_FOR_FILES = "waiting_for_files"
-    FILES_READY = "files_ready" 
-    PROCESSING = "processing"
-    PREVIEW_READY = "preview_ready"
-    COMPLETED = "completed"
+    WAITING_FOR_FILES = auto()
+    FILES_READY = auto()
+    PROCESSING = auto()
+    PREVIEW_READY = auto()
+    DATABASE_LOADED = auto()      # Renamed from COMPLETED
+    SELECTING_QUESTIONS = auto()  # New: covers select/delete modes
+    EXPORTING = auto()            # New
+    FINISHED = auto()             # New
+
+    # For backward compatibility, you may want to alias COMPLETED:
+    COMPLETED = DATABASE_LOADED
 
 @dataclass
 class MergePreviewData:
@@ -73,37 +79,33 @@ class UploadInterfaceV2:
             st.session_state.upload_state[key] = value
     
     def _render_progress_indicator(self, current_state: ProcessingState):
-        """Show clear progress through the workflow"""
-        stages = [
-            (ProcessingState.WAITING_FOR_FILES, "📁 Upload Files"),
-            (ProcessingState.FILES_READY, "🔄 Process Files"), 
-            (ProcessingState.PREVIEW_READY, "📊 Review & Load"),
-            (ProcessingState.COMPLETED, "✅ Complete")
-        ]
-        
-        # Create progress bar
-        cols = st.columns(len(stages))
-        current_index = None
-        
-        for i, (stage, label) in enumerate(stages):
-            if stage == current_state:
-                current_index = i
-                break
-        
-        if current_index is None:
-            current_index = 0
-        
-        for i, (col, (stage, label)) in enumerate(zip(cols, stages)):
-            with col:
+        """Show clear progress through the workflow in the sidebar"""
+        with st.sidebar:
+            st.markdown("### 🔄 Workflow Progress")
+            stages = [
+                (ProcessingState.WAITING_FOR_FILES, "📁 Upload Files"),
+                (ProcessingState.FILES_READY, "🔄 Process Files"),
+                (ProcessingState.PREVIEW_READY, "📊 Review & Load"),
+                (ProcessingState.SELECTING_QUESTIONS, "📝 Select Questions"),
+                (ProcessingState.EXPORTING, "📥 Export"),
+                (ProcessingState.FINISHED, "✅ Complete")
+            ]
+            current_index = None
+            for i, (stage, label) in enumerate(stages):
+                if stage == current_state:
+                    current_index = i
+                    break
+            if current_index is None:
+                current_index = 0
+
+            for i, (stage, label) in enumerate(stages):
                 if i < current_index:
-                    # Completed
-                    st.markdown(f"✅ **{label}**")
+                    st.markdown(f"<div style='color:green;font-weight:bold;'>✅ {label}</div>", unsafe_allow_html=True)
                 elif i == current_index:
-                    # Current
-                    st.markdown(f"🔄 **{label}**")
+                    st.markdown(f"<div style='color:#1a73e8;font-weight:bold;'>🔄 {label}</div>", unsafe_allow_html=True)
                 else:
-                    # Future
-                    st.markdown(f"⏳ {label}")
+                    st.markdown(f"<div style='color:gray;'>⏳ {label}</div>", unsafe_allow_html=True)
+            st.markdown("---")
     
     @contextlib.contextmanager
     def _clean_operation(self, operation_name: str):
