@@ -64,58 +64,22 @@ class UIManager:
         return filtered_df
     
     def render_upload_interface(self):
-        """Render prominent upload interface"""
-        
-        # Create prominent header like File Processing Results
+        """Render prominent upload interface (refactored, simplified)"""
+
         st.markdown("## 📁 Upload Question Database Files")
-        
+
         if self.app_config.is_available('upload_system'):
             try:
                 upload_system = self.app_config.get_feature('upload_system')
                 upload_interface = upload_system['UploadInterfaceV2']()
-                
-                # Create container with better styling
-                with st.container():
-                    uploaded_files = st.file_uploader(
-                        "Drag and drop files here or click Browse",
-                        accept_multiple_files=True,
-                        type=['json', 'csv', 'xlsx'],
-                        key="file_uploader",
-                        help="Select 1 or more JSON, CSV, or Excel files to merge"
-                    )
-                    
-                    if uploaded_files and len(uploaded_files) >= 1:
-                        # Add metrics display like File Processing Results
-                        st.markdown("#### 📊 Upload Summary")
-                        col1, col2, col3 = st.columns(3)
-                        
-                        with col1:
-                            st.metric("Files Selected", len(uploaded_files))
-                        with col2:
-                            total_size = sum(file.size for file in uploaded_files) / (1024*1024)  # MB
-                            st.metric("Total Size", f"{total_size:.1f} MB")
-                        with col3:
-                            if len(uploaded_files) == 1:
-                                st.metric("Mode", "Direct Load")
-                            else:
-                                st.metric("Mode", "Merge Files")
-                        
-                        if st.button("🚀 Process Files", type="primary", use_container_width=True):
-                            upload_interface._process_uploaded_files(uploaded_files)
-                
-                # Show preview and results
-                upload_interface.render_preview_section()
-                upload_interface.render_results_section()
-                
-                has_database = ('df' in st.session_state and st.session_state['df'] is not None and len(st.session_state['df']) > 0)
-                
+                has_database = upload_interface.render_upload_section()
             except Exception as e:
                 st.error(f"Upload interface error: {e}")
                 has_database = False
         else:
             st.error("❌ Upload functionality not available")
             has_database = False
-        
+
         return has_database
     
     def render_system_status(self):
