@@ -125,8 +125,18 @@ def main():
     has_df = 'df' in st.session_state and st.session_state['df'] is not None and len(st.session_state['df']) > 0
     has_ui_components = app_config.is_available('ui_components')
     
+    # Check current workflow state to determine if we should show main interface
+    upload_state = st.session_state.get('upload_state', {})
+    current_workflow_state = upload_state.get('current_state')
+    
+    # Import ProcessingState for comparison
+    from modules.upload_interface_v2 import ProcessingState
+    
+    # If workflow is in DOWNLOADING or FINISHED, don't show main tabs - the upload interface handles this
+    workflow_in_final_states = current_workflow_state in [ProcessingState.DOWNLOADING, ProcessingState.FINISHED]
+    
     # Main application logic
-    if has_df and has_ui_components:
+    if has_df and has_ui_components and not workflow_in_final_states:
         df = st.session_state['df']
         metadata = st.session_state.get('metadata', {})
         original_questions = st.session_state.get('original_questions', [])
@@ -143,14 +153,16 @@ def main():
         # Exit button at bottom
         exit_manager.render_exit_section_at_bottom()
         
-    elif has_df and not has_ui_components:
+    elif has_df and not has_ui_components and not workflow_in_final_states:
         st.error("❌ Database loaded but UI components not available")
         exit_manager.render_exit_section_at_bottom()
         
-    else:
-        # No database - show getting started
+    elif not workflow_in_final_states:
+        # No database - show getting started (only if not in final workflow states)
         ui_manager.render_getting_started_section()
         exit_manager.render_exit_section_at_bottom()
+    
+    # Note: If workflow_in_final_states is True, the upload interface already rendered the appropriate UI
 
 if __name__ == "__main__":
     main()

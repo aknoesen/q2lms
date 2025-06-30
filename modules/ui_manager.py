@@ -8,14 +8,49 @@ import streamlit as st
 import pandas as pd
 import json
 from datetime import datetime
-from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Add this import here
+from .upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Add this import here
 
 class UIManager:
     """Manages user interface coordination and rendering for Q2LMS"""
     
     def __init__(self, app_config):
         self.app_config = app_config
-    
+    def find_topic_column(self, df: pd.DataFrame) -> str:
+        """Find topic column case-insensitively"""
+        if 'Topic' in df.columns:
+            return 'Topic'
+        elif 'topic' in df.columns:
+            return 'topic'
+        return None
+
+    def find_subtopic_column(self, df: pd.DataFrame) -> str:
+        """Find subtopic column case-insensitively"""
+        if 'Subtopic' in df.columns:
+            return 'Subtopic'
+        elif 'subtopic' in df.columns:
+            return 'subtopic'
+        elif 'SubTopic' in df.columns:
+            return 'SubTopic'
+        elif 'sub_topic' in df.columns:
+            return 'sub_topic'
+        return None
+
+    def find_difficulty_column(self, df: pd.DataFrame) -> str:
+        """Find difficulty column case-insensitively"""
+        if 'Difficulty' in df.columns:
+            return 'Difficulty'
+        elif 'difficulty' in df.columns:
+            return 'difficulty'
+        elif 'Level' in df.columns:
+            return 'Level'
+        elif 'level' in df.columns:
+            return 'level'
+        elif 'DifficultyLevel' in df.columns:
+            return 'DifficultyLevel'
+        elif 'difficulty_level' in df.columns:
+            return 'difficulty_level'
+        return None
+
     def _render_stats_summary_before_tabs(self, df: pd.DataFrame, metadata: dict):
         """Render a concise summary and charts before main tabs."""
         if self.app_config.is_available('ui_components'):
@@ -27,21 +62,22 @@ class UIManager:
     
     
     def enhanced_subject_filtering(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Multi-subject filter using the correct 'Topic' column with clear instructions"""
+        """Multi-subject filter with case-insensitive detection and reset options"""
         
         if df.empty:
             return df
         
-        # Use 'Topic' instead of 'Subject'
-        if 'Topic' not in df.columns:
+        # Use case-insensitive topic column detection
+        topic_column = self.find_topic_column(df)
+        if not topic_column:
             return df
         
         # Get unique topics
-        topics = sorted(df['Topic'].dropna().unique())
+        topics = sorted(df[topic_column].dropna().unique())
         if not topics:
             return df
         
-        # Add topic filter to sidebar with clear instructions
+        # === TOPIC FILTER (EXISTING - WORKING) ===
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 📚 Topic Filter")
         
@@ -53,27 +89,176 @@ class UIManager:
         - 🔄 **Use this to focus** on specific subjects
         """)
         
+        # Check if we need to reset (before creating the multiselect)
+        if st.session_state.get("reset_topics_requested", False):
+            # Clear the multiselect session state completely
+            for key in list(st.session_state.keys()):
+                if key == "enhanced_topic_multiselect":
+                    del st.session_state[key]
+            # Clear the reset request flag
+            st.session_state["reset_topics_requested"] = False
+            st.rerun()
+        
+        # Create multiselect with unique key that includes reset counter
+        reset_counter = st.session_state.get("topic_reset_counter", 0)
+        multiselect_key = f"enhanced_topic_multiselect_{reset_counter}"
+        
         selected_topics = st.sidebar.multiselect(
             "Choose topics to include:",
             options=topics,
-            default=topics,  # Start with all topics selected
-            key=f"topic_filter_multi_{id(self)}",
-            help="💡 Tip: Uncheck topics you want to exclude from the current view"
+            default=topics,  # Always default to all topics
+            key=multiselect_key,  # Use counter-based key for forced refresh
+            help="💡 Tip: Click to select/deselect topics for filtering"
         )
         
-        # Apply filtering with clear feedback
+        # RESET BUTTON - AFTER multiselect (below it)
+        if st.sidebar.button("🔄 Reset Topics", key="reset_topics_btn", help="Select all topics again"):
+            # Increment reset counter to force new multiselect widget
+            st.session_state["topic_reset_counter"] = reset_counter + 1
+            # Set flag for cleanup on next run
+            st.session_state["reset_topics_requested"] = True
+            st.rerun()
+        
+        # Apply topic filtering first
         if selected_topics:
-            filtered_df = df[df['Topic'].isin(selected_topics)]
+            topic_filtered_df = df[df[topic_column].isin(selected_topics)]
             excluded_count = len(topics) - len(selected_topics)
             if excluded_count > 0:
                 st.sidebar.info(f"✅ {len(selected_topics)} topics selected\n📋 {excluded_count} topics excluded")
             else:
                 st.sidebar.success(f"✅ All {len(topics)} topics selected")
         else:
-            filtered_df = pd.DataFrame()  # Empty if nothing selected
+            topic_filtered_df = pd.DataFrame()  # Empty if nothing selected
             st.sidebar.warning("⚠️ No topics selected - showing no questions")
+            return topic_filtered_df  # Return early if no topics selected
         
-        return filtered_df
+        # === SUBTOPIC FILTER ===
+        subtopic_column = self.find_subtopic_column(topic_filtered_df)
+        if subtopic_column and not topic_filtered_df.empty:
+            # Get unique subtopics from topic-filtered data
+            subtopics = sorted(topic_filtered_df[subtopic_column].dropna().unique())
+            
+            if subtopics:
+                st.sidebar.markdown("---")
+                st.sidebar.markdown("### 🎯 Subtopic Filter")
+                
+                # Subtopic instructions
+                st.sidebar.markdown("""
+                **Instructions:**
+                - ✅ **Selected subtopics** will be included
+                - ❌ **Uncheck subtopics** to exclude them  
+                - 🔍 **Refine your topic selection**
+                """)
+                
+                # Subtopic reset check
+                if st.session_state.get("reset_subtopics_requested", False):
+                    for key in list(st.session_state.keys()):
+                        if key == "enhanced_subtopic_multiselect":
+                            del st.session_state[key]
+                    st.session_state["reset_subtopics_requested"] = False
+                    st.rerun()
+                
+                # Subtopic multiselect
+                subtopic_reset_counter = st.session_state.get("subtopic_reset_counter", 0)
+                subtopic_multiselect_key = f"enhanced_subtopic_multiselect_{subtopic_reset_counter}"
+                
+                selected_subtopics = st.sidebar.multiselect(
+                    "Choose subtopics to include:",
+                    options=subtopics,
+                    default=subtopics,
+                    key=subtopic_multiselect_key,
+                    help="💡 Tip: Narrow down by specific subtopics"
+                )
+                
+                # Subtopic reset button
+                if st.sidebar.button("🔄 Reset Subtopics", key="reset_subtopics_btn", help="Select all subtopics again"):
+                    st.session_state["subtopic_reset_counter"] = subtopic_reset_counter + 1
+                    st.session_state["reset_subtopics_requested"] = True
+                    st.rerun()
+                
+                # Apply subtopic filtering
+                if selected_subtopics:
+                    subtopic_filtered_df = topic_filtered_df[topic_filtered_df[subtopic_column].isin(selected_subtopics)]
+                    excluded_subtopic_count = len(subtopics) - len(selected_subtopics)
+                    if excluded_subtopic_count > 0:
+                        st.sidebar.info(f"🎯 {len(selected_subtopics)} subtopics selected\n📋 {excluded_subtopic_count} subtopics excluded")
+                    else:
+                        st.sidebar.success(f"🎯 All {len(subtopics)} subtopics selected")
+                else:
+                    subtopic_filtered_df = pd.DataFrame()
+                    st.sidebar.warning("⚠️ No subtopics selected")
+                    return subtopic_filtered_df
+            else:
+                # No subtopics available, use topic-filtered data
+                subtopic_filtered_df = topic_filtered_df
+        else:
+            # No subtopic column found, use topic-filtered data
+            subtopic_filtered_df = topic_filtered_df
+        
+        # === NEW DIFFICULTY FILTER ===
+        difficulty_column = self.find_difficulty_column(subtopic_filtered_df)
+        if difficulty_column and not subtopic_filtered_df.empty:
+            # Get unique difficulties from subtopic-filtered data
+            difficulties = sorted(subtopic_filtered_df[difficulty_column].dropna().unique())
+            
+            if difficulties:
+                st.sidebar.markdown("---")
+                st.sidebar.markdown("### ⚡ Difficulty Filter")
+                
+                # Difficulty instructions
+                st.sidebar.markdown("""
+                **Instructions:**
+                - ✅ **Selected difficulties** will be included
+                - ❌ **Uncheck difficulties** to exclude them  
+                - 📊 **Filter by question difficulty**
+                """)
+                
+                # Difficulty reset check
+                if st.session_state.get("reset_difficulties_requested", False):
+                    for key in list(st.session_state.keys()):
+                        if key == "enhanced_difficulty_multiselect":
+                            del st.session_state[key]
+                    st.session_state["reset_difficulties_requested"] = False
+                    st.rerun()
+                
+                # Difficulty multiselect
+                difficulty_reset_counter = st.session_state.get("difficulty_reset_counter", 0)
+                difficulty_multiselect_key = f"enhanced_difficulty_multiselect_{difficulty_reset_counter}"
+                
+                selected_difficulties = st.sidebar.multiselect(
+                    "Choose difficulties to include:",
+                    options=difficulties,
+                    default=difficulties,
+                    key=difficulty_multiselect_key,
+                    help="💡 Tip: Filter by Easy, Medium, Hard, etc."
+                )
+                
+                # Difficulty reset button
+                if st.sidebar.button("🔄 Reset Difficulties", key="reset_difficulties_btn", help="Select all difficulties again"):
+                    st.session_state["difficulty_reset_counter"] = difficulty_reset_counter + 1
+                    st.session_state["reset_difficulties_requested"] = True
+                    st.rerun()
+                
+                # Apply difficulty filtering
+                if selected_difficulties:
+                    final_filtered_df = subtopic_filtered_df[subtopic_filtered_df[difficulty_column].isin(selected_difficulties)]
+                    excluded_difficulty_count = len(difficulties) - len(selected_difficulties)
+                    if excluded_difficulty_count > 0:
+                        st.sidebar.info(f"⚡ {len(selected_difficulties)} difficulties selected\n📋 {excluded_difficulty_count} difficulties excluded")
+                    else:
+                        st.sidebar.success(f"⚡ All {len(difficulties)} difficulties selected")
+                else:
+                    final_filtered_df = pd.DataFrame()
+                    st.sidebar.warning("⚠️ No difficulties selected")
+                    return final_filtered_df
+            else:
+                # No difficulties available, use subtopic-filtered data
+                final_filtered_df = subtopic_filtered_df
+        else:
+            # No difficulty column found, use subtopic-filtered data
+            final_filtered_df = subtopic_filtered_df
+        
+        return final_filtered_df
     
     def render_upload_interface(self):
         """Render prominent upload interface (refactored, simplified)"""
@@ -165,6 +350,10 @@ class UIManager:
             # Button-based navigation
             if 'main_active_tab' not in st.session_state:
                 st.session_state.main_active_tab = "📋 Browse Questions"
+            
+            # Clear export tab state when switching away from Export tab
+            current_tab = st.session_state.get('main_active_tab', '')
+            
             tab_cols = st.columns(len(tab_names))
             for idx, tab_name in enumerate(tab_names):
                 btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
@@ -173,6 +362,12 @@ class UIManager:
                     key=btn_key,
                     type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
                 ):
+                    # If switching away from Export tab, clear export state
+                    if current_tab == "📥 Export" and tab_name != "📥 Export":
+                        # Clear export session when leaving export tab (fork branch)
+                        for key in ['export_tab_loaded', 'export_tab_session_id']:
+                            if key in st.session_state:
+                                del st.session_state[key]
                     st.session_state.main_active_tab = tab_name
             st.markdown("---")
 
@@ -205,6 +400,10 @@ class UIManager:
             # Button-based navigation
             if 'main_active_tab' not in st.session_state:
                 st.session_state.main_active_tab = tab_names[0]
+            
+            # Clear export tab state when switching away from Export tab
+            current_tab = st.session_state.get('main_active_tab', '')
+            
             tab_cols = st.columns(len(tab_names))
             for idx, tab_name in enumerate(tab_names):
                 btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
@@ -213,6 +412,12 @@ class UIManager:
                     key=btn_key,
                     type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
                 ):
+                    # If switching away from Export tab, clear export state
+                    if current_tab == "📥 Export" and tab_name != "📥 Export":
+                        # Clear export session when leaving export tab (fallback branch)
+                        for key in ['export_tab_loaded', 'export_tab_session_id']:
+                            if key in st.session_state:
+                                del st.session_state[key]
                     st.session_state.main_active_tab = tab_name
             st.markdown("---")
 
@@ -346,73 +551,43 @@ class UIManager:
         try:
             # Note: Workflow state is already updated in render_main_tabs based on active tab
             
+            # Clear any stale completion flags when entering export tab
+            # This ensures soft exit only appears after actual QTI download
+            
+            # Only clear flags when first entering the export tab, not on every render
+            if 'export_tab_session_id' not in st.session_state:
+                # Generate a unique session ID for this export tab session
+                import time
+                current_session_id = f"export_{int(time.time() * 1000)}"
+                st.session_state['export_tab_session_id'] = current_session_id
+                
+                # Clear all completion flags on first entry to export tab
+                for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                
+                st.session_state['export_tab_loaded'] = True
+            
             if self.app_config.is_available('export_system'):
                 # Use the advanced export system
                 export_system = self.app_config.get_feature('export_system')
                 export_system['integrate_with_existing_ui'](export_df, export_original)
                 
                 # Check if any export was completed and ensure completion UI is shown
-                completion_detected = (st.session_state.get('qti_downloaded', False) or 
-                                     st.session_state.get('qti_package_created', False) or
-                                     st.session_state.get('export_completed', False) or
-                                     st.session_state.get('json_downloaded', False) or
-                                     st.session_state.get('csv_downloaded', False))
+                # Now enabled: User must confirm QTI download for completion to be detected
+                completion_detected = st.session_state.get('qti_downloaded', False)
                 
                 # Debug: Show completion status (can be removed later)
                 with st.expander("🔍 Debug: Completion Detection"):
                     st.write(f"- qti_downloaded: {st.session_state.get('qti_downloaded', False)}")
                     st.write(f"- qti_package_created: {st.session_state.get('qti_package_created', False)}")
                     st.write(f"- export_completed: {st.session_state.get('export_completed', False)}")
-                    st.write(f"- json_downloaded: {st.session_state.get('json_downloaded', False)}")
-                    st.write(f"- csv_downloaded: {st.session_state.get('csv_downloaded', False)}")
-                    st.write(f"- completion_detected: {completion_detected}")
+                    st.write(f"- completion_detected: {completion_detected} (DISABLED)")
+                    st.write(f"- export_tab_session_id: {st.session_state.get('export_tab_session_id', 'None')}")
+                    st.error("� Automatic completion detection DISABLED. Soft exit UI will only appear in basic fallback interface.")
                     
-                    st.markdown("**Available session state keys:**")
+                    st.markdown("**All session state keys:**")
                     st.write([key for key in st.session_state.keys() if 'download' in key.lower() or 'export' in key.lower() or 'complete' in key.lower()])
-                    
-                    # Add button to manually trigger completion UI for testing
-                    if st.button("🧪 Test Completion UI", key="test_completion"):
-                        st.session_state['export_completed'] = True
-                        st.rerun()
-                    
-                    # Force show completion UI temporarily
-                    if st.button("🧪 Force Show Soft Exit", key="force_completion"):
-                        st.markdown("---")
-                        st.success("🎉 FORCED Export Process Complete!")
-                        st.markdown("### 🎯 What would you like to do next?")
-                        
-                        force_col1, force_col2 = st.columns(2)
-                        with force_col1:
-                            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="force_exit_app"):
-                                st.success("✅ Thank you for using Q2LMS!")
-                                st.balloons()
-                                st.stop()
-                        with force_col2:
-                            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="force_start_over"):
-                                if UploadInterfaceV2.is_workflow_active():
-                                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                                st.rerun()
-                
-                # Always show soft exit section at bottom of export tab (universal solution)
-                st.markdown("---")
-                st.markdown("### 🎯 Export Session Complete")
-                st.info("💡 **Need to exit or start over?** Use the options below anytime.")
-                
-                completion_col1, completion_col2 = st.columns(2)
-                with completion_col1:
-                    if st.button("🔄 Start Over", type="secondary", use_container_width=True, key="universal_start_over"):
-                        # Clear all completion flags and reset to start
-                        for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                        if UploadInterfaceV2.is_workflow_active():
-                            UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                        st.rerun()
-                with completion_col2:
-                    if st.button("🚪 Exit Application", type="primary", use_container_width=True, key="universal_exit_app"):
-                        st.success("✅ Thank you for using Q2LMS!")
-                        st.balloons()
-                        st.stop()
                 
                 # Only show completion UI if export was actually completed
                 if completion_detected:
@@ -421,9 +596,9 @@ class UIManager:
                     st.success("🎉 Export Process Complete!")
                     st.markdown("### 🎯 What would you like to do next?")
                     
-                    # Update workflow state to FINISHED
+                    # Update workflow state to DOWNLOADING
                     if 'upload_state' in st.session_state:
-                        UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.DOWNLOADING)
                     
                     comp_col1, comp_col2 = st.columns(2)
                     with comp_col1:
@@ -434,7 +609,7 @@ class UIManager:
                     with comp_col2:
                         if st.button("🔄 Start Over", type="primary", use_container_width=True, key="ui_start_over"):
                             # Clear all completion flags and reset to start
-                            for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
+                            for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded', 'export_tab_loaded', 'export_tab_session_id']:
                                 if key in st.session_state:
                                     del st.session_state[key]
                             if UploadInterfaceV2.is_workflow_active():
@@ -482,9 +657,9 @@ class UIManager:
                         # This is a simplified approach - the actual QTI creation would be more complex
                         st.info("🔄 Creating QTI package using advanced export system...")
                         
-                        # Update workflow state to FINISHED after QTI creation
+                        # Update workflow state to DOWNLOADING after QTI creation
                         if 'upload_state' in st.session_state:
-                            UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                            UploadInterfaceV2.update_workflow_state(ProcessingState.DOWNLOADING)
                         
                         st.success("🎉 QTI Export completed successfully!")
                         
@@ -515,18 +690,14 @@ class UIManager:
             
             # Basic CSV download
             csv_data = export_df.to_csv(index=False)
-            if st.download_button(
+            st.download_button(
                 label="📄 Download as CSV",
                 data=csv_data,
                 file_name="questions_export.csv",
                 mime="text/csv",
                 use_container_width=True,
                 key="basic_csv_export"
-            ):
-                # Set completion flags when CSV is downloaded
-                st.session_state['export_completed'] = True
-                st.session_state['csv_downloaded'] = True
-                st.rerun()  # Refresh to show completion UI
+            )
             
             # Basic JSON download
             if export_original:
@@ -539,19 +710,15 @@ class UIManager:
                     }
                 }, indent=2)
                 
-                # JSON download with completion detection
-                if st.download_button(
+                # JSON download without completion detection for now
+                st.download_button(
                     label="📋 Download as JSON",
                     data=json_data,
                     file_name="questions_export.json",
                     mime="application/json",
                     use_container_width=True,
                     key="basic_json_export"
-                ):
-                    # Set completion flags when JSON is downloaded
-                    st.session_state['export_completed'] = True
-                    st.session_state['json_downloaded'] = True
-                    st.rerun()  # Refresh to show completion UI
+                )
         
         with col2:
             st.metric("Questions", len(export_df))
