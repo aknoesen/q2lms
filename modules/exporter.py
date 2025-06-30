@@ -524,10 +524,10 @@ class QuestionExporter:
                                 type="secondary"):
                         st.session_state['qti_downloaded'] = True
                         st.session_state['export_completed'] = True
-                        # Update workflow state to FINISHED after user confirms download
+                        # Update workflow state to DOWNLOADING after user confirms download
                         try:
                             from .upload_interface_v2 import UploadInterfaceV2, ProcessingState
-                            UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                            UploadInterfaceV2.update_workflow_state(ProcessingState.DOWNLOADING)
                         except ImportError:
                             pass  # Ignore if upload interface not available
                         st.rerun()  # Refresh to show completion UI
@@ -563,10 +563,10 @@ class QuestionExporter:
                     st.session_state['qti_package_created'] = True
                     st.session_state['export_completed'] = True
                     
-                    # Update workflow state to FINISHED
+                    # Update workflow state to DOWNLOADING
                     try:
                         from .upload_interface_v2 import UploadInterfaceV2, ProcessingState
-                        UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.DOWNLOADING)
                     except ImportError:
                         pass  # Ignore if upload interface not available
                     

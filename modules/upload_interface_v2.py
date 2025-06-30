@@ -19,6 +19,7 @@ class ProcessingState(Enum):
     DATABASE_LOADED = auto()      # Renamed from COMPLETED
     SELECTING_QUESTIONS = auto()  # New: covers select/delete modes
     EXPORTING = auto()            # New
+    DOWNLOADING = auto()          # Phase 13: after export completion
     FINISHED = auto()             # New
 
     # For backward compatibility, you may want to alias COMPLETED:
@@ -75,6 +76,7 @@ class UploadInterfaceV2:
                 ProcessingState.DATABASE_LOADED,
                 ProcessingState.SELECTING_QUESTIONS,
                 ProcessingState.EXPORTING,
+                ProcessingState.DOWNLOADING,
                 ProcessingState.FINISHED
             ]
             
@@ -174,6 +176,7 @@ class UploadInterfaceV2:
                 (ProcessingState.PREVIEW_READY, "📊 Review & Load"),
                 (ProcessingState.SELECTING_QUESTIONS, "📝 Select Questions"),
                 (ProcessingState.EXPORTING, "📥 Export"),
+                (ProcessingState.DOWNLOADING, "📥 Download"),
                 (ProcessingState.FINISHED, "✅ Complete")
             ]
             current_index = None
@@ -253,6 +256,10 @@ class UploadInterfaceV2:
             self._render_preview_and_load_state()
         elif current_state == ProcessingState.COMPLETED:
             self._render_completed_state()
+        elif current_state == ProcessingState.DOWNLOADING:
+            self._render_downloading_state()
+        elif current_state == ProcessingState.FINISHED:
+            self._render_finished_state()
     
     def _render_file_upload_state(self):
         """State 1: Waiting for file upload"""
@@ -381,7 +388,7 @@ class UploadInterfaceV2:
                     self._execute_merge(preview_data)
                     # Only set to COMPLETED if not already in a later state  
                     current_state = st.session_state.upload_state.get('current_state')
-                    later_states = [ProcessingState.SELECTING_QUESTIONS, ProcessingState.EXPORTING, ProcessingState.FINISHED]
+                    later_states = [ProcessingState.SELECTING_QUESTIONS, ProcessingState.EXPORTING, ProcessingState.DOWNLOADING, ProcessingState.FINISHED]
                     if current_state not in later_states:
                         self._set_state(ProcessingState.COMPLETED)
                     st.rerun()
@@ -533,7 +540,7 @@ class UploadInterfaceV2:
             # Update upload state
             # Only set to COMPLETED if not already in a later state
             current_state = st.session_state.upload_state.get('current_state')
-            later_states = [ProcessingState.SELECTING_QUESTIONS, ProcessingState.EXPORTING, ProcessingState.FINISHED]
+            later_states = [ProcessingState.SELECTING_QUESTIONS, ProcessingState.EXPORTING, ProcessingState.DOWNLOADING, ProcessingState.FINISHED]
             if current_state not in later_states:
                 self._set_state(
                     ProcessingState.COMPLETED,
@@ -657,9 +664,11 @@ class UploadInterfaceV2:
             use_container_width=True
         )
         if csv_downloaded:
+            # Transition to DOWNLOADING state
             if 'upload_state' in st.session_state:
-                UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                UploadInterfaceV2.update_workflow_state(ProcessingState.DOWNLOADING)
             st.success("🎉 Export completed successfully!")
+            st.rerun()  # Trigger re-render to show DOWNLOADING state UI
             # --- Completion section ---
             st.markdown("---")
             st.success("🎉 Export Complete!")
@@ -667,8 +676,10 @@ class UploadInterfaceV2:
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
-                    st.markdown("Thank you for using Q2LMS!")
-                    st.stop()
+                    # Use the existing working exit interface from exit_manager
+                    st.session_state['show_exit_interface'] = True
+                    st.session_state['exit_message'] = "Opening graceful exit interface..."
+                    st.rerun()
             with col2:
                 if st.button("🔄 Start Over", type="primary", use_container_width=True):
                     UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
@@ -693,9 +704,11 @@ class UploadInterfaceV2:
                 use_container_width=True
             )
             if json_downloaded:
+                # Transition to DOWNLOADING state
                 if 'upload_state' in st.session_state:
-                    UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.DOWNLOADING)
                 st.success("🎉 Export completed successfully!")
+                st.rerun()  # Trigger re-render to show DOWNLOADING state UI
                 # --- Completion section ---
                 st.markdown("---")
                 st.success("🎉 Export Complete!")
@@ -703,9 +716,82 @@ class UploadInterfaceV2:
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
-                        st.markdown("Thank you for using Q2LMS!")
-                        st.stop()
+                        # Use the existing working exit interface from exit_manager
+                        st.session_state['show_exit_interface'] = True
+                        st.session_state['exit_message'] = "Opening graceful exit interface..."
+                        st.rerun()
                 with col2:
                     if st.button("🔄 Start Over", type="primary", use_container_width=True):
                         UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
                         st.rerun()
+    
+    def _render_downloading_state(self):
+        """State 6: Download in progress - Phase 13 graceful exit implementation"""
+        st.header("📥 Download in Progress")
+        
+        st.info("🔄 **Your export download is being processed...**")
+        
+        # Show that we're in download state
+        st.markdown("""
+        **📋 Download Status:**
+        
+        ✅ Export processing completed  
+        🔄 File download initiated  
+        ⏳ Waiting for download confirmation  
+        
+        **📌 Note:** This screen will update once your download is complete.
+        """)
+        
+        # Manual completion button for users whose downloads completed
+        st.markdown("---")
+        st.markdown("### ✅ Download Complete?")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ My Download is Complete", type="primary", use_container_width=True):
+                # Transition to FINISHED state
+                self._set_state(ProcessingState.FINISHED)
+                st.rerun()
+        
+        with col2:
+            if st.button("🔄 Start Over", type="secondary", use_container_width=True):
+                self._reset_state()
+                st.rerun()
+    
+    def _render_finished_state(self):
+        """State 7: Final graceful exit state - Phase 13 implementation"""
+        st.header("🎉 Session Complete!")
+        
+        # Celebration and summary
+        st.success("✨ **Congratulations! Your Q2LMS session has been completed successfully.**")
+        
+        st.markdown("""
+        **📋 Session Summary:**
+        
+        ✅ Questions processed and loaded  
+        ✅ Export completed successfully  
+        ✅ Files downloaded to your device  
+        
+        **🎯 Thank you for using Q2LMS!**
+        """)
+        
+        # Final exit options
+        st.markdown("---")
+        st.markdown("### 🚪 What would you like to do?")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Start New Session", type="primary", use_container_width=True):
+                # Reset everything and start over
+                self._reset_state()
+                st.rerun()
+        
+        with col2:
+            if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
+                # Use the existing working exit interface from exit_manager
+                st.session_state['show_exit_interface'] = True
+                st.session_state['exit_message'] = "Opening graceful exit interface..."
+                st.rerun()
+
+    # ...existing code...
