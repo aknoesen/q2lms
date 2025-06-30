@@ -23,6 +23,18 @@ class UIManager:
             return 'topic'
         return None
 
+    def find_subtopic_column(self, df: pd.DataFrame) -> str:
+        """Find subtopic column case-insensitively"""
+        if 'Subtopic' in df.columns:
+            return 'Subtopic'
+        elif 'subtopic' in df.columns:
+            return 'subtopic'
+        elif 'SubTopic' in df.columns:
+            return 'SubTopic'
+        elif 'sub_topic' in df.columns:
+            return 'sub_topic'
+        return None
+
     def _render_stats_summary_before_tabs(self, df: pd.DataFrame, metadata: dict):
         """Render a concise summary and charts before main tabs."""
         if self.app_config.is_available('ui_components'):
@@ -34,7 +46,7 @@ class UIManager:
     
     
     def enhanced_subject_filtering(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Multi-subject filter with case-insensitive detection and reset option"""
+        """Multi-subject filter with case-insensitive detection and reset options"""
         
         if df.empty:
             return df
@@ -49,7 +61,7 @@ class UIManager:
         if not topics:
             return df
         
-        # Add topic filter to sidebar with clear instructions
+        # === TOPIC FILTER (EXISTING - WORKING) ===
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 📚 Topic Filter")
         
@@ -91,19 +103,83 @@ class UIManager:
             st.session_state["reset_topics_requested"] = True
             st.rerun()
         
-        # Apply filtering with clear feedback
+        # Apply topic filtering first
         if selected_topics:
-            filtered_df = df[df[topic_column].isin(selected_topics)]
+            topic_filtered_df = df[df[topic_column].isin(selected_topics)]
             excluded_count = len(topics) - len(selected_topics)
             if excluded_count > 0:
                 st.sidebar.info(f"✅ {len(selected_topics)} topics selected\n📋 {excluded_count} topics excluded")
             else:
                 st.sidebar.success(f"✅ All {len(topics)} topics selected")
         else:
-            filtered_df = pd.DataFrame()  # Empty if nothing selected
+            topic_filtered_df = pd.DataFrame()  # Empty if nothing selected
             st.sidebar.warning("⚠️ No topics selected - showing no questions")
+            return topic_filtered_df  # Return early if no topics selected
         
-        return filtered_df
+        # === NEW SUBTOPIC FILTER ===
+        subtopic_column = self.find_subtopic_column(topic_filtered_df)
+        if subtopic_column and not topic_filtered_df.empty:
+            # Get unique subtopics from topic-filtered data
+            subtopics = sorted(topic_filtered_df[subtopic_column].dropna().unique())
+            
+            if subtopics:
+                st.sidebar.markdown("---")
+                st.sidebar.markdown("### 🎯 Subtopic Filter")
+                
+                # Subtopic instructions
+                st.sidebar.markdown("""
+                **Instructions:**
+                - ✅ **Selected subtopics** will be included
+                - ❌ **Uncheck subtopics** to exclude them  
+                - 🔍 **Refine your topic selection**
+                """)
+                
+                # Subtopic reset check
+                if st.session_state.get("reset_subtopics_requested", False):
+                    for key in list(st.session_state.keys()):
+                        if key == "enhanced_subtopic_multiselect":
+                            del st.session_state[key]
+                    st.session_state["reset_subtopics_requested"] = False
+                    st.rerun()
+                
+                # Subtopic multiselect
+                subtopic_reset_counter = st.session_state.get("subtopic_reset_counter", 0)
+                subtopic_multiselect_key = f"enhanced_subtopic_multiselect_{subtopic_reset_counter}"
+                
+                selected_subtopics = st.sidebar.multiselect(
+                    "Choose subtopics to include:",
+                    options=subtopics,
+                    default=subtopics,
+                    key=subtopic_multiselect_key,
+                    help="💡 Tip: Narrow down by specific subtopics"
+                )
+                
+                # Subtopic reset button
+                if st.sidebar.button("🔄 Reset Subtopics", key="reset_subtopics_btn", help="Select all subtopics again"):
+                    st.session_state["subtopic_reset_counter"] = subtopic_reset_counter + 1
+                    st.session_state["reset_subtopics_requested"] = True
+                    st.rerun()
+                
+                # Apply subtopic filtering
+                if selected_subtopics:
+                    final_filtered_df = topic_filtered_df[topic_filtered_df[subtopic_column].isin(selected_subtopics)]
+                    excluded_subtopic_count = len(subtopics) - len(selected_subtopics)
+                    if excluded_subtopic_count > 0:
+                        st.sidebar.info(f"🎯 {len(selected_subtopics)} subtopics selected\n📋 {excluded_subtopic_count} subtopics excluded")
+                    else:
+                        st.sidebar.success(f"🎯 All {len(subtopics)} subtopics selected")
+                else:
+                    final_filtered_df = pd.DataFrame()
+                    st.sidebar.warning("⚠️ No subtopics selected")
+                    return final_filtered_df
+            else:
+                # No subtopics available, return topic-filtered data
+                final_filtered_df = topic_filtered_df
+        else:
+            # No subtopic column found, return topic-filtered data
+            final_filtered_df = topic_filtered_df
+        
+        return final_filtered_df
     
     def render_upload_interface(self):
         """Render prominent upload interface (refactored, simplified)"""
