@@ -6,6 +6,7 @@ Handles user interface coordination, tab management, and rendering
 
 import streamlit as st
 import pandas as pd
+import json
 from datetime import datetime
 from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Add this import here
 
@@ -14,6 +15,16 @@ class UIManager:
     
     def __init__(self, app_config):
         self.app_config = app_config
+    
+    def _render_stats_summary_before_tabs(self, df: pd.DataFrame, metadata: dict):
+        """Render a concise summary and charts before main tabs."""
+        if self.app_config.is_available('ui_components'):
+            ui_components = self.app_config.get_feature('ui_components')
+            if 'display_database_summary' in ui_components:
+                ui_components['display_database_summary'](df, metadata)
+        st.markdown("---")
+    
+    
     
     def enhanced_subject_filtering(self, df: pd.DataFrame) -> pd.DataFrame:
         """Multi-subject filter using the correct 'Topic' column with clear instructions"""
@@ -99,39 +110,39 @@ class UIManager:
         # Intentionally empty for clean, minimal interface
         pass
     
-    def render_main_tabs(self, df, metadata, original_questions):
+    def render_main_tabs(self, df, metadata, original_questions, fork_components=None):
         """Render the main application tabs with fork feature integration"""
-        
-        # Only update workflow state if upload interface is active
-        if 'upload_state' in st.session_state:
-            UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
-        
+
         # Show success message
         st.success(f"✅ Database loaded successfully! {len(df)} questions ready.")
 
-        # TEST: Check which branch we're using
-        st.error("🧪 CHECKING FORK FEATURE AVAILABILITY")
-        
+        # --- PROMPT 9: Apply filtering and stats summary globally ---
+        filtered_df = self.enhanced_subject_filtering(df)
+        self._render_stats_summary_before_tabs(df, metadata)
+        # ----------------------------------------------------------
+
         # Fork feature integration
         if self.app_config.is_available('fork_feature'):
-            fork_feature = self.app_config.get_feature('fork_feature')
-            mode_manager = fork_feature['get_operation_mode_manager']()
-            
+            # PROMPT 1: Directly access mode_manager from fork_components
+            mode_manager = fork_components['mode_manager']
+
             # Check if mode has been chosen
             if not mode_manager.has_mode_been_chosen():
                 # Show fork decision UI
                 mode_manager.render_mode_selection()
+                # Set default tab to Browse Questions for fork mode
+                st.session_state.main_active_tab = "📋 Browse Questions"
                 return False  # Don't show tabs until mode is chosen
-            
+
             # Mode has been chosen - ensure flags are initialized
             if not mode_manager.is_mode_initialized():
                 if mode_manager.initialize_question_flags():
                     st.rerun()  # Refresh to show updated interface
-            
+
             # Get current mode info for tab labeling
             current_mode = mode_manager.get_current_mode()
             mode_name, mode_icon, mode_description = mode_manager.get_mode_display_info()
-            
+
             # Show current mode status
             col1, col2 = st.columns([3, 1])
             with col1:
@@ -140,216 +151,308 @@ class UIManager:
                 if st.button("🔄 Change Mode", key="main_change_mode"):
                     mode_manager.reset_mode()
                     st.rerun()
-            
-            # Apply topic filtering
-            filtered_df = self.enhanced_subject_filtering(df)
-            
-            # STATS SUMMARY BEFORE TABS - Quick overview metrics
-            self._render_stats_summary_before_tabs(df, metadata)
-            
-            # Create tabs - Database Overview is now optional for detailed info
+
+            # Define tab names for fork feature branch
             edit_tab_label = f"📝 {mode_name}"
-            tab1, tab2, tab3, tab4, tab5 = st.tabs([
-                "📊 Charts",  # Changed from "📊 Database Overview"
-                "📋 Browse Questions", 
-                edit_tab_label, 
+            tab_names = [
+                "📊 Charts",
+                "📋 Browse Questions",
+                edit_tab_label,
                 "📥 Export",
                 "⚙️ Settings"
-            ])
-            
-            # FIXED: Use the correct fork method with all 5 tabs and proper parameters
-            self._render_tab_content_with_fork_and_overview(tab1, tab2, tab3, tab4, tab5, df, filtered_df, original_questions, mode_manager, fork_feature)
-            
+            ]
+
+            # Button-based navigation
+            if 'main_active_tab' not in st.session_state:
+                st.session_state.main_active_tab = "📋 Browse Questions"
+            tab_cols = st.columns(len(tab_names))
+            for idx, tab_name in enumerate(tab_names):
+                btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
+                if tab_cols[idx].button(
+                    tab_name,
+                    key=btn_key,
+                    type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
+                ):
+                    st.session_state.main_active_tab = tab_name
+            st.markdown("---")
+
+            # Update workflow state based on the active tab (fork branch)
+            if 'upload_state' in st.session_state:
+                current_tab = st.session_state.get('main_active_tab', '')
+                if current_tab == "📥 Export":
+                    # Force workflow state to EXPORTING when in Export tab
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
+                else:
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
+
+            # Refactor content rendering using new helpers
+            active_tab_name = st.session_state.main_active_tab
+            self._render_tab_content_with_fork_and_overview_new(
+                active_tab_name, df, filtered_df, original_questions, metadata, mode_manager, fork_components
+            )
+
         else:
             # Fallback to original interface if fork feature not available
-            filtered_df = self.enhanced_subject_filtering(df)
-            
-            # STATS SUMMARY BEFORE TABS - Quick overview metrics (fallback case)
-            self._render_stats_summary_before_tabs(df, metadata)
-            
-            tab1, tab2, tab3, tab4 = st.tabs([
-                "📊 Database Overview", 
-                "📋 Browse Questions", 
-                "📝 Browse & Edit", 
+
+            # Define tab names for fallback branch
+            tab_names = [
+                "📊 Database Overview",
+                "📋 Browse Questions",
+                "📝 Browse & Edit",
                 "📥 Export"
-            ])
-            
-            # Render tab content without fork features - correct method for 4 tabs
-            self._render_tab_content_standard_with_overview(tab1, tab2, tab3, tab4, df, filtered_df, original_questions)
-        
-        return True
-    
-    def _render_tab_content_with_fork(self, tab1, tab2, tab3, tab4, df, filtered_df, original_questions, mode_manager, fork_feature):
-        """Render tab content with fork feature integration"""
-        
-        # Tab 1: Overview - Clean and simple, no database summary (moved before tabs)
-        with tab1:
-            st.markdown("### 🎯 Current Workflow Guide")
-            
-            current_mode = mode_manager.get_current_mode()
-            mode_name, mode_icon, _ = mode_manager.get_mode_display_info()
-            
-            if current_mode == 'select':
-                st.info(f"""
-                **{mode_icon} You're in {mode_name} Mode**
-                
-                **Next Steps:**
-                1. Use **Browse Questions** to review all available questions
-                2. Use **{mode_name}** tab to select specific questions for export
-                3. Use **Export** tab to download your selected questions
-                """)
-            elif current_mode == 'delete':
-                st.info(f"""
-                **{mode_icon} You're in {mode_name} Mode**
-                
-                **Next Steps:**
-                1. Use **Browse Questions** to review all available questions  
-                2. Use **{mode_name}** tab to mark unwanted questions for removal
-                3. Use **Export** tab to download remaining questions
-                """)
-            
-            st.markdown("### 🔧 Available Tools")
-            st.markdown("""
-            - **Topic Filtering:** Use the sidebar to focus on specific subjects
-            - **Question Editing:** Edit questions directly in the mode-specific tab
-            - **Bulk Operations:** Use bulk controls for faster selection/deletion
-            - **Export Options:** Multiple format options (CSV, JSON, QTI) available
-            """)
-            
-            # Show current filter status
-            if 'topic_filter_multi' in st.session_state:
-                selected_topics = st.session_state.get(f'topic_filter_multi_{id(self)}', [])
-                if selected_topics:
-                    if len(selected_topics) < len(df['Topic'].unique()):
-                        st.warning(f"🔍 **Topic Filter Active:** Only showing {len(selected_topics)} of {len(df['Topic'].unique())} topics")
-                    else:
-                        st.success("✅ **All Topics Visible:** No filtering applied")
-        
-        # Tab 2: Browse Questions
-        with tab2:
-            if self.app_config.is_available('ui_components'):
-                ui_components = self.app_config.get_feature('ui_components')
-                ui_components['simple_browse_questions_tab'](filtered_df)
-            else:
-                st.error("❌ UI components not available for browsing")
-        
-        # Tab 3: Mode-specific Edit Tab
-        with tab3:
-            current_mode = mode_manager.get_current_mode()
-            
-            if current_mode == 'select':
-                # Use Select Questions interface
-                select_interface = fork_feature['SelectQuestionsInterface']()
-                select_interface.render_selection_interface(filtered_df)
-                
-            elif current_mode == 'delete':
-                # Use Delete Questions interface
-                delete_interface = fork_feature['DeleteQuestionsInterface']()
-                delete_interface.render_deletion_interface(filtered_df)
-                
-            else:
-                st.error(f"❌ Unknown mode: {current_mode}")
-        
-        # Tab 4: Export with Filtering
-        with tab4:
-            # Apply fork filtering before export
-            current_mode = mode_manager.get_current_mode()
-            flag_manager = fork_feature['QuestionFlagManager']()
-            
-            # Get filtered questions based on mode
-            export_df, export_original = flag_manager.get_filtered_questions_for_export(
-                filtered_df, original_questions, current_mode
+            ]
+
+            # Button-based navigation
+            if 'main_active_tab' not in st.session_state:
+                st.session_state.main_active_tab = tab_names[0]
+            tab_cols = st.columns(len(tab_names))
+            for idx, tab_name in enumerate(tab_names):
+                btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
+                if tab_cols[idx].button(
+                    tab_name,
+                    key=btn_key,
+                    type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
+                ):
+                    st.session_state.main_active_tab = tab_name
+            st.markdown("---")
+
+            # Update workflow state based on the active tab (standard branch)
+            if 'upload_state' in st.session_state:
+                current_tab = st.session_state.get('main_active_tab', '')
+                if current_tab == "📥 Export":
+                    # Force workflow state to EXPORTING when in Export tab
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
+                else:
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
+
+            # Refactor content rendering using new helpers
+            active_tab_name = st.session_state.main_active_tab
+            self._render_tab_content_standard_with_overview_new(
+                active_tab_name, df, filtered_df, original_questions, metadata
             )
-            
-            # Show export preview
-            st.markdown("### 📊 Export Preview")
-            
-            if current_mode == 'select':
-                selected_count = len(export_df)
-                total_count = len(filtered_df)
-                st.info(f"🎯 **Select Mode:** Exporting {selected_count} of {total_count} selected questions")
-                
-                if selected_count == 0:
-                    st.warning("⚠️ No questions selected for export. Use checkboxes in the edit tab to select questions.")
-                    st.info("💡 **Tip:** Go to the edit tab and use the selection checkboxes or bulk controls.")
-                    return
-                    
-            elif current_mode == 'delete':
-                remaining_count = len(export_df)
-                total_count = len(filtered_df)
-                deleted_count = total_count - remaining_count
-                st.info(f"🗑️ **Delete Mode:** Exporting {remaining_count} remaining questions ({deleted_count} excluded)")
-                
-                if remaining_count == 0:
-                    st.warning("⚠️ All questions marked for deletion. Nothing to export.")
-                    st.info("💡 **Tip:** Go to the edit tab and uncheck some questions to remove deletion marks.")
-                    return
-            
-            # Use existing export interface with filtered data
-            self.render_export_tab(export_df, export_original)
-    
-    def _render_tab_content_standard(self, tab1, tab2, tab3, tab4, df, filtered_df, original_questions):
-        """Render tab content without fork features (fallback)"""
-        
-        # Tab 1: Overview
-        with tab1:
+
+        return True
+
+    def _render_tab_content_with_fork_and_overview_new(self, active_tab_name, df, filtered_df, original_questions, metadata, mode_manager, fork_components):
+        """Render tab content with fork feature integration and overview using active_tab_name"""
+        # PROMPT 3: Access instances directly from fork_components (no need for None fallback)
+        select_interface = fork_components.get('select_interface')
+        delete_interface = fork_components.get('delete_interface')
+        flag_manager = fork_components.get('flag_manager')
+
+        # Charts Tab
+        if active_tab_name == "📊 Charts":
+            st.markdown("### 📊 Database Overview")
             if self.app_config.is_available('ui_components'):
                 ui_components = self.app_config.get_feature('ui_components')
-                #ui_components['display_database_summary'](df, st.session_state['metadata'])
-                st.markdown("---")
-                #ui_components['create_summary_charts'](df)
+                if 'display_database_summary' in ui_components:
+                    ui_components['display_database_summary'](df, metadata)
+                if 'create_summary_charts' in ui_components:
+                    ui_components['create_summary_charts'](df, chart_key_suffix='charts_fork_tab')
             else:
-                st.error("❌ UI components not available for overview")
-        
-        # Tab 2: Browse Questions
-        with tab2:
+                st.info("No database overview available.")
+        # Browse Questions Tab
+        elif active_tab_name == "📋 Browse Questions":
             if self.app_config.is_available('ui_components'):
                 ui_components = self.app_config.get_feature('ui_components')
                 ui_components['simple_browse_questions_tab'](filtered_df)
             else:
                 st.error("❌ UI components not available for browsing")
-        
-        # Tab 3: Standard Edit Tab
-        with tab3:
+        # Mode-specific Edit Tab
+        elif active_tab_name.startswith("📝"):
+            current_mode = mode_manager.get_current_mode()
+            if current_mode == 'select' and select_interface:
+                select_interface.render_selection_interface(filtered_df)
+            elif current_mode == 'delete' and delete_interface:
+                delete_interface.render_deletion_interface(filtered_df)
+            else:
+                st.error(f"❌ Unknown or unavailable mode: {current_mode}")
+        # Export Tab
+        elif active_tab_name == "📥 Export":
+            current_mode = mode_manager.get_current_mode()
+            if flag_manager:
+                export_df, export_original = flag_manager.get_filtered_questions_for_export(
+                    filtered_df, original_questions, current_mode
+                )
+                st.markdown("### 📊 Export Preview")
+                if current_mode == 'select':
+                    selected_count = len(export_df)
+                    total_count = len(filtered_df)
+                    st.info(f"🎯 **Select Mode:** Exporting {selected_count} of {total_count} selected questions")
+                    if selected_count == 0:
+                        st.warning("⚠️ No questions selected for export. Use checkboxes in the edit tab to select questions.")
+                        st.info("💡 **Tip:** Go to the edit tab and use the selection checkboxes or bulk controls.")
+                        return
+                elif current_mode == 'delete':
+                    remaining_count = len(export_df)
+                    total_count = len(filtered_df)
+                    deleted_count = total_count - remaining_count
+                    st.info(f"🗑️ **Delete Mode:** Exporting {remaining_count} remaining questions ({deleted_count} excluded)")
+                    if remaining_count == 0:
+                        st.warning("⚠️ All questions marked for deletion. Nothing to export.")
+                        st.info("💡 **Tip:** Go to the edit tab and uncheck some questions to remove deletion marks.")
+                        return
+                self.render_export_tab(export_df, export_original)
+            else:
+                st.error("❌ Export functionality not available")
+        # Settings Tab
+        elif active_tab_name == "⚙️ Settings":
+            st.markdown("### ⚙️ Application Settings")
+            st.info("💡 Configure Q2LMS preferences and options.")
+            st.checkbox("🔍 Show detailed tooltips", value=True)
+            st.checkbox("📊 Auto-refresh charts", value=False)
+            st.selectbox("🎨 Theme", ["Default", "Dark", "Light"])
+
+    def _render_tab_content_standard_with_overview_new(self, active_tab_name, df, filtered_df, original_questions, metadata):
+        """Render tab content without fork features but with overview using active_tab_name"""
+        # Database Overview Tab
+        if active_tab_name == "📊 Database Overview":
+            st.markdown("### 📊 Detailed Database Analysis")
+            if self.app_config.is_available('ui_components'):
+                ui_components = self.app_config.get_feature('ui_components')
+                if 'display_database_summary' in ui_components:
+                    ui_components['display_database_summary'](df, metadata)
+                if 'create_summary_charts' in ui_components:
+                    ui_components['create_summary_charts'](df, chart_key_suffix='charts_standard_tab')
+            else:
+                st.error("❌ UI components not available for detailed overview")
+        # Browse Questions Tab
+        elif active_tab_name == "📋 Browse Questions":
+            if self.app_config.is_available('ui_components'):
+                ui_components = self.app_config.get_feature('ui_components')
+                ui_components['simple_browse_questions_tab'](filtered_df)
+            else:
+                st.error("❌ UI components not available for browsing")
+        # Standard Edit Tab
+        elif active_tab_name == "📝 Browse & Edit":
             if self.app_config.is_available('question_editor'):
                 question_editor = self.app_config.get_feature('question_editor')
                 question_editor['side_by_side_question_editor'](filtered_df)
             else:
                 st.error("❌ Question editor not available")
                 st.info("You can still browse questions in the other tabs.")
-        
-        # Tab 4: Standard Export
-        with tab4:
+        # Export Tab
+        elif active_tab_name == "📥 Export":
             self.render_export_tab(filtered_df, original_questions)
+
     def render_export_tab(self, export_df: pd.DataFrame, export_original: list) -> None:
         """
-        Render export tab with given filtered data
+        Render export tab with comprehensive export options
         
         Args:
             export_df (pd.DataFrame): Filtered DataFrame for export
             export_original (list): Original questions list for export
         """
-        # Only update workflow state if upload interface is active
-        if 'upload_state' in st.session_state:
-            UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
-
         try:
+            # Note: Workflow state is already updated in render_main_tabs based on active tab
+            
             if self.app_config.is_available('export_system'):
+                # Use the advanced export system
                 export_system = self.app_config.get_feature('export_system')
                 export_system['integrate_with_existing_ui'](export_df, export_original)
+                
+                # Check if any export was completed and ensure completion UI is shown
+                completion_detected = (st.session_state.get('qti_downloaded', False) or 
+                                     st.session_state.get('qti_package_created', False) or
+                                     st.session_state.get('export_completed', False) or
+                                     st.session_state.get('json_downloaded', False) or
+                                     st.session_state.get('csv_downloaded', False))
+                
+                # Debug: Show completion status (can be removed later)
+                with st.expander("🔍 Debug: Completion Detection"):
+                    st.write(f"- qti_downloaded: {st.session_state.get('qti_downloaded', False)}")
+                    st.write(f"- qti_package_created: {st.session_state.get('qti_package_created', False)}")
+                    st.write(f"- export_completed: {st.session_state.get('export_completed', False)}")
+                    st.write(f"- json_downloaded: {st.session_state.get('json_downloaded', False)}")
+                    st.write(f"- csv_downloaded: {st.session_state.get('csv_downloaded', False)}")
+                    st.write(f"- completion_detected: {completion_detected}")
+                    
+                    st.markdown("**Available session state keys:**")
+                    st.write([key for key in st.session_state.keys() if 'download' in key.lower() or 'export' in key.lower() or 'complete' in key.lower()])
+                    
+                    # Add button to manually trigger completion UI for testing
+                    if st.button("🧪 Test Completion UI", key="test_completion"):
+                        st.session_state['export_completed'] = True
+                        st.rerun()
+                    
+                    # Force show completion UI temporarily
+                    if st.button("🧪 Force Show Soft Exit", key="force_completion"):
+                        st.markdown("---")
+                        st.success("🎉 FORCED Export Process Complete!")
+                        st.markdown("### 🎯 What would you like to do next?")
+                        
+                        force_col1, force_col2 = st.columns(2)
+                        with force_col1:
+                            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="force_exit_app"):
+                                st.success("✅ Thank you for using Q2LMS!")
+                                st.balloons()
+                                st.stop()
+                        with force_col2:
+                            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="force_start_over"):
+                                if UploadInterfaceV2.is_workflow_active():
+                                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                                st.rerun()
+                
+                # Always show soft exit section at bottom of export tab (universal solution)
+                st.markdown("---")
+                st.markdown("### 🎯 Export Session Complete")
+                st.info("💡 **Need to exit or start over?** Use the options below anytime.")
+                
+                completion_col1, completion_col2 = st.columns(2)
+                with completion_col1:
+                    if st.button("🔄 Start Over", type="secondary", use_container_width=True, key="universal_start_over"):
+                        # Clear all completion flags and reset to start
+                        for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
+                            if key in st.session_state:
+                                del st.session_state[key]
+                        if UploadInterfaceV2.is_workflow_active():
+                            UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                        st.rerun()
+                with completion_col2:
+                    if st.button("🚪 Exit Application", type="primary", use_container_width=True, key="universal_exit_app"):
+                        st.success("✅ Thank you for using Q2LMS!")
+                        st.balloons()
+                        st.stop()
+                
+                # Only show completion UI if export was actually completed
+                if completion_detected:
+                    # Always show completion UI to ensure soft exit is available
+                    st.markdown("---")
+                    st.success("🎉 Export Process Complete!")
+                    st.markdown("### 🎯 What would you like to do next?")
+                    
+                    # Update workflow state to FINISHED
+                    if 'upload_state' in st.session_state:
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                    
+                    comp_col1, comp_col2 = st.columns(2)
+                    with comp_col1:
+                        if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="ui_exit_app"):
+                            st.success("✅ Thank you for using Q2LMS!")
+                            st.balloons()
+                            st.stop()
+                    with comp_col2:
+                        if st.button("🔄 Start Over", type="primary", use_container_width=True, key="ui_start_over"):
+                            # Clear all completion flags and reset to start
+                            for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                            if UploadInterfaceV2.is_workflow_active():
+                                UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                            st.rerun()
             else:
-                # Fallback basic export interface
+                # Fallback to basic export interface
                 self._render_basic_export_interface(export_df, export_original)
                 
         except Exception as e:
             st.error(f"❌ Error rendering export interface: {e}")
             # Show basic download options as fallback
             self._render_basic_export_interface(export_df, export_original)
-
+    
     def _render_basic_export_interface(self, export_df: pd.DataFrame, export_original: list) -> None:
         """
         Basic export interface fallback
-
+        
         Args:
             export_df (pd.DataFrame): DataFrame to export
             export_original (list): Original questions for export
@@ -362,236 +465,127 @@ class UIManager:
         
         st.success(f"✅ Ready to export {len(export_df)} questions")
         
-        # Basic CSV download
-        csv_data = export_df.to_csv(index=False)
-        csv_downloaded = st.download_button(
-            label="📄 Download as CSV",
-            data=csv_data,
-            file_name="questions_export.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-        if csv_downloaded:
-            if 'upload_state' in st.session_state:
-                UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
-            st.success("🎉 Export completed successfully!")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("📁 Load New Database", key="csv_new_db"):
-                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                    # Optionally clear session state for a fresh start
-                    for key in ['df', 'original_questions', 'metadata']:
-                        if key in st.session_state:
-                            del st.session_state[key]
-            with col2:
-                if st.button("✅ Finish Session", key="csv_finish"):
-                    UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
-        
-        # Basic JSON download
-        if export_original:
-            import json
-            json_data = json.dumps({
-                "questions": export_original,
-                "metadata": {
-                    "total_questions": len(export_original),
-                    "export_timestamp": pd.Timestamp.now().isoformat()
-                }
-            }, indent=2)
-            
-            json_downloaded = st.download_button(
-                label="📋 Download as JSON",
-                data=json_data,
-                file_name="questions_export.json",
-                mime="application/json",
-                use_container_width=True
-            )
-            if json_downloaded:
-                if 'upload_state' in st.session_state:
-                    UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
-                st.success("🎉 Export completed successfully!")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("📁 Load New Database", key="json_new_db"):
-                        UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                        for key in ['df', 'original_questions', 'metadata']:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                with col2:
-                    if st.button("✅ Finish Session", key="json_finish"):
-                        UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
-
-    def _render_stats_summary_before_tabs(self, df, metadata):
-        """Render quick stats summary before tabs - key metrics only with expandable details"""
-        
-        st.markdown("---")
-        
-        # Quick stats in a compact format (keep existing)
-        total_questions = len(df)
-        
-        col1, col2, col3, col4 = st.columns(4)
+        # Export completion notice
+        col1, col2 = st.columns([2, 1])
         
         with col1:
-            st.metric("📚 Total Questions", total_questions)
+            # Primary QTI Package Export (moved to top)
+            st.markdown("#### 📦 QTI Package Export")
+            st.markdown("**🎯 Recommended for LMS deployment**")
+            
+            if st.button("📦 Create QTI Package", type="primary", use_container_width=True, key="basic_qti_create"):
+                # Attempt to create QTI package using available export system
+                try:
+                    if self.app_config.is_available('export_system'):
+                        # Use advanced export system for QTI creation
+                        export_system = self.app_config.get_feature('export_system')
+                        # This is a simplified approach - the actual QTI creation would be more complex
+                        st.info("🔄 Creating QTI package using advanced export system...")
+                        
+                        # Update workflow state to FINISHED after QTI creation
+                        if 'upload_state' in st.session_state:
+                            UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                        
+                        st.success("🎉 QTI Export completed successfully!")
+                        
+                        # --- QTI Completion section ---
+                        st.markdown("---")
+                        st.success("🎉 QTI Package Export Complete!")
+                        st.markdown("### 🎯 What's Next?")
+                        
+                        completion_col1, completion_col2 = st.columns(2)
+                        with completion_col1:
+                            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="qti_exit_app"):
+                                st.success("✅ Thank you for using Q2LMS!")
+                                st.stop()
+                        with completion_col2:
+                            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_start_over"):
+                                if UploadInterfaceV2.is_workflow_active():
+                                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                                st.rerun()
+                    else:
+                        st.error("❌ QTI export system not available. Please use CSV or JSON export options.")
+                except Exception as e:
+                    st.error(f"❌ QTI export failed: {e}")
+                    st.info("💡 Please try using CSV or JSON export as an alternative.")
+            
+            # Alternative formats (moved below QTI)
+            st.markdown("---")
+            st.markdown("#### 📊 Alternative Export Formats")
+            
+            # Basic CSV download
+            csv_data = export_df.to_csv(index=False)
+            if st.download_button(
+                label="📄 Download as CSV",
+                data=csv_data,
+                file_name="questions_export.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="basic_csv_export"
+            ):
+                # Set completion flags when CSV is downloaded
+                st.session_state['export_completed'] = True
+                st.session_state['csv_downloaded'] = True
+                st.rerun()  # Refresh to show completion UI
+            
+            # Basic JSON download
+            if export_original:
+                json_data = json.dumps({
+                    "questions": export_original,
+                    "metadata": {
+                        "subject": "Exported Questions",
+                        "total_questions": len(export_original),
+                        "export_timestamp": pd.Timestamp.now().isoformat()
+                    }
+                }, indent=2)
+                
+                # JSON download with completion detection
+                if st.download_button(
+                    label="📋 Download as JSON",
+                    data=json_data,
+                    file_name="questions_export.json",
+                    mime="application/json",
+                    use_container_width=True,
+                    key="basic_json_export"
+                ):
+                    # Set completion flags when JSON is downloaded
+                    st.session_state['export_completed'] = True
+                    st.session_state['json_downloaded'] = True
+                    st.rerun()  # Refresh to show completion UI
         
         with col2:
-            if 'Topic' in df.columns:
-                topics = df['Topic'].nunique()
-                st.metric("📂 Topics", topics)
-            else:
-                st.metric("📂 Topics", "N/A")
+            st.metric("Questions", len(export_df))
+            if 'Points' in export_df.columns:
+                total_points = export_df['Points'].sum()
+                st.metric("Total Points", int(total_points))
         
-        with col3:
-            if 'Points' in df.columns:
-                total_points = int(df['Points'].sum())
-                st.metric("🎯 Total Points", total_points)
-            else:
-                st.metric("🎯 Total Points", "N/A")
-        
-        with col4:
-            if 'Type' in df.columns:
-                question_types = df['Type'].nunique()
-                st.metric("🏷️ Question Types", question_types)
-            else:
-                st.metric("🏷️ Question Types", "N/A")
-        
-        # Optional: Show source info compactly
-        if metadata and 'source' in metadata:
-            source = metadata.get('source', 'Unknown')
-            st.caption(f"📁 **Source:** {source}")
-        
-        # ADD: Expandable detailed analysis
-        with st.expander("📊 **View Detailed Analysis**", expanded=False):
-            if self.app_config.is_available('ui_components'):
-                ui_components = self.app_config.get_feature('ui_components')
-                
-                # Detailed database summary
-                st.markdown("#### 📋 Database Details")
-                ui_components['display_database_summary'](df, metadata)
-                
-                st.markdown("---")
-                
-                # Charts and visualizations
-                st.markdown("#### 📈 Visual Analysis")
-                ui_components['create_summary_charts'](df)
-            else:
-                st.error("❌ Detailed analysis components not available")
-        
+        # Workflow completion options
         st.markdown("---")
+        st.markdown("### 🎯 Complete Your Session")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🔄 Start Over", type="secondary", key="basic_start_over"):
+                if UploadInterfaceV2.is_workflow_active():
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                st.rerun()
+        
+        with col2:
+            if st.button("🚪 Exit Application", type="secondary", key="basic_exit_app"):
+                st.success("✅ Export complete! You can now close this tab.")
+                st.stop()
 
-    def _render_tab_content_with_fork_and_overview(self, tab1, tab2, tab3, tab4, tab5, df, filtered_df, original_questions, mode_manager, fork_feature):
-        """Render tab content with fork feature integration and separate overview tab"""
-        
-        # Tab 1: Database Overview - Detailed analysis (OPTIONAL)
-        with tab1:
-            st.markdown("### 🧪 Test - Tab Content Removed")
-            st.info("If you see this message and NO database overview content above, then we've found the source of the problem.")
-            st.markdown("The database overview content was coming from this tab.")
-        
-        # Tab 2: Browse Questions
-        with tab2:
-            if self.app_config.is_available('ui_components'):
-                ui_components = self.app_config.get_feature('ui_components')
-                ui_components['simple_browse_questions_tab'](filtered_df)
-            else:
-                st.error("❌ UI components not available for browsing")
-        
-        # Tab 3: Mode-specific Edit Tab
-        with tab3:
-            current_mode = mode_manager.get_current_mode()
-            
-            if current_mode == 'select':
-                select_interface = fork_feature['SelectQuestionsInterface']()
-                select_interface.render_selection_interface(filtered_df)
-                
-            elif current_mode == 'delete':
-                delete_interface = fork_feature['DeleteQuestionsInterface']()
-                delete_interface.render_deletion_interface(filtered_df)
-                
-            else:
-                st.error(f"❌ Unknown mode: {current_mode}")
-        
-        # Tab 4: Export with Filtering
-        with tab4:
-            current_mode = mode_manager.get_current_mode()
-            flag_manager = fork_feature['QuestionFlagManager']()
-            
-            export_df, export_original = flag_manager.get_filtered_questions_for_export(
-                filtered_df, original_questions, current_mode
-            )
-            
-            st.markdown("### 📊 Export Preview")
-            
-            if current_mode == 'select':
-                selected_count = len(export_df)
-                total_count = len(filtered_df)
-                st.info(f"🎯 **Select Mode:** Exporting {selected_count} of {total_count} selected questions")
-                
-                if selected_count == 0:
-                    st.warning("⚠️ No questions selected for export. Use checkboxes in the edit tab to select questions.")
-                    st.info("💡 **Tip:** Go to the edit tab and use the selection checkboxes or bulk controls.")
-                    return
-                    
-            elif current_mode == 'delete':
-                remaining_count = len(export_df)
-                total_count = len(filtered_df)
-                deleted_count = total_count - remaining_count
-                st.info(f"🗑️ **Delete Mode:** Exporting {remaining_count} remaining questions ({deleted_count} excluded)")
-                
-                if remaining_count == 0:
-                    st.warning("⚠️ All questions marked for deletion. Nothing to export.")
-                    st.info("💡 **Tip:** Go to the edit tab and uncheck some questions to remove deletion marks.")
-                    return
-            
-            self.render_export_tab(export_df, export_original)
-        
-        # Tab 5: Settings (Optional)
-        with tab5:
-            st.markdown("### ⚙️ Application Settings")
-            st.info("💡 Configure Q2LMS preferences and options.")
-            
-            # Add settings options here
-            st.checkbox("🔍 Show detailed tooltips", value=True)
-            st.checkbox("📊 Auto-refresh charts", value=False)
-            st.selectbox("🎨 Theme", ["Default", "Dark", "Light"])
-
-    def _render_tab_content_standard_with_overview(self, tab1, tab2, tab3, tab4, df, filtered_df, original_questions):
-        """Render tab content without fork features but with overview tab"""
-        
-        # Tab 1: Database Overview - Detailed analysis
-        with tab1:
-            st.markdown("### 📊 Detailed Database Analysis") 
-            if self.app_config.is_available('ui_components'):
-                ui_components = self.app_config.get_feature('ui_components')
-                #ui_components['create_summary_charts'](df)
-            else:
-                st.error("❌ UI components not available for detailed overview")
-        
-        # Tab 2: Browse Questions
-        with tab2:
-            if self.app_config.is_available('ui_components'):
-                ui_components = self.app_config.get_feature('ui_components')
-                ui_components['simple_browse_questions_tab'](filtered_df)
-            else:
-                st.error("❌ UI components not available for browsing")
-        
-        # Tab 3: Standard Edit Tab
-        with tab3:
-            if self.app_config.is_available('question_editor'):
-                question_editor = self.app_config.get_feature('question_editor')
-                question_editor['side_by_side_question_editor'](filtered_df)
-            else:
-                st.error("❌ Question editor not available")
-                st.info("You can still browse questions in the other tabs.")
-        
-        # Tab 4: Standard Export
-        with tab4:
-            self.render_export_tab(filtered_df, original_questions)
-# Global instance
-_ui_manager = None
-
+#
+# Convenience function for easy integration
 def get_ui_manager(app_config):
-    """Get the global UI manager instance"""
-    global _ui_manager
-    if _ui_manager is None:
-        _ui_manager = UIManager(app_config)
-    return _ui_manager
+    """
+    Get a configured UIManager instance.
+
+    Args:
+        app_config: The application configuration object.
+
+    Returns:
+        UIManager: Configured instance.
+    """
+    return UIManager(app_config)

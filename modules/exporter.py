@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """
-Question Export Module - Main Interface
+Question Export Module - M            export_type = st.selectbox(
+                "🎯 **Choose Export Format:**",
+                [
+                    "📦 QTI Package for Canvas",
+                    "📊 CSV Export", 
+                    "📄 JSON Database (Native Format)"
+                ],
+                key="export_type_selection"
+            )face
 Enhanced with JSON export capability for native format preservation
 """
 
@@ -52,12 +60,12 @@ class QuestionExporter:
             st.markdown("### 📥 Export System")
             st.success("✅ Export system ready with custom filename support!")
             
-            # Export type selection with JSON option
+            # Export type selection with QTI as default
             export_type = st.radio(
                 "Choose Export Format:",
                 [
-                    "📊 CSV Export", 
-                    "📦 QTI Package for Canvas",
+                    "� QTI Package for Canvas",
+                    "� CSV Export", 
                     "📄 JSON Database (Native Format)"
                 ],
                 key="export_type_selection"
@@ -489,8 +497,12 @@ class QuestionExporter:
                 )
                 
                 if package_data:
-                    # Provide download
-                    download_key = f"qti_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    # Set completion flags immediately when package is created
+                    st.session_state['qti_package_created'] = True
+                    st.session_state['export_completed'] = True
+                    
+                    # Provide download with stable key
+                    download_key = f"qti_download_{hash(filename)}"  # Stable key based on filename
                     downloaded = st.download_button(
                         label="📦 Download QTI Package",
                         data=package_data,
@@ -500,6 +512,13 @@ class QuestionExporter:
                     )
                     if downloaded:
                         st.session_state['qti_downloaded'] = True
+                        st.session_state['export_completed'] = True
+                        # Update workflow state to FINISHED after successful download
+                        try:
+                            from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState
+                            UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                        except ImportError:
+                            pass  # Ignore if upload interface not available
 
                     # Show success details
                     total_points = sum(q.get('points', 1) for q in processed_questions)
@@ -524,21 +543,39 @@ class QuestionExporter:
                     4. Verify questions import correctly
                     """)
 
-                    # --- Completion section: only after download ---
-                    if st.session_state.get('qti_downloaded', False):
-                        st.markdown("---")
-                        st.success("🎉 Export Complete!")
-                        st.markdown("### What's Next?")
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="qti_exit_btn"):
-                                st.markdown("Thank you for using Q2LMS!")
-                                st.stop()
-                        with col2:
-                            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_startover_btn"):
+                    # Always show completion UI after successful package creation
+                    st.markdown("---")
+                    st.success("🎉 Export Complete!")
+                    
+                    # Set completion flags
+                    st.session_state['qti_package_created'] = True
+                    st.session_state['export_completed'] = True
+                    
+                    # Update workflow state to FINISHED
+                    try:
+                        from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
+                    except ImportError:
+                        pass  # Ignore if upload interface not available
+                    
+                    st.markdown("### What's Next?")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="qti_exit_btn"):
+                            st.markdown("Thank you for using Q2LMS!")
+                            st.stop()
+                    with col2:
+                        if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_startover_btn"):
+                            try:
                                 from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState
                                 UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                                st.rerun()
+                            except ImportError:
+                                pass  # Ignore if upload interface not available
+                            # Clear all session state for restart
+                            for key in ['qti_downloaded', 'qti_package_created']:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                            st.rerun()
                 else:
                     st.error("❌ Failed to create QTI package")
                 

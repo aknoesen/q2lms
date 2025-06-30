@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.express as px
+from typing import Optional
 
 def display_database_summary(df, metadata):
     st.markdown('<div class="main-header">📊 Database Overview</div>', unsafe_allow_html=True)
@@ -29,7 +30,7 @@ def display_database_summary(df, metadata):
             if 'total_questions' in metadata:
                 st.info(f"**Expected Questions:** {metadata['total_questions']}")
 
-def create_summary_charts(df):
+def create_summary_charts(df, chart_key_suffix: Optional[str] = None):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 📚 Topics Distribution")
@@ -40,7 +41,8 @@ def create_summary_charts(df):
             title="Questions by Topic"
         )
         fig_topics.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_topics, use_container_width=True)
+        topics_chart_key = f"topics_chart_{chart_key_suffix}" if chart_key_suffix else "topics_chart_default"
+        st.plotly_chart(fig_topics, use_container_width=True, key=topics_chart_key)
     with col2:
         st.markdown("### 🎯 Difficulty Distribution")
         difficulty_counts = df['Difficulty'].value_counts()
@@ -54,7 +56,8 @@ def create_summary_charts(df):
             color_discrete_sequence=color_sequence
         )
         fig_difficulty.update_layout(showlegend=False)
-        st.plotly_chart(fig_difficulty, use_container_width=True)
+        difficulty_chart_key = f"difficulty_chart_{chart_key_suffix}" if chart_key_suffix else "difficulty_chart_default"
+        st.plotly_chart(fig_difficulty, use_container_width=True, key=difficulty_chart_key)
     subtopics = df[df['Subtopic'].notna() & (df['Subtopic'] != '') & (df['Subtopic'] != 'N/A')]['Subtopic'].value_counts()
     if len(subtopics) > 0:
         st.markdown("### 🔍 Subtopics Distribution")
@@ -65,7 +68,8 @@ def create_summary_charts(df):
             title="Questions by Subtopic"
         )
         fig_subtopics.update_layout(height=max(400, len(subtopics) * 30))
-        st.plotly_chart(fig_subtopics, use_container_width=True)
+        subtopics_chart_key = f"subtopics_chart_{chart_key_suffix}" if chart_key_suffix else "subtopics_chart_default"
+        st.plotly_chart(fig_subtopics, use_container_width=True, key=subtopics_chart_key)
     st.markdown("### 📝 Question Types")
     type_counts = df['Type'].value_counts()
     col1, col2 = st.columns([2, 1])
@@ -75,7 +79,8 @@ def create_summary_charts(df):
             y=type_counts.values,
             title="Questions by Type"
         )
-        st.plotly_chart(fig_types, use_container_width=True)
+        types_chart_key = f"types_chart_{chart_key_suffix}" if chart_key_suffix else "types_chart_default"
+        st.plotly_chart(fig_types, use_container_width=True, key=types_chart_key)
     with col2:
         st.markdown("**Type Breakdown:**")
         for qtype, count in type_counts.items():
