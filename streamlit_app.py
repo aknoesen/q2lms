@@ -9,6 +9,7 @@ import pandas as pd
 import sys
 import os
 from datetime import datetime
+from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Fixed import
 
 # Page configuration
 st.set_page_config(
@@ -104,7 +105,7 @@ def main():
     
     # Sidebar with logo
     app_config.render_sidebar_header()
-    
+
     # Check for exit request
     if exit_manager.check_for_exit_request():
         return
@@ -129,114 +130,14 @@ def main():
         df = st.session_state['df']
         metadata = st.session_state.get('metadata', {})
         original_questions = st.session_state.get('original_questions', [])
-        
-        st.success(f"✅ Database loaded: {len(df)} questions ready")
-        
-        # Fork decision workflow
-        if fork_available:
-            mode_manager = fork_components['mode_manager']
-            
-            try:
-                # Check if we should show fork decision
-                has_mode = mode_manager.has_mode_been_chosen()
-                
-                if not has_mode:
-                    
-                    
-                    # Show fork decision
-                    mode_manager.render_mode_selection()
-                    
-                    # Add exit button and stop here during fork decision
-                    exit_manager.render_exit_section_at_bottom()
-                    return
-                
-                # Mode has been chosen - get current mode
-                current_mode = mode_manager.get_current_mode()
-                mode_name, mode_icon, mode_description = mode_manager.get_mode_display_info()
-                
-                # Show current mode status
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.info(f"{mode_icon} **Current Mode:** {mode_name} - {mode_description}")
-                with col2:
-                    if st.button("🔄 Change Mode", key="main_change_mode"):
-                        mode_manager.reset_mode()
-                        st.rerun()
-                
-                # Apply topic filtering
-                filtered_df = ui_manager.enhanced_subject_filtering(df)
 
-                # ADD STATS SUMMARY BEFORE TABS
-                ui_manager._render_stats_summary_before_tabs(df, metadata)
-                
-                # Create tabs with mode-specific edit tab
-                edit_tab_label = f"📝 {mode_name}"
-                tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📋 Browse Questions", edit_tab_label, "📥 Export"])
-                
-                with tab1:
-                    if app_config.is_available('ui_components'):
-                        ui_components = app_config.get_feature('ui_components')
-                        #ui_components['display_database_summary'](df, metadata)
-                        st.markdown("---")
-                        #ui_components['create_summary_charts'](df)
-                
-                with tab2:
-                    if app_config.is_available('ui_components'):
-                        ui_components = app_config.get_feature('ui_components')
-                        ui_components['simple_browse_questions_tab'](filtered_df)
-                
-                with tab3:
-                    # Mode-specific edit interface
-                    if current_mode == 'select':
-                        select_interface = fork_components['select_interface']
-                        select_interface.render_selection_interface(filtered_df)
-                    elif current_mode == 'delete':
-                        delete_interface = fork_components['delete_interface']
-                        delete_interface.render_deletion_interface(filtered_df)
-                
-                with tab4:
-                    # Export with fork filtering
-                    flag_manager = fork_components['flag_manager']
-                    export_df, export_original = flag_manager.get_filtered_questions_for_export(
-                        filtered_df, original_questions, current_mode
-                    )
-                    
-                    # Show export preview
-                    st.markdown("### 📊 Export Preview")
-                    
-                    if current_mode == 'select':
-                        selected_count = len(export_df)
-                        total_count = len(filtered_df)
-                        st.info(f"🎯 **Select Mode:** Exporting {selected_count} of {total_count} selected questions")
-                        
-                        if selected_count == 0:
-                            st.warning("⚠️ No questions selected for export. Use checkboxes in the edit tab to select questions.")
-                            st.info("💡 **Tip:** Go to the edit tab and use the selection checkboxes or bulk controls.")
-                        else:
-                            ui_manager.render_export_tab(export_df, export_original)
-                            
-                    elif current_mode == 'delete':
-                        remaining_count = len(export_df)
-                        total_count = len(filtered_df)
-                        deleted_count = total_count - remaining_count
-                        st.info(f"🗑️ **Delete Mode:** Exporting {remaining_count} remaining questions ({deleted_count} excluded)")
-                        
-                        if remaining_count == 0:
-                            st.warning("⚠️ All questions marked for deletion. Nothing to export.")
-                            st.info("💡 **Tip:** Go to the edit tab and uncheck some questions to remove deletion marks.")
-                        else:
-                            ui_manager.render_export_tab(export_df, export_original)
-                
-            except Exception as e:
-                st.error(f"Fork workflow error: {e}")
-                st.info("Continuing with standard interface...")
-                # Fall back to standard interface
-                ui_manager._render_stats_summary_before_tabs(df, metadata)  # ADD THIS LINE
-                ui_manager.render_main_tabs(df, metadata, original_questions)
-        
+        # PROMPT 3: Remove redundant st.success message
+        # st.success(f"✅ Database loaded: {len(df)} questions ready")
+
+        # PROMPT 1 & 2: Remove st.tabs() block and replace with render_main_tabs
+        if fork_available:
+            ui_manager.render_main_tabs(df, metadata, original_questions, fork_components)
         else:
-            # No fork feature - use standard interface
-            ui_manager._render_stats_summary_before_tabs(df, metadata)  # ADD THIS LINE
             ui_manager.render_main_tabs(df, metadata, original_questions)
         
         # Exit button at bottom
