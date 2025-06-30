@@ -9,6 +9,7 @@ import io
 import sys
 from enum import Enum, auto
 from datetime import datetime  # <-- Add this import
+from .app_config import AppConfig  # Import for red button styling
 
 class ProcessingState(Enum):
     """Clear states for the upload workflow"""
@@ -299,7 +300,7 @@ class UploadInterfaceV2:
                         st.write(file.type or "Unknown")
             
             # SINGLE ACTION BUTTON - Move to next state
-            if st.button("🚀 Process Files", type="primary", use_container_width=True):
+            if AppConfig.create_red_button("🚀 Process Files", "primary-action", "process_files_btn", use_container_width=True):
                 self._set_state(ProcessingState.FILES_READY, uploaded_files=uploaded_files)
                 st.rerun()
     
@@ -382,7 +383,7 @@ class UploadInterfaceV2:
         # SINGLE ACTION BUTTON - Complete the process
         button_text = "📊 Load Database" if preview_data.conflict_count == 0 else "📊 Complete Merge & Load"
         
-        if st.button(button_text, type="primary", use_container_width=True):
+        if AppConfig.create_red_button(button_text, "primary-action", "load_database_btn", use_container_width=True):
             with st.spinner("Loading database..."):
                 try:
                     self._execute_merge(preview_data)
@@ -416,12 +417,12 @@ class UploadInterfaceV2:
         # Option to load another database
         col1, col2 = st.columns([1, 1])
         with col1:
-            if st.button("📁 Load Another Database", use_container_width=True):
+            if AppConfig.create_red_button("📁 Load Another Database", "secondary-action", "load_another_btn", use_container_width=True):
                 self._reset_state()
                 st.rerun()
         
         with col2:
-            if st.button("📊 View Database Overview", use_container_width=True):
+            if AppConfig.create_red_button("📊 View Database Overview", "secondary-action", "view_overview_btn", use_container_width=True):
                 # This will show the main interface above
                 pass
     
@@ -675,13 +676,13 @@ class UploadInterfaceV2:
             st.markdown("### What's Next?")
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
+                if AppConfig.create_red_button("🚪 Exit Application", "destructive-action", "export_exit_btn", use_container_width=True):
                     # Use the existing working exit interface from exit_manager
                     st.session_state['show_exit_interface'] = True
                     st.session_state['exit_message'] = "Opening graceful exit interface..."
                     st.rerun()
             with col2:
-                if st.button("🔄 Start Over", type="primary", use_container_width=True):
+                if AppConfig.create_red_button("🔄 Start Over", "primary-action", "export_restart_btn", use_container_width=True):
                     UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
                     st.rerun()
         
@@ -715,13 +716,13 @@ class UploadInterfaceV2:
                 st.markdown("### What's Next?")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
+                    if AppConfig.create_red_button("🚪 Exit Application", "destructive-action", "json_exit_btn", use_container_width=True):
                         # Use the existing working exit interface from exit_manager
                         st.session_state['show_exit_interface'] = True
                         st.session_state['exit_message'] = "Opening graceful exit interface..."
                         st.rerun()
                 with col2:
-                    if st.button("🔄 Start Over", type="primary", use_container_width=True):
+                    if AppConfig.create_red_button("🔄 Start Over", "primary-action", "json_restart_btn", use_container_width=True):
                         UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
                         st.rerun()
     
@@ -748,13 +749,13 @@ class UploadInterfaceV2:
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ My Download is Complete", type="primary", use_container_width=True):
+            if AppConfig.create_red_button("✅ My Download is Complete", "confirmation-action", "download_complete_btn", use_container_width=True):
                 # Transition to FINISHED state
                 self._set_state(ProcessingState.FINISHED)
                 st.rerun()
         
         with col2:
-            if st.button("🔄 Start Over", type="secondary", use_container_width=True):
+            if AppConfig.create_red_button("🔄 Start Over", "secondary-action", "download_restart_btn", use_container_width=True):
                 self._reset_state()
                 st.rerun()
     
@@ -782,13 +783,13 @@ class UploadInterfaceV2:
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("🔄 Start New Session", type="primary", use_container_width=True):
+            if AppConfig.create_red_button("🔄 Start New Session", "primary-action", "new_session_btn", use_container_width=True):
                 # Reset everything and start over
                 self._reset_state()
                 st.rerun()
         
         with col2:
-            if st.button("🚪 Exit Application", type="secondary", use_container_width=True):
+            if AppConfig.create_red_button("🚪 Exit Application", "destructive-action", "finished_exit_btn", use_container_width=True):
                 # Use the existing working exit interface from exit_manager
                 st.session_state['show_exit_interface'] = True
                 st.session_state['exit_message'] = "Opening graceful exit interface..."

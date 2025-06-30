@@ -9,6 +9,12 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
+# Import AppConfig for consistent button styling
+try:
+    from .app_config import AppConfig
+except ImportError:
+    from app_config import AppConfig
+
 def initialize_session_state():
     """Initialize session state with default values"""
     if 'database_history' not in st.session_state:
@@ -181,7 +187,7 @@ def display_current_database_status() -> bool:
         
         with col4:
             st.markdown("**Clear Database:**")
-            if st.button("🗑️ Clear & Load New", type="secondary", help="Clear current database to load a new one"):
+            if AppConfig.create_red_button("🗑️ Clear & Load New", help="Clear current database to load a new one", button_type="destructive-action"):
                 save_database_to_history()
                 clear_session_state()
                 st.success("✅ Database cleared! You can now load a new file.")
@@ -226,7 +232,7 @@ def display_enhanced_database_status() -> bool:
         
         with col3:
             st.markdown("**🗑️ Database Management:**")
-            if st.button("🔄 Load New Database", type="secondary", help="Save current and load new"):
+            if AppConfig.create_red_button("🔄 Load New Database", help="Save current and load new", button_type="secondary-action"):
                 save_database_to_history()
                 clear_session_state()
                 st.success("✅ Ready for new database!")

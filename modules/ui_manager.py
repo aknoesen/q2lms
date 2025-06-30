@@ -9,6 +9,7 @@ import pandas as pd
 import json
 from datetime import datetime
 from .upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Add this import here
+from .app_config import AppConfig  # Import for red button styling
 
 class UIManager:
     """Manages user interface coordination and rendering for Q2LMS"""
@@ -333,7 +334,7 @@ class UIManager:
             with col1:
                 st.info(f"{mode_icon} **Current Mode:** {mode_name} - {mode_description}")
             with col2:
-                if st.button("🔄 Change Mode", key="main_change_mode"):
+                if AppConfig.create_red_button("🔄 Change Mode", "secondary-action", "main_change_mode"):
                     mode_manager.reset_mode()
                     st.rerun()
 
@@ -357,18 +358,21 @@ class UIManager:
             tab_cols = st.columns(len(tab_names))
             for idx, tab_name in enumerate(tab_names):
                 btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
-                if tab_cols[idx].button(
-                    tab_name,
-                    key=btn_key,
-                    type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
-                ):
-                    # If switching away from Export tab, clear export state
-                    if current_tab == "📥 Export" and tab_name != "📥 Export":
-                        # Clear export session when leaving export tab (fork branch)
-                        for key in ['export_tab_loaded', 'export_tab_session_id']:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                    st.session_state.main_active_tab = tab_name
+                button_type = "primary-action" if st.session_state.main_active_tab == tab_name else "secondary-action"
+                
+                with tab_cols[idx]:
+                    if AppConfig.create_red_button(
+                        tab_name,
+                        button_type,
+                        btn_key
+                    ):
+                        # If switching away from Export tab, clear export state
+                        if current_tab == "📥 Export" and tab_name != "📥 Export":
+                            # Clear export session when leaving export tab (fork branch)
+                            for key in ['export_tab_loaded', 'export_tab_session_id']:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                        st.session_state.main_active_tab = tab_name
             st.markdown("---")
 
             # Update workflow state based on the active tab (fork branch)
@@ -407,18 +411,21 @@ class UIManager:
             tab_cols = st.columns(len(tab_names))
             for idx, tab_name in enumerate(tab_names):
                 btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
-                if tab_cols[idx].button(
-                    tab_name,
-                    key=btn_key,
-                    type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
-                ):
-                    # If switching away from Export tab, clear export state
-                    if current_tab == "📥 Export" and tab_name != "📥 Export":
-                        # Clear export session when leaving export tab (fallback branch)
-                        for key in ['export_tab_loaded', 'export_tab_session_id']:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                    st.session_state.main_active_tab = tab_name
+                button_type = "primary-action" if st.session_state.main_active_tab == tab_name else "secondary-action"
+                
+                with tab_cols[idx]:
+                    if AppConfig.create_red_button(
+                        tab_name,
+                        button_type,
+                        btn_key
+                    ):
+                        # If switching away from Export tab, clear export state
+                        if current_tab == "📥 Export" and tab_name != "📥 Export":
+                            # Clear export session when leaving export tab (fallback branch)
+                            for key in ['export_tab_loaded', 'export_tab_session_id']:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                        st.session_state.main_active_tab = tab_name
             st.markdown("---")
 
             # Update workflow state based on the active tab (standard branch)
@@ -602,12 +609,12 @@ class UIManager:
                     
                     comp_col1, comp_col2 = st.columns(2)
                     with comp_col1:
-                        if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="ui_exit_app"):
+                        if AppConfig.create_red_button("🚪 Exit Application", "destructive-action", "ui_exit_app", use_container_width=True):
                             st.success("✅ Thank you for using Q2LMS!")
                             st.balloons()
                             st.stop()
                     with comp_col2:
-                        if st.button("🔄 Start Over", type="primary", use_container_width=True, key="ui_start_over"):
+                        if AppConfig.create_red_button("🔄 Start Over", "primary-action", "ui_start_over", use_container_width=True):
                             # Clear all completion flags and reset to start
                             for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded', 'export_tab_loaded', 'export_tab_session_id']:
                                 if key in st.session_state:
@@ -648,7 +655,7 @@ class UIManager:
             st.markdown("#### 📦 QTI Package Export")
             st.markdown("**🎯 Recommended for LMS deployment**")
             
-            if st.button("📦 Create QTI Package", type="primary", use_container_width=True, key="basic_qti_create"):
+            if AppConfig.create_red_button("📦 Create QTI Package", "primary-action", "basic_qti_create", use_container_width=True):
                 # Attempt to create QTI package using available export system
                 try:
                     if self.app_config.is_available('export_system'):
@@ -670,11 +677,11 @@ class UIManager:
                         
                         completion_col1, completion_col2 = st.columns(2)
                         with completion_col1:
-                            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="qti_exit_app"):
+                            if AppConfig.create_red_button("🚪 Exit Application", "destructive-action", "qti_exit_app", use_container_width=True):
                                 st.success("✅ Thank you for using Q2LMS!")
                                 st.stop()
                         with completion_col2:
-                            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_start_over"):
+                            if AppConfig.create_red_button("🔄 Start Over", "primary-action", "qti_start_over", use_container_width=True):
                                 if UploadInterfaceV2.is_workflow_active():
                                     UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
                                 st.rerun()
@@ -733,13 +740,13 @@ class UIManager:
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("🔄 Start Over", type="secondary", key="basic_start_over"):
+            if AppConfig.create_red_button("🔄 Start Over", "secondary-action", "basic_start_over"):
                 if UploadInterfaceV2.is_workflow_active():
                     UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
                 st.rerun()
         
         with col2:
-            if st.button("🚪 Exit Application", type="secondary", key="basic_exit_app"):
+            if AppConfig.create_red_button("🚪 Exit Application", "destructive-action", "basic_exit_app"):
                 st.success("✅ Export complete! You can now close this tab.")
                 st.stop()
 

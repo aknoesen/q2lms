@@ -9,6 +9,12 @@ import pandas as pd
 from typing import Optional, Tuple
 from datetime import datetime
 
+# Import AppConfig for consistent button styling
+try:
+    from .app_config import AppConfig
+except ImportError:
+    from app_config import AppConfig
+
 class OperationModeManager:
     """
     Manages the fork decision point between Select Questions and Delete Questions modes.
@@ -147,10 +153,10 @@ class OperationModeManager:
             - Curating question sets
             """)
             
-            if st.button("🎯 Choose Select Mode", 
-                        type="primary", 
+            if AppConfig.create_red_button("🎯 Choose Select Mode", 
                         key="select_mode_btn",
                         use_container_width=True,
+                        button_type="primary-action",
                         help="Flag questions you want to INCLUDE in export"):
                 self._handle_mode_selection('select')
         
@@ -171,10 +177,10 @@ class OperationModeManager:
             - Filtering large databases
             """)
             
-            if st.button("🗑️ Choose Delete Mode", 
-                        type="secondary", 
+            if AppConfig.create_red_button("🗑️ Choose Delete Mode", 
                         key="delete_mode_btn",
                         use_container_width=True,
+                        button_type="destructive-action",
                         help="Flag questions you want to EXCLUDE from export"):
                 self._handle_mode_selection('delete')
         
@@ -292,8 +298,9 @@ class OperationModeManager:
             st.caption(f"Mode selected: {timestamp}")
         
         # Option to change mode
-        if st.button("🔄 Change Mode", 
+        if AppConfig.create_red_button("🔄 Change Mode", 
                     key="change_mode_btn",
+                    button_type="secondary-action",
                     help="Return to mode selection screen"):
             self.reset_mode()
             st.rerun()

@@ -338,6 +338,99 @@ class AppConfig:
                 transform: translateY(-2px);
                 box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
             }
+            
+            /* Q2LMS Red Button Styling System */
+            
+            /* Primary Action Buttons - Solid Red */
+            .stButton > button[data-q2lms-type="primary-action"] {
+                background: linear-gradient(135deg, #dc3545, #c82333) !important;
+                color: white !important;
+                font-weight: bold !important;
+                border: 2px solid #bd2130 !important;
+                border-radius: 8px !important;
+                box-shadow: 0 3px 6px rgba(220, 53, 69, 0.3) !important;
+                transition: all 0.2s ease !important;
+                min-height: 45px !important;
+            }
+            
+            .stButton > button[data-q2lms-type="primary-action"]:hover {
+                background: linear-gradient(135deg, #c82333, #bd2130) !important;
+                box-shadow: 0 5px 10px rgba(220, 53, 69, 0.4) !important;
+                transform: translateY(-2px) !important;
+            }
+            
+            /* Secondary Action Buttons - Red Outline */
+            .stButton > button[data-q2lms-type="secondary-action"] {
+                background: white !important;
+                color: #dc3545 !important;
+                font-weight: bold !important;
+                border: 2px solid #dc3545 !important;
+                border-radius: 8px !important;
+                box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2) !important;
+                transition: all 0.2s ease !important;
+                min-height: 45px !important;
+            }
+            
+            .stButton > button[data-q2lms-type="secondary-action"]:hover {
+                background: #ffeaea !important;
+                border-color: #c82333 !important;
+                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
+                transform: translateY(-1px) !important;
+            }
+            
+            /* Destructive Action Buttons - Dark Red */
+            .stButton > button[data-q2lms-type="destructive-action"] {
+                background: linear-gradient(135deg, #a71e2a, #8b1a1a) !important;
+                color: white !important;
+                font-weight: bold !important;
+                border: 2px solid #721c24 !important;
+                border-radius: 8px !important;
+                box-shadow: 0 3px 6px rgba(167, 30, 42, 0.4) !important;
+                transition: all 0.2s ease !important;
+                min-height: 45px !important;
+            }
+            
+            .stButton > button[data-q2lms-type="destructive-action"]:hover {
+                background: linear-gradient(135deg, #8b1a1a, #721c24) !important;
+                box-shadow: 0 5px 10px rgba(167, 30, 42, 0.5) !important;
+                transform: translateY(-2px) !important;
+            }
+            
+            /* Confirmation Action Buttons - Bright Red with Emphasis */
+            .stButton > button[data-q2lms-type="confirmation-action"] {
+                background: linear-gradient(135deg, #ff1744, #d50000) !important;
+                color: white !important;
+                font-weight: 900 !important;
+                border: 3px solid #b71c1c !important;
+                border-radius: 10px !important;
+                box-shadow: 0 4px 8px rgba(255, 23, 68, 0.4) !important;
+                transition: all 0.2s ease !important;
+                min-height: 50px !important;
+                font-size: 1.1em !important;
+            }
+            
+            .stButton > button[data-q2lms-type="confirmation-action"]:hover {
+                background: linear-gradient(135deg, #d50000, #b71c1c) !important;
+                box-shadow: 0 6px 12px rgba(255, 23, 68, 0.5) !important;
+                transform: translateY(-3px) scale(1.02) !important;
+            }
+            
+            /* Universal red button properties - applies to all Q2LMS action buttons */
+            .stButton > button[data-q2lms-type] {
+                text-transform: none !important;
+                letter-spacing: 0.5px !important;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            }
+            
+            /* Disabled state for all red buttons */
+            .stButton > button[data-q2lms-type]:disabled {
+                background: #f5f5f5 !important;
+                color: #999 !important;
+                border-color: #ddd !important;
+                box-shadow: none !important;
+                transform: none !important;
+                cursor: not-allowed !important;
+            }
         </style>
         """, unsafe_allow_html=True)
     
@@ -355,13 +448,52 @@ class AppConfig:
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
         <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         """, unsafe_allow_html=True)
+    
+    @staticmethod
+    def apply_red_button_styling(button_type: str, key: str) -> str:
+        """Apply red button styling via JavaScript injection
+        
+        Args:
+            button_type (str): Type of button ('primary-action', 'secondary-action', 'destructive-action', 'confirmation-action')
+            key (str): Button key for targeting
+            
+        Returns:
+            str: JavaScript code to apply styling
+        """
+        return f"""
+        <script>
+        setTimeout(function() {{
+            const button = document.querySelector('[data-testid="baseButton-{key}"]');
+            if (button) {{
+                button.setAttribute('data-q2lms-type', '{button_type}');
+            }}
+        }}, 100);
+        </script>
+        """
+    
+    @staticmethod
+    def create_red_button(label: str, button_type: str, key: str, **kwargs) -> bool:
+        """Create a button with Q2LMS red styling
+        
+        Args:
+            label (str): Button label
+            button_type (str): Type of button styling
+            key (str): Button key
+            **kwargs: Additional streamlit button parameters
+            
+        Returns:
+            bool: Button click state
+        """
+        # Create the button
+        clicked = st.button(label, key=key, **kwargs)
+        
+        # Apply styling
+        styling_script = AppConfig.apply_red_button_styling(button_type, key)
+        st.markdown(styling_script, unsafe_allow_html=True)
+        
+        return clicked
 
-# Global instance
-_app_config = None
-
+# Factory function for compatibility with existing code
 def get_app_config():
-    """Get the global app configuration instance"""
-    global _app_config
-    if _app_config is None:
-        _app_config = AppConfig()
-    return _app_config
+    """Factory function to get an AppConfig instance"""
+    return AppConfig()

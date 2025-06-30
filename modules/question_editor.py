@@ -6,6 +6,13 @@ import pandas as pd
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+
+# Import AppConfig for consistent button styling
+try:
+    from .app_config import AppConfig
+except ImportError:
+    from app_config import AppConfig
+
 from .utils import render_latex_in_text
 # RESTORED: Re-enable LaTeX converter for the fix
 from .export.latex_converter import CanvasLaTeXConverter 
@@ -170,12 +177,12 @@ def side_by_side_question_editor(filtered_df):
                 st.session_state['current_page'] = 1
             
             with col1:
-                if st.button("⬅️ Previous") and st.session_state['current_page'] > 1:
+                if AppConfig.create_red_button("⬅️ Previous", button_type="secondary-action") and st.session_state['current_page'] > 1:
                     st.session_state['current_page'] -= 1
                     st.rerun()
             
             with col2:
-                if st.button("⏪ First"):
+                if AppConfig.create_red_button("⏪ First", button_type="secondary-action"):
                     st.session_state['current_page'] = 1
                     st.rerun()
             
@@ -188,12 +195,12 @@ def side_by_side_question_editor(filtered_df):
                     st.rerun()
             
             with col4:
-                if st.button("⏩ Last"):
+                if AppConfig.create_red_button("⏩ Last", button_type="secondary-action"):
                     st.session_state['current_page'] = total_pages
                     st.rerun()
             
             with col5:
-                if st.button("Next ➡️") and st.session_state['current_page'] < total_pages:
+                if AppConfig.create_red_button("Next ➡️", button_type="secondary-action") and st.session_state['current_page'] < total_pages:
                     st.session_state['current_page'] += 1
                     st.rerun()
             
@@ -246,12 +253,12 @@ def side_by_side_question_editor(filtered_df):
             col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
             
             with col1:
-                if st.button("⬅️ Previous", key="bottom_prev") and st.session_state['current_page'] > 1:
+                if AppConfig.create_red_button("⬅️ Previous", key="bottom_prev", button_type="secondary-action") and st.session_state['current_page'] > 1:
                     st.session_state['current_page'] -= 1
                     st.rerun()
             
             with col2:
-                if st.button("⏪ First", key="bottom_first"):
+                if AppConfig.create_red_button("⏪ First", key="bottom_first", button_type="secondary-action"):
                     st.session_state['current_page'] = 1
                     st.rerun()
             
@@ -259,12 +266,12 @@ def side_by_side_question_editor(filtered_df):
                 st.info(f"Page {st.session_state['current_page']} of {total_pages}")
             
             with col4:
-                if st.button("⏩ Last", key="bottom_last"):
+                if AppConfig.create_red_button("⏩ Last", key="bottom_last", button_type="secondary-action"):
                     st.session_state['current_page'] = total_pages
                     st.rerun()
             
             with col5:
-                if st.button("Next ➡️", key="bottom_next") and st.session_state['current_page'] < total_pages:
+                if AppConfig.create_red_button("Next ➡️", key="bottom_next", button_type="secondary-action") and st.session_state['current_page'] < total_pages:
                     st.session_state['current_page'] += 1
                     st.rerun()
     
@@ -444,7 +451,7 @@ def edit_question_form(question_index, original_question):
     # Save and Delete buttons
     col_save, col_delete, col_reset = st.columns(3)
     with col_save:
-        if st.button("💾 Save to Database", key=f"save_{question_index}", type="primary"):
+        if AppConfig.create_red_button("💾 Save to Database", key=f"save_{question_index}", button_type="primary-action"):
             changes = {
                 'title': title,
                 'question_type': question_type,
@@ -467,10 +474,10 @@ def edit_question_form(question_index, original_question):
                 st.success("✅ Saved to database!")
                 st.rerun()
     with col_delete:
-        if st.button("🗑️ Delete Question", key=f"delete_{question_index}", type="secondary"):
+        if AppConfig.create_red_button("🗑️ Delete Question", key=f"delete_{question_index}", button_type="destructive-action"):
             st.session_state[f"confirm_delete_{question_index}"] = True
     with col_reset:
-        if st.button("🔄 Reset to Original", key=f"reset_{question_index}"):
+        if AppConfig.create_red_button("🔄 Reset to Original", key=f"reset_{question_index}", button_type="secondary-action"):
             keys_to_reset = [key for key in st.session_state.keys() if key.endswith(f"_{question_index}")]
             for key in keys_to_reset:
                 del st.session_state[key]
@@ -481,13 +488,13 @@ def edit_question_form(question_index, original_question):
         st.write("This action cannot be undone!")
         col_yes, col_no = st.columns(2)
         with col_yes:
-            if st.button("✅ Yes, Delete", key=f"confirm_yes_{question_index}", type="primary"):
+            if AppConfig.create_red_button("✅ Yes, Delete", key=f"confirm_yes_{question_index}", button_type="confirmation-action"):
                 delete_success = delete_question(question_index)
                 if delete_success:
                     st.success("🗑️ Question deleted successfully!")
                     st.session_state[f"confirm_delete_{question_index}"] = False
                     st.rerun()
         with col_no:
-            if st.button("❌ Cancel", key=f"confirm_no_{question_index}"):
+            if AppConfig.create_red_button("❌ Cancel", key=f"confirm_no_{question_index}", button_type="secondary-action"):
                 st.session_state[f"confirm_delete_{question_index}"] = False
                 st.rerun()

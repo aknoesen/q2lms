@@ -10,6 +10,12 @@ import pandas as pd
 from datetime import datetime
 from typing import Tuple, Optional, Dict, Any, List
 
+# Import AppConfig for consistent button styling
+try:
+    from .app_config import AppConfig
+except ImportError:
+    from app_config import AppConfig
+
 # Import session manager
 from .session_manager import (
     clear_session_state, save_database_to_history, 
@@ -117,7 +123,7 @@ def enhanced_file_upload_widget():
                 save_previous = st.checkbox("💾 Save current to history", value=True)
             
             # Process button
-            if st.button("🚀 Load Database", type="primary"):
+            if AppConfig.create_red_button("🚀 Load Database", button_type="primary-action"):
                 # Save current database to history if requested and exists
                 if save_previous and 'df' in st.session_state:
                     save_database_to_history()
@@ -206,7 +212,7 @@ def handle_database_replacement():
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🔄 Replace Database", type="primary"):
+            if AppConfig.create_red_button("🔄 Replace Database", button_type="destructive-action"):
                 # Clear current session state
                 clear_session_state()
                 
@@ -285,7 +291,7 @@ def handle_single_upload():
             assign_new_ids = st.checkbox("🔄 Assign new IDs", value=False, help="Generate new question IDs (preserves originals)")
         
         # Process button
-        if st.button("🚀 Process Database", type="primary"):
+        if AppConfig.create_red_button("🚀 Process Database", button_type="primary-action"):
             # Clear any existing session state first
             clear_session_state()
             
@@ -365,7 +371,7 @@ def handle_append_upload():
             merge_metadata = st.checkbox("📋 Merge metadata", value=True)
             preserve_order = st.checkbox("📑 Preserve question order", value=True)
         
-        if st.button("➕ Append to Database", type="primary"):
+        if AppConfig.create_red_button("➕ Append to Database", button_type="primary-action"):
             # Import append processor
             from .database_processor import process_append_operation
             

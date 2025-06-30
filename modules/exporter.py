@@ -18,6 +18,7 @@ from typing import List, Dict, Any, Optional
 import logging
 import io
 import json
+from .app_config import AppConfig  # Import for red button styling
 from datetime import datetime
 
 # Set up logging
@@ -165,7 +166,7 @@ class QuestionExporter:
             st.caption(f"Sample structure - actual export will contain {len(df)} questions")
         
         # Export button
-        if st.button("📄 Download JSON Database", type="primary", key="json_export_btn"):
+        if AppConfig.create_red_button("📄 Download JSON Database", "primary-action", "json_export_btn"):
             json_filename = f"{filename_input}.json" if filename_input else f"{suggested_name}.json"
             self._export_json(
                 df, 
@@ -349,7 +350,7 @@ class QuestionExporter:
             st.caption(f"Showing first 3 of {len(df)} questions")
         
         # Export button
-        if st.button("📥 Download CSV", type="primary", key="csv_export_btn"):
+        if AppConfig.create_red_button("📥 Download CSV", "primary-action", "csv_export_btn"):
             csv_filename = self.naming_manager.get_csv_filename(filename_input) if filename_input else f"{suggested_name}.csv"
             self._export_csv(df, csv_filename)
     
@@ -455,11 +456,11 @@ class QuestionExporter:
         # Always show the button, but with helpful state
         button_text = "📦 Create QTI Package" if export_enabled else "📦 Create QTI Package (Complete fields above)"
         
-        if st.button(
+        if AppConfig.create_red_button(
             button_text,
-            type="primary", 
+            "primary-action",
+            "qti_export_btn",
             disabled=not export_enabled,
-            key="qti_export_btn",
             help="Creates a Canvas-compatible QTI package ready for import" if export_enabled else "Complete the required fields above to enable export"
         ):
             final_quiz_title = quiz_title if quiz_title else default_quiz_title
@@ -519,9 +520,9 @@ class QuestionExporter:
                     st.info("👆 **Click the download button above to save your QTI package**")
                     
                     # User confirmation that they've downloaded the file
-                    if st.button("✅ I have downloaded the QTI package", 
-                                key="confirm_qti_download",
-                                type="secondary"):
+                    if AppConfig.create_red_button("✅ I have downloaded the QTI package", 
+                                "confirmation-action",
+                                "confirm_qti_download"):
                         st.session_state['qti_downloaded'] = True
                         st.session_state['export_completed'] = True
                         # Update workflow state to DOWNLOADING after user confirms download
@@ -573,11 +574,11 @@ class QuestionExporter:
                     st.markdown("### What's Next?")
                     col1, col2 = st.columns(2)
                     with col1:
-                        if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="qti_exit_btn"):
+                        if AppConfig.create_red_button("🚪 Exit Application", use_container_width=True, key="qti_exit_btn", button_type="secondary-action"):
                             st.markdown("Thank you for using Q2LMS!")
                             st.stop()
                     with col2:
-                        if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_startover_btn"):
+                        if AppConfig.create_red_button("🔄 Start Over", use_container_width=True, key="qti_startover_btn", button_type="primary-action"):
                             try:
                                 from .upload_interface_v2 import UploadInterfaceV2, ProcessingState
                                 UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)

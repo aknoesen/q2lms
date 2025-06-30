@@ -12,6 +12,7 @@ from datetime import datetime
 # Import shared components - handle both relative and absolute imports
 try:
     # Try relative imports first (when used as a module)
+    from .app_config import AppConfig
     from .question_flag_manager import QuestionFlagManager
     from .utils import render_latex_in_text
     from .export.latex_converter import CanvasLaTeXConverter
@@ -19,6 +20,7 @@ try:
 except ImportError:
     # Fall back to absolute imports (when testing independently)
     try:
+        from app_config import AppConfig
         from question_flag_manager import QuestionFlagManager
         from utils import render_latex_in_text
         from export.latex_converter import CanvasLaTeXConverter
@@ -219,19 +221,19 @@ class DeleteQuestionsInterface:
                 col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
                 
                 with col1:
-                    if st.button("🗑️ Delete View", key="delete_view", use_container_width=True):
+                    if AppConfig.create_red_button("🗑️ Delete View", key="delete_view", use_container_width=True, button_type="destructive-action"):
                         self._bulk_delete_current_view(filtered_df, True)
                         st.success("✅ Marked all questions in current view for deletion")
                         st.rerun()
                 
                 with col2:
-                    if st.button("✅ Keep View", key="keep_view", use_container_width=True):
+                    if AppConfig.create_red_button("✅ Keep View", key="keep_view", use_container_width=True, button_type="secondary-action"):
                         self._bulk_delete_current_view(filtered_df, False)
                         st.success("✅ Unmarked all questions in current view from deletion")
                         st.rerun()
                 
                 with col3:
-                    if st.button("🔄 Invert View", key="invert_delete_view", use_container_width=True):
+                    if AppConfig.create_red_button("🔄 Invert View", key="invert_delete_view", use_container_width=True, button_type="secondary-action"):
                         self._invert_deletion_current_view(filtered_df)
                         st.success("✅ Inverted deletion marks in current view")
                         st.rerun()
@@ -328,12 +330,12 @@ class DeleteQuestionsInterface:
                         st.session_state['delete_current_page'] = 1
                     
                     with col1:
-                        if st.button("⬅️ Previous", key="delete_prev") and st.session_state['delete_current_page'] > 1:
+                        if AppConfig.create_red_button("⬅️ Previous", key="delete_prev", button_type="secondary-action") and st.session_state['delete_current_page'] > 1:
                             st.session_state['delete_current_page'] -= 1
                             st.rerun()
                     
                     with col2:
-                        if st.button("⏪ First", key="delete_first"):
+                        if AppConfig.create_red_button("⏪ First", key="delete_first", button_type="secondary-action"):
                             st.session_state['delete_current_page'] = 1
                             st.rerun()
                     
@@ -349,12 +351,12 @@ class DeleteQuestionsInterface:
                             st.rerun()
                     
                     with col4:
-                        if st.button("⏩ Last", key="delete_last"):
+                        if AppConfig.create_red_button("⏩ Last", key="delete_last", button_type="secondary-action"):
                             st.session_state['delete_current_page'] = total_pages
                             st.rerun()
                     
                     with col5:
-                        if st.button("Next ➡️", key="delete_next") and st.session_state['delete_current_page'] < total_pages:
+                        if AppConfig.create_red_button("Next ➡️", key="delete_next", button_type="secondary-action") and st.session_state['delete_current_page'] < total_pages:
                             st.session_state['delete_current_page'] += 1
                             st.rerun()
                     
@@ -674,7 +676,7 @@ class DeleteQuestionsInterface:
                 points = st.number_input("Points", min_value=0.1, key=points_key, step=0.1)
             
             # Quick save button
-            if st.button(f"💾 Save Changes", key=f"delete_save_{question_index}", type="secondary"):
+            if AppConfig.create_red_button(f"💾 Save Changes", key=f"delete_save_{question_index}", button_type="primary-action"):
                 # Use existing save logic
                 changes = {
                     'title': title,

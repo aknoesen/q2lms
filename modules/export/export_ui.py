@@ -10,6 +10,15 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 import io
 
+# Import AppConfig for consistent button styling
+try:
+    from ..app_config import AppConfig
+except ImportError:
+    try:
+        from .app_config import AppConfig
+    except ImportError:
+        from app_config import AppConfig
+
 from .filename_utils import ExportNamingManager
 from .latex_converter import LaTeXAnalyzer
 
@@ -86,7 +95,7 @@ class ExportInterface:
             st.caption(f"Showing first 3 of {len(df)} questions")
         
         # Export button
-        if st.button("📥 Download CSV", type="primary", key="csv_export_btn"):
+        if AppConfig.create_red_button("📥 Download CSV", key="csv_export_btn", button_type="primary-action"):
             csv_filename = self.naming_manager.get_csv_filename(filename_input)
             self._export_csv(df, csv_filename)
     

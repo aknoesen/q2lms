@@ -12,6 +12,7 @@ from datetime import datetime
 # Import shared components - handle both relative and absolute imports
 try:
     # Try relative imports first (when used as a module)
+    from .app_config import AppConfig
     from .question_flag_manager import QuestionFlagManager
     from .utils import render_latex_in_text
     from .export.latex_converter import CanvasLaTeXConverter
@@ -19,6 +20,7 @@ try:
 except ImportError:
     # Fall back to absolute imports (when testing independently)
     try:
+        from app_config import AppConfig
         from question_flag_manager import QuestionFlagManager
         from utils import render_latex_in_text
         from export.latex_converter import CanvasLaTeXConverter
@@ -217,19 +219,19 @@ class SelectQuestionsInterface:
                 col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
                 
                 with col1:
-                    if st.button("✅ Select View", key="select_view", use_container_width=True):
+                    if AppConfig.create_red_button("✅ Select View", key="select_view", use_container_width=True, button_type="secondary-action"):
                         self._bulk_select_current_view(filtered_df, True)
                         st.success("✅ Selected all questions in current view")
                         st.rerun()
                 
                 with col2:
-                    if st.button("❌ Deselect View", key="deselect_view", use_container_width=True):
+                    if AppConfig.create_red_button("❌ Deselect View", key="deselect_view", use_container_width=True, button_type="secondary-action"):
                         self._bulk_select_current_view(filtered_df, False)
                         st.success("✅ Deselected all questions in current view")
                         st.rerun()
                 
                 with col3:
-                    if st.button("🔄 Invert View", key="invert_view", use_container_width=True):
+                    if AppConfig.create_red_button("🔄 Invert View", key="invert_view", use_container_width=True, button_type="secondary-action"):
                         self._invert_selection_current_view(filtered_df)
                         st.success("✅ Inverted selection in current view")
                         st.rerun()
@@ -325,12 +327,12 @@ class SelectQuestionsInterface:
                         st.session_state['select_current_page'] = 1
                     
                     with col1:
-                        if st.button("⬅️ Previous", key="select_prev") and st.session_state['select_current_page'] > 1:
+                        if AppConfig.create_red_button("⬅️ Previous", key="select_prev", button_type="secondary-action") and st.session_state['select_current_page'] > 1:
                             st.session_state['select_current_page'] -= 1
                             st.rerun()
                     
                     with col2:
-                        if st.button("⏪ First", key="select_first"):
+                        if AppConfig.create_red_button("⏪ First", key="select_first", button_type="secondary-action"):
                             st.session_state['select_current_page'] = 1
                             st.rerun()
                     
@@ -346,12 +348,12 @@ class SelectQuestionsInterface:
                             st.rerun()
                     
                     with col4:
-                        if st.button("⏩ Last", key="select_last"):
+                        if AppConfig.create_red_button("⏩ Last", key="select_last", button_type="secondary-action"):
                             st.session_state['select_current_page'] = total_pages
                             st.rerun()
                     
                     with col5:
-                        if st.button("Next ➡️", key="select_next") and st.session_state['select_current_page'] < total_pages:
+                        if AppConfig.create_red_button("Next ➡️", key="select_next", button_type="secondary-action") and st.session_state['select_current_page'] < total_pages:
                             st.session_state['select_current_page'] += 1
                             st.rerun()
                     
@@ -645,7 +647,7 @@ class SelectQuestionsInterface:
                 points = st.number_input("Points", min_value=0.1, key=points_key, step=0.1)
             
             # Quick save button
-            if st.button(f"💾 Save Changes", key=f"select_save_{question_index}", type="secondary"):
+            if AppConfig.create_red_button(f"💾 Save Changes", key=f"select_save_{question_index}", button_type="primary-action"):
                 # Use your existing save logic
                 changes = {
                     'title': title,

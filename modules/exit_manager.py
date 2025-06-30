@@ -10,6 +10,12 @@ import os
 import sys
 from datetime import datetime
 
+# Import AppConfig for consistent button styling
+try:
+    from .app_config import AppConfig
+except ImportError:
+    from app_config import AppConfig
+
 class ExitManager:
     """Manages graceful exit functionality for Q2LMS"""
     
@@ -51,7 +57,7 @@ class ExitManager:
             col1, col2 = st.columns(2)
             
             with col1:
-                if st.button("💾 Quick Save as JSON", key="quick_save_json"):
+                if AppConfig.create_red_button("💾 Quick Save as JSON", key="quick_save_json", button_type="primary-action"):
                     try:
                         # Create a quick export
                         export_data = {
@@ -134,7 +140,7 @@ class ExitManager:
         with col2:
             # Quick return option prominently displayed
             st.markdown("### 🔙 Quick Actions")
-            if st.button("🔙 Return to App", type="secondary", key="quick_return", use_container_width=True):
+            if AppConfig.create_red_button("🔙 Return to App", key="quick_return", use_container_width=True, button_type="secondary-action"):
                 if 'show_exit_interface' in st.session_state:
                     del st.session_state['show_exit_interface']
                 st.rerun()
@@ -154,7 +160,7 @@ class ExitManager:
             col1, col2 = st.columns([1, 1])
             
             with col1:
-                if st.button("💾 Quick Save as JSON", key="quick_save_json", type="primary", use_container_width=True):
+                if AppConfig.create_red_button("💾 Quick Save as JSON", key="quick_save_json", use_container_width=True, button_type="primary-action"):
                     try:
                         # Create a quick export
                         export_data = {
@@ -201,7 +207,7 @@ class ExitManager:
         col1, col2, col3 = st.columns([1, 1, 2])
         
         with col1:
-            if st.button("🚪 Exit Q2LMS", type="primary", key="confirm_exit", use_container_width=True):
+            if AppConfig.create_red_button("🚪 Exit Q2LMS", key="confirm_exit", use_container_width=True, button_type="destructive-action"):
                 # User confirmed exit
                 st.balloons()  # Visual feedback
                 st.success("👋 **Exiting Q2LMS...**")
@@ -237,7 +243,7 @@ class ExitManager:
                 st.stop()
         
         with col2:
-            if st.button("❌ Cancel Exit", type="secondary", key="cancel_exit", use_container_width=True):
+            if AppConfig.create_red_button("❌ Cancel Exit", key="cancel_exit", use_container_width=True, button_type="secondary-action"):
                 # User cancelled - return to app
                 if 'show_exit_interface' in st.session_state:
                     del st.session_state['show_exit_interface']
