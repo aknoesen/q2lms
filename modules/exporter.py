@@ -64,8 +64,8 @@ class QuestionExporter:
             export_type = st.radio(
                 "Choose Export Format:",
                 [
-                    "� QTI Package for Canvas",
-                    "� CSV Export", 
+                    "📦 QTI Package for Canvas",
+                    "📊 CSV Export", 
                     "📄 JSON Database (Native Format)"
                 ],
                 key="export_type_selection"
@@ -225,14 +225,18 @@ class QuestionExporter:
                 else:
                     json_string = json.dumps(json_data, ensure_ascii=False)
                 
-                # Provide download
-                st.download_button(
+                # Provide download button for JSON export
+                download_key = f"json_download_{hash(filename)}"  # Stable key based on filename
+                downloaded = st.download_button(
                     label="📄 Download JSON File",
                     data=json_string,
                     file_name=filename,
                     mime="application/json",
-                    key=f"json_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    key=download_key
                 )
+                
+                # Note: JSON completion detection is handled separately
+                # The soft exit UI will only appear for QTI exports for now
                 
                 # Show success details
                 st.success(f"""
@@ -497,28 +501,36 @@ class QuestionExporter:
                 )
                 
                 if package_data:
-                    # Set completion flags immediately when package is created
+                    # Set package creation flag (but not export completed yet)
                     st.session_state['qti_package_created'] = True
-                    st.session_state['export_completed'] = True
                     
                     # Provide download with stable key
                     download_key = f"qti_download_{hash(filename)}"  # Stable key based on filename
-                    downloaded = st.download_button(
+                    st.download_button(
                         label="📦 Download QTI Package",
                         data=package_data,
                         file_name=filename,
                         mime="application/zip",
                         key=download_key
                     )
-                    if downloaded:
+                    
+                    # After download button is shown, ask user to confirm download
+                    st.markdown("---")
+                    st.info("👆 **Click the download button above to save your QTI package**")
+                    
+                    # User confirmation that they've downloaded the file
+                    if st.button("✅ I have downloaded the QTI package", 
+                                key="confirm_qti_download",
+                                type="secondary"):
                         st.session_state['qti_downloaded'] = True
                         st.session_state['export_completed'] = True
-                        # Update workflow state to FINISHED after successful download
+                        # Update workflow state to FINISHED after user confirms download
                         try:
-                            from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState
+                            from .upload_interface_v2 import UploadInterfaceV2, ProcessingState
                             UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
                         except ImportError:
                             pass  # Ignore if upload interface not available
+                        st.rerun()  # Refresh to show completion UI
 
                     # Show success details
                     total_points = sum(q.get('points', 1) for q in processed_questions)
@@ -553,7 +565,7 @@ class QuestionExporter:
                     
                     # Update workflow state to FINISHED
                     try:
-                        from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState
+                        from .upload_interface_v2 import UploadInterfaceV2, ProcessingState
                         UploadInterfaceV2.update_workflow_state(ProcessingState.FINISHED)
                     except ImportError:
                         pass  # Ignore if upload interface not available
@@ -567,7 +579,7 @@ class QuestionExporter:
                     with col2:
                         if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_startover_btn"):
                             try:
-                                from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState
+                                from .upload_interface_v2 import UploadInterfaceV2, ProcessingState
                                 UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
                             except ImportError:
                                 pass  # Ignore if upload interface not available
@@ -593,13 +605,16 @@ class QuestionExporter:
             df.to_csv(csv_buffer, index=False)
             csv_data = csv_buffer.getvalue()
             
-            st.download_button(
+            downloaded = st.download_button(
                 label="📥 Download CSV File",
                 data=csv_data,
                 file_name=filename,
                 mime="text/csv",
-                key=f"csv_download_{datetime.now().strftime('%H%M%S')}"
+                key=f"csv_download_{hash(filename)}"  # Use stable key
             )
+            
+            # Note: CSV completion detection is handled separately
+            # The soft exit UI will only appear for QTI exports for now
             
             st.success(f"✅ CSV export ready: `{filename}`")
             

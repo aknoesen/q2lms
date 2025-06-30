@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 import json
 from datetime import datetime
-from modules.upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Add this import here
+from .upload_interface_v2 import UploadInterfaceV2, ProcessingState  # <-- Add this import here
 
 class UIManager:
     """Manages user interface coordination and rendering for Q2LMS"""
@@ -165,6 +165,10 @@ class UIManager:
             # Button-based navigation
             if 'main_active_tab' not in st.session_state:
                 st.session_state.main_active_tab = "📋 Browse Questions"
+            
+            # Clear export tab state when switching away from Export tab
+            current_tab = st.session_state.get('main_active_tab', '')
+            
             tab_cols = st.columns(len(tab_names))
             for idx, tab_name in enumerate(tab_names):
                 btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
@@ -173,6 +177,12 @@ class UIManager:
                     key=btn_key,
                     type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
                 ):
+                    # If switching away from Export tab, clear export state
+                    if current_tab == "📥 Export" and tab_name != "📥 Export":
+                        # Clear export session when leaving export tab (fork branch)
+                        for key in ['export_tab_loaded', 'export_tab_session_id']:
+                            if key in st.session_state:
+                                del st.session_state[key]
                     st.session_state.main_active_tab = tab_name
             st.markdown("---")
 
@@ -205,6 +215,10 @@ class UIManager:
             # Button-based navigation
             if 'main_active_tab' not in st.session_state:
                 st.session_state.main_active_tab = tab_names[0]
+            
+            # Clear export tab state when switching away from Export tab
+            current_tab = st.session_state.get('main_active_tab', '')
+            
             tab_cols = st.columns(len(tab_names))
             for idx, tab_name in enumerate(tab_names):
                 btn_key = f"main_tab_btn_{tab_name.replace(' ', '_').lower()}"
@@ -213,6 +227,12 @@ class UIManager:
                     key=btn_key,
                     type="primary" if st.session_state.main_active_tab == tab_name else "secondary"
                 ):
+                    # If switching away from Export tab, clear export state
+                    if current_tab == "📥 Export" and tab_name != "📥 Export":
+                        # Clear export session when leaving export tab (fallback branch)
+                        for key in ['export_tab_loaded', 'export_tab_session_id']:
+                            if key in st.session_state:
+                                del st.session_state[key]
                     st.session_state.main_active_tab = tab_name
             st.markdown("---")
 
@@ -346,73 +366,43 @@ class UIManager:
         try:
             # Note: Workflow state is already updated in render_main_tabs based on active tab
             
+            # Clear any stale completion flags when entering export tab
+            # This ensures soft exit only appears after actual QTI download
+            
+            # Only clear flags when first entering the export tab, not on every render
+            if 'export_tab_session_id' not in st.session_state:
+                # Generate a unique session ID for this export tab session
+                import time
+                current_session_id = f"export_{int(time.time() * 1000)}"
+                st.session_state['export_tab_session_id'] = current_session_id
+                
+                # Clear all completion flags on first entry to export tab
+                for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                
+                st.session_state['export_tab_loaded'] = True
+            
             if self.app_config.is_available('export_system'):
                 # Use the advanced export system
                 export_system = self.app_config.get_feature('export_system')
                 export_system['integrate_with_existing_ui'](export_df, export_original)
                 
                 # Check if any export was completed and ensure completion UI is shown
-                completion_detected = (st.session_state.get('qti_downloaded', False) or 
-                                     st.session_state.get('qti_package_created', False) or
-                                     st.session_state.get('export_completed', False) or
-                                     st.session_state.get('json_downloaded', False) or
-                                     st.session_state.get('csv_downloaded', False))
+                # Now enabled: User must confirm QTI download for completion to be detected
+                completion_detected = st.session_state.get('qti_downloaded', False)
                 
                 # Debug: Show completion status (can be removed later)
                 with st.expander("🔍 Debug: Completion Detection"):
                     st.write(f"- qti_downloaded: {st.session_state.get('qti_downloaded', False)}")
                     st.write(f"- qti_package_created: {st.session_state.get('qti_package_created', False)}")
                     st.write(f"- export_completed: {st.session_state.get('export_completed', False)}")
-                    st.write(f"- json_downloaded: {st.session_state.get('json_downloaded', False)}")
-                    st.write(f"- csv_downloaded: {st.session_state.get('csv_downloaded', False)}")
-                    st.write(f"- completion_detected: {completion_detected}")
+                    st.write(f"- completion_detected: {completion_detected} (DISABLED)")
+                    st.write(f"- export_tab_session_id: {st.session_state.get('export_tab_session_id', 'None')}")
+                    st.error("� Automatic completion detection DISABLED. Soft exit UI will only appear in basic fallback interface.")
                     
-                    st.markdown("**Available session state keys:**")
+                    st.markdown("**All session state keys:**")
                     st.write([key for key in st.session_state.keys() if 'download' in key.lower() or 'export' in key.lower() or 'complete' in key.lower()])
-                    
-                    # Add button to manually trigger completion UI for testing
-                    if st.button("🧪 Test Completion UI", key="test_completion"):
-                        st.session_state['export_completed'] = True
-                        st.rerun()
-                    
-                    # Force show completion UI temporarily
-                    if st.button("🧪 Force Show Soft Exit", key="force_completion"):
-                        st.markdown("---")
-                        st.success("🎉 FORCED Export Process Complete!")
-                        st.markdown("### 🎯 What would you like to do next?")
-                        
-                        force_col1, force_col2 = st.columns(2)
-                        with force_col1:
-                            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="force_exit_app"):
-                                st.success("✅ Thank you for using Q2LMS!")
-                                st.balloons()
-                                st.stop()
-                        with force_col2:
-                            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="force_start_over"):
-                                if UploadInterfaceV2.is_workflow_active():
-                                    UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                                st.rerun()
-                
-                # Always show soft exit section at bottom of export tab (universal solution)
-                st.markdown("---")
-                st.markdown("### 🎯 Export Session Complete")
-                st.info("💡 **Need to exit or start over?** Use the options below anytime.")
-                
-                completion_col1, completion_col2 = st.columns(2)
-                with completion_col1:
-                    if st.button("🔄 Start Over", type="secondary", use_container_width=True, key="universal_start_over"):
-                        # Clear all completion flags and reset to start
-                        for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                        if UploadInterfaceV2.is_workflow_active():
-                            UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                        st.rerun()
-                with completion_col2:
-                    if st.button("🚪 Exit Application", type="primary", use_container_width=True, key="universal_exit_app"):
-                        st.success("✅ Thank you for using Q2LMS!")
-                        st.balloons()
-                        st.stop()
                 
                 # Only show completion UI if export was actually completed
                 if completion_detected:
@@ -434,7 +424,7 @@ class UIManager:
                     with comp_col2:
                         if st.button("🔄 Start Over", type="primary", use_container_width=True, key="ui_start_over"):
                             # Clear all completion flags and reset to start
-                            for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded']:
+                            for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded', 'export_tab_loaded', 'export_tab_session_id']:
                                 if key in st.session_state:
                                     del st.session_state[key]
                             if UploadInterfaceV2.is_workflow_active():
@@ -515,18 +505,14 @@ class UIManager:
             
             # Basic CSV download
             csv_data = export_df.to_csv(index=False)
-            if st.download_button(
+            st.download_button(
                 label="📄 Download as CSV",
                 data=csv_data,
                 file_name="questions_export.csv",
                 mime="text/csv",
                 use_container_width=True,
                 key="basic_csv_export"
-            ):
-                # Set completion flags when CSV is downloaded
-                st.session_state['export_completed'] = True
-                st.session_state['csv_downloaded'] = True
-                st.rerun()  # Refresh to show completion UI
+            )
             
             # Basic JSON download
             if export_original:
@@ -539,19 +525,15 @@ class UIManager:
                     }
                 }, indent=2)
                 
-                # JSON download with completion detection
-                if st.download_button(
+                # JSON download without completion detection for now
+                st.download_button(
                     label="📋 Download as JSON",
                     data=json_data,
                     file_name="questions_export.json",
                     mime="application/json",
                     use_container_width=True,
                     key="basic_json_export"
-                ):
-                    # Set completion flags when JSON is downloaded
-                    st.session_state['export_completed'] = True
-                    st.session_state['json_downloaded'] = True
-                    st.rerun()  # Refresh to show completion UI
+                )
         
         with col2:
             st.metric("Questions", len(export_df))
