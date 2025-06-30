@@ -35,6 +35,22 @@ class UIManager:
             return 'sub_topic'
         return None
 
+    def find_difficulty_column(self, df: pd.DataFrame) -> str:
+        """Find difficulty column case-insensitively"""
+        if 'Difficulty' in df.columns:
+            return 'Difficulty'
+        elif 'difficulty' in df.columns:
+            return 'difficulty'
+        elif 'Level' in df.columns:
+            return 'Level'
+        elif 'level' in df.columns:
+            return 'level'
+        elif 'DifficultyLevel' in df.columns:
+            return 'DifficultyLevel'
+        elif 'difficulty_level' in df.columns:
+            return 'difficulty_level'
+        return None
+
     def _render_stats_summary_before_tabs(self, df: pd.DataFrame, metadata: dict):
         """Render a concise summary and charts before main tabs."""
         if self.app_config.is_available('ui_components'):
@@ -116,7 +132,7 @@ class UIManager:
             st.sidebar.warning("⚠️ No topics selected - showing no questions")
             return topic_filtered_df  # Return early if no topics selected
         
-        # === NEW SUBTOPIC FILTER ===
+        # === SUBTOPIC FILTER ===
         subtopic_column = self.find_subtopic_column(topic_filtered_df)
         if subtopic_column and not topic_filtered_df.empty:
             # Get unique subtopics from topic-filtered data
@@ -162,22 +178,85 @@ class UIManager:
                 
                 # Apply subtopic filtering
                 if selected_subtopics:
-                    final_filtered_df = topic_filtered_df[topic_filtered_df[subtopic_column].isin(selected_subtopics)]
+                    subtopic_filtered_df = topic_filtered_df[topic_filtered_df[subtopic_column].isin(selected_subtopics)]
                     excluded_subtopic_count = len(subtopics) - len(selected_subtopics)
                     if excluded_subtopic_count > 0:
                         st.sidebar.info(f"🎯 {len(selected_subtopics)} subtopics selected\n📋 {excluded_subtopic_count} subtopics excluded")
                     else:
                         st.sidebar.success(f"🎯 All {len(subtopics)} subtopics selected")
                 else:
-                    final_filtered_df = pd.DataFrame()
+                    subtopic_filtered_df = pd.DataFrame()
                     st.sidebar.warning("⚠️ No subtopics selected")
+                    return subtopic_filtered_df
+            else:
+                # No subtopics available, use topic-filtered data
+                subtopic_filtered_df = topic_filtered_df
+        else:
+            # No subtopic column found, use topic-filtered data
+            subtopic_filtered_df = topic_filtered_df
+        
+        # === NEW DIFFICULTY FILTER ===
+        difficulty_column = self.find_difficulty_column(subtopic_filtered_df)
+        if difficulty_column and not subtopic_filtered_df.empty:
+            # Get unique difficulties from subtopic-filtered data
+            difficulties = sorted(subtopic_filtered_df[difficulty_column].dropna().unique())
+            
+            if difficulties:
+                st.sidebar.markdown("---")
+                st.sidebar.markdown("### ⚡ Difficulty Filter")
+                
+                # Difficulty instructions
+                st.sidebar.markdown("""
+                **Instructions:**
+                - ✅ **Selected difficulties** will be included
+                - ❌ **Uncheck difficulties** to exclude them  
+                - 📊 **Filter by question difficulty**
+                """)
+                
+                # Difficulty reset check
+                if st.session_state.get("reset_difficulties_requested", False):
+                    for key in list(st.session_state.keys()):
+                        if key == "enhanced_difficulty_multiselect":
+                            del st.session_state[key]
+                    st.session_state["reset_difficulties_requested"] = False
+                    st.rerun()
+                
+                # Difficulty multiselect
+                difficulty_reset_counter = st.session_state.get("difficulty_reset_counter", 0)
+                difficulty_multiselect_key = f"enhanced_difficulty_multiselect_{difficulty_reset_counter}"
+                
+                selected_difficulties = st.sidebar.multiselect(
+                    "Choose difficulties to include:",
+                    options=difficulties,
+                    default=difficulties,
+                    key=difficulty_multiselect_key,
+                    help="💡 Tip: Filter by Easy, Medium, Hard, etc."
+                )
+                
+                # Difficulty reset button
+                if st.sidebar.button("🔄 Reset Difficulties", key="reset_difficulties_btn", help="Select all difficulties again"):
+                    st.session_state["difficulty_reset_counter"] = difficulty_reset_counter + 1
+                    st.session_state["reset_difficulties_requested"] = True
+                    st.rerun()
+                
+                # Apply difficulty filtering
+                if selected_difficulties:
+                    final_filtered_df = subtopic_filtered_df[subtopic_filtered_df[difficulty_column].isin(selected_difficulties)]
+                    excluded_difficulty_count = len(difficulties) - len(selected_difficulties)
+                    if excluded_difficulty_count > 0:
+                        st.sidebar.info(f"⚡ {len(selected_difficulties)} difficulties selected\n📋 {excluded_difficulty_count} difficulties excluded")
+                    else:
+                        st.sidebar.success(f"⚡ All {len(difficulties)} difficulties selected")
+                else:
+                    final_filtered_df = pd.DataFrame()
+                    st.sidebar.warning("⚠️ No difficulties selected")
                     return final_filtered_df
             else:
-                # No subtopics available, return topic-filtered data
-                final_filtered_df = topic_filtered_df
+                # No difficulties available, use subtopic-filtered data
+                final_filtered_df = subtopic_filtered_df
         else:
-            # No subtopic column found, return topic-filtered data
-            final_filtered_df = topic_filtered_df
+            # No difficulty column found, use subtopic-filtered data
+            final_filtered_df = subtopic_filtered_df
         
         return final_filtered_df
     
