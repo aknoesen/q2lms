@@ -15,7 +15,14 @@ class UIManager:
     
     def __init__(self, app_config):
         self.app_config = app_config
-    
+    def find_topic_column(self, df: pd.DataFrame) -> str:
+        """Find topic column case-insensitively"""
+        if 'Topic' in df.columns:
+            return 'Topic'
+        elif 'topic' in df.columns:
+            return 'topic'
+        return None
+
     def _render_stats_summary_before_tabs(self, df: pd.DataFrame, metadata: dict):
         """Render a concise summary and charts before main tabs."""
         if self.app_config.is_available('ui_components'):
@@ -27,17 +34,18 @@ class UIManager:
     
     
     def enhanced_subject_filtering(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Multi-subject filter using the correct 'Topic' column with clear instructions"""
+        """Multi-subject filter with case-insensitive detection and reset option"""
         
         if df.empty:
             return df
         
-        # Use 'Topic' instead of 'Subject'
-        if 'Topic' not in df.columns:
+        # Use case-insensitive topic column detection
+        topic_column = self.find_topic_column(df)
+        if not topic_column:
             return df
         
         # Get unique topics
-        topics = sorted(df['Topic'].dropna().unique())
+        topics = sorted(df[topic_column].dropna().unique())
         if not topics:
             return df
         
@@ -53,17 +61,39 @@ class UIManager:
         - 🔄 **Use this to focus** on specific subjects
         """)
         
+        # Check if we need to reset (before creating the multiselect)
+        if st.session_state.get("reset_topics_requested", False):
+            # Clear the multiselect session state completely
+            for key in list(st.session_state.keys()):
+                if key == "enhanced_topic_multiselect":
+                    del st.session_state[key]
+            # Clear the reset request flag
+            st.session_state["reset_topics_requested"] = False
+            st.rerun()
+        
+        # Create multiselect with unique key that includes reset counter
+        reset_counter = st.session_state.get("topic_reset_counter", 0)
+        multiselect_key = f"enhanced_topic_multiselect_{reset_counter}"
+        
         selected_topics = st.sidebar.multiselect(
             "Choose topics to include:",
             options=topics,
-            default=topics,  # Start with all topics selected
-            key=f"topic_filter_multi_{id(self)}",
-            help="💡 Tip: Uncheck topics you want to exclude from the current view"
+            default=topics,  # Always default to all topics
+            key=multiselect_key,  # Use counter-based key for forced refresh
+            help="💡 Tip: Click to select/deselect topics for filtering"
         )
+        
+        # RESET BUTTON - AFTER multiselect (below it)
+        if st.sidebar.button("🔄 Reset Topics", key="reset_topics_btn", help="Select all topics again"):
+            # Increment reset counter to force new multiselect widget
+            st.session_state["topic_reset_counter"] = reset_counter + 1
+            # Set flag for cleanup on next run
+            st.session_state["reset_topics_requested"] = True
+            st.rerun()
         
         # Apply filtering with clear feedback
         if selected_topics:
-            filtered_df = df[df['Topic'].isin(selected_topics)]
+            filtered_df = df[df[topic_column].isin(selected_topics)]
             excluded_count = len(topics) - len(selected_topics)
             if excluded_count > 0:
                 st.sidebar.info(f"✅ {len(selected_topics)} topics selected\n📋 {excluded_count} topics excluded")
