@@ -364,15 +364,6 @@ class UIManager:
             export_original (list): Original questions list for export
         """
         try:
-            # Check current workflow state to determine UI rendering
-            upload_state = st.session_state.get('upload_state', {})
-            current_workflow_state = upload_state.get('current_state')
-            
-            # If we're in DOWNLOADING state, show downloading UI
-            if current_workflow_state == ProcessingState.DOWNLOADING:
-                self._render_downloading_state_ui(export_df, export_original)
-                return
-            
             # Note: Workflow state is already updated in render_main_tabs based on active tab
             
             # Clear any stale completion flags when entering export tab
@@ -398,16 +389,47 @@ class UIManager:
                 export_system['integrate_with_existing_ui'](export_df, export_original)
                 
                 # Check if any export was completed and ensure completion UI is shown
-                # Export completion now handled by workflow states DOWNLOADING → FINISHED
+                # Now enabled: User must confirm QTI download for completion to be detected
                 completion_detected = st.session_state.get('qti_downloaded', False)
+                
+                # Debug: Show completion status (can be removed later)
+                with st.expander("🔍 Debug: Completion Detection"):
+                    st.write(f"- qti_downloaded: {st.session_state.get('qti_downloaded', False)}")
+                    st.write(f"- qti_package_created: {st.session_state.get('qti_package_created', False)}")
+                    st.write(f"- export_completed: {st.session_state.get('export_completed', False)}")
+                    st.write(f"- completion_detected: {completion_detected} (DISABLED)")
+                    st.write(f"- export_tab_session_id: {st.session_state.get('export_tab_session_id', 'None')}")
+                    st.error("� Automatic completion detection DISABLED. Soft exit UI will only appear in basic fallback interface.")
+                    
+                    st.markdown("**All session state keys:**")
+                    st.write([key for key in st.session_state.keys() if 'download' in key.lower() or 'export' in key.lower() or 'complete' in key.lower()])
                 
                 # Only show completion UI if export was actually completed
                 if completion_detected:
-                    # Transition to DOWNLOADING state for Phase 13 graceful exit flow
+                    # Always show completion UI to ensure soft exit is available
+                    st.markdown("---")
+                    st.success("🎉 Export Process Complete!")
+                    st.markdown("### 🎯 What would you like to do next?")
+                    
+                    # Update workflow state to DOWNLOADING
                     if 'upload_state' in st.session_state:
                         UploadInterfaceV2.update_workflow_state(ProcessingState.DOWNLOADING)
-                        # Force app to re-render and show DOWNLOADING state UI
-                        st.rerun()
+                    
+                    comp_col1, comp_col2 = st.columns(2)
+                    with comp_col1:
+                        if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="ui_exit_app"):
+                            st.success("✅ Thank you for using Q2LMS!")
+                            st.balloons()
+                            st.stop()
+                    with comp_col2:
+                        if st.button("🔄 Start Over", type="primary", use_container_width=True, key="ui_start_over"):
+                            # Clear all completion flags and reset to start
+                            for key in ['qti_downloaded', 'qti_package_created', 'export_completed', 'json_downloaded', 'csv_downloaded', 'export_tab_loaded', 'export_tab_session_id']:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                            if UploadInterfaceV2.is_workflow_active():
+                                UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
+                            st.rerun()
             else:
                 # Fallback to basic export interface
                 self._render_basic_export_interface(export_df, export_original)
@@ -464,10 +486,8 @@ class UIManager:
                         completion_col1, completion_col2 = st.columns(2)
                         with completion_col1:
                             if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="qti_exit_app"):
-                                # Use the existing working exit interface from exit_manager
-                                st.session_state['show_exit_interface'] = True
-                                st.session_state['exit_message'] = "Opening graceful exit interface..."
-                                st.rerun()
+                                st.success("✅ Thank you for using Q2LMS!")
+                                st.stop()
                         with completion_col2:
                             if st.button("🔄 Start Over", type="primary", use_container_width=True, key="qti_start_over"):
                                 if UploadInterfaceV2.is_workflow_active():
@@ -535,83 +555,9 @@ class UIManager:
         
         with col2:
             if st.button("🚪 Exit Application", type="secondary", key="basic_exit_app"):
-                # Use the existing working exit interface from exit_manager
-                st.session_state['show_exit_interface'] = True
-                st.session_state['exit_message'] = "Opening graceful exit interface..."
-                st.rerun()
-    
-    def _render_downloading_state_ui(self, export_df: pd.DataFrame, export_original: list) -> None:
-        """
-        Render UI for DOWNLOADING state - Phase 13 graceful exit implementation
-        
-        Args:
-            export_df (pd.DataFrame): DataFrame that was exported
-            export_original (list): Original questions that were exported
-        """
-        st.header("📥 Download Complete")
-        
-        # Show download completion status
-        st.success("🎉 **Your export has been downloaded successfully!**")
-        
-        # Show summary of what was downloaded
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Questions Exported", len(export_df))
-        with col2:
-            if 'Points' in export_df.columns:
-                total_points = export_df['Points'].sum()
-                st.metric("Total Points", int(total_points))
-            else:
-                st.metric("Format", "Multiple Available")
-        with col3:
-            st.metric("Status", "✅ Complete")
-        
-        # Information about what happens next
-        st.info("""
-        **📋 Export Summary:**
-        
-        ✅ Your question database has been successfully exported  
-        ✅ The file is now available in your downloads folder  
-        ✅ You can import this file into your Learning Management System  
-        
-        **🎯 What would you like to do next?**
-        """)
-        
-        # Graceful exit options - Phase 13 implementation
-        st.markdown("---")
-        st.markdown("### 🎯 Session Complete - Choose Your Next Action")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔄 Start Over", type="primary", use_container_width=True, key="downloading_start_over"):
-                # Clear all session data and reset to initial state
-                self._reset_application_state()
-                UploadInterfaceV2.update_workflow_state(ProcessingState.WAITING_FOR_FILES)
-                st.rerun()
-        
-        with col2:
-            if st.button("🚪 Exit Application", type="secondary", use_container_width=True, key="downloading_exit"):
-                # Use the existing working exit interface from exit_manager
-                st.session_state['show_exit_interface'] = True
-                st.session_state['exit_message'] = "Opening graceful exit interface..."
-                st.rerun()
-    
-    def _reset_application_state(self):
-        """Reset application state for starting over - Phase 13 helper method"""
-        # Clear upload-related session state
-        keys_to_clear = [
-            'df', 'original_questions', 'metadata', 'upload_state',
-            'qti_downloaded', 'qti_package_created', 'export_completed', 
-            'json_downloaded', 'csv_downloaded', 'export_tab_loaded', 
-            'export_tab_session_id', 'main_active_tab'
-        ]
-        
-        for key in keys_to_clear:
-            if key in st.session_state:
-                del st.session_state[key]
+                st.success("✅ Export complete! You can now close this tab.")
+                st.stop()
 
-    # ...existing code...
 #
 # Convenience function for easy integration
 def get_ui_manager(app_config):
