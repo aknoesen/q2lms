@@ -18,6 +18,7 @@ class ProcessingState(Enum):
     PROCESSING = auto()
     PREVIEW_READY = auto()
     DATABASE_LOADED = auto()      # Renamed from COMPLETED
+    SELECTING_CATEGORIES = auto() # New: Category/filter selection interface
     SELECTING_QUESTIONS = auto()  # New: covers select/delete modes
     EXPORTING = auto()            # New
     DOWNLOADING = auto()          # Phase 13: after export completion
@@ -75,6 +76,7 @@ class UploadInterfaceV2:
                 ProcessingState.PROCESSING,
                 ProcessingState.PREVIEW_READY,
                 ProcessingState.DATABASE_LOADED,
+                ProcessingState.SELECTING_CATEGORIES,
                 ProcessingState.SELECTING_QUESTIONS,
                 ProcessingState.EXPORTING,
                 ProcessingState.DOWNLOADING,
@@ -90,6 +92,11 @@ class UploadInterfaceV2:
 
             # Special case: allow EXPORTING -> SELECTING_QUESTIONS (tab switch)
             if current_state == ProcessingState.EXPORTING and new_state == ProcessingState.SELECTING_QUESTIONS:
+                st.session_state.upload_state['current_state'] = new_state
+                st.session_state.upload_state['last_update'] = datetime.now()
+            # Special case: allow backwards navigation within selection flow (categories <-> questions)
+            elif ((current_state == ProcessingState.SELECTING_CATEGORIES and new_state == ProcessingState.SELECTING_QUESTIONS) or
+                  (current_state == ProcessingState.SELECTING_QUESTIONS and new_state == ProcessingState.SELECTING_CATEGORIES)):
                 st.session_state.upload_state['current_state'] = new_state
                 st.session_state.upload_state['last_update'] = datetime.now()
             # Only allow forward or same-state transitions otherwise
@@ -159,9 +166,9 @@ class UploadInterfaceV2:
         upload_state = st.session_state.get('upload_state', {})
         current_state = upload_state.get('current_state', ProcessingState.WAITING_FOR_FILES)
 
-        # Map DATABASE_LOADED to SELECTING_QUESTIONS for visual display
+        # Map DATABASE_LOADED to SELECTING_CATEGORIES for visual display (new flow)
         if current_state == ProcessingState.DATABASE_LOADED:
-            current_state = ProcessingState.SELECTING_QUESTIONS
+            current_state = ProcessingState.SELECTING_CATEGORIES
 
         # Do NOT map EXPORTING to SELECTING_QUESTIONS; let EXPORTING highlight the Export stage
         # if current_state == ProcessingState.EXPORTING:
@@ -175,6 +182,7 @@ class UploadInterfaceV2:
                 (ProcessingState.WAITING_FOR_FILES, "📁 Upload Files"),
                 (ProcessingState.FILES_READY, "🔄 Process Files"),
                 (ProcessingState.PREVIEW_READY, "📊 Review & Load"),
+                (ProcessingState.SELECTING_CATEGORIES, "🏷️ Select Categories"),
                 (ProcessingState.SELECTING_QUESTIONS, "📝 Select Questions"),
                 (ProcessingState.EXPORTING, "📥 Export"),
                 (ProcessingState.DOWNLOADING, "📥 Download"),

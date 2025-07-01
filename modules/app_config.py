@@ -105,7 +105,7 @@ class AppConfig:
         # UI Components
         try:
             from modules.utils import render_latex_in_text, determine_correct_answer_letter
-            from modules.ui_components import display_database_summary, create_summary_charts, apply_filters
+            from modules.ui_components import display_database_summary, create_summary_charts, apply_filters, create_category_selection_interface
             from modules.simple_browse import simple_browse_questions_tab
             self.feature_status['ui_components'] = True
             self.ui_components = {
@@ -114,7 +114,8 @@ class AppConfig:
                 'display_database_summary': display_database_summary,
                 'create_summary_charts': create_summary_charts,
                 'apply_filters': apply_filters,
-                'simple_browse_questions_tab': simple_browse_questions_tab
+                'simple_browse_questions_tab': simple_browse_questions_tab,
+                'create_category_selection_interface': create_category_selection_interface
             }
         except ImportError:
             self.feature_status['ui_components'] = False

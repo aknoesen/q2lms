@@ -303,7 +303,11 @@ class UIManager:
         st.success(f"✅ Database loaded successfully! {len(df)} questions ready.")
 
         # --- PROMPT 9: Apply filtering and stats summary globally ---
-        filtered_df = self.enhanced_subject_filtering(df)
+        # Use category-filtered data if available, otherwise use enhanced subject filtering
+        if 'category_filtered_df' in st.session_state:
+            filtered_df = st.session_state['category_filtered_df']
+        else:
+            filtered_df = self.enhanced_subject_filtering(df)
         self._render_stats_summary_before_tabs(df, metadata)
         # ----------------------------------------------------------
 
@@ -342,6 +346,7 @@ class UIManager:
             edit_tab_label = f"📝 {mode_name}"
             tab_names = [
                 "📊 Charts",
+                "🏷️ Categories",
                 "📋 Browse Questions",
                 edit_tab_label,
                 "📥 Export",
@@ -350,7 +355,15 @@ class UIManager:
 
             # Button-based navigation
             if 'main_active_tab' not in st.session_state:
-                st.session_state.main_active_tab = "📋 Browse Questions"
+                # Check workflow state to determine initial tab
+                upload_state = st.session_state.get('upload_state', {})
+                current_workflow_state = upload_state.get('current_state')
+                
+                # If database just loaded, start with Categories tab for new workflow
+                if current_workflow_state == ProcessingState.DATABASE_LOADED:
+                    st.session_state.main_active_tab = "🏷️ Categories"
+                else:
+                    st.session_state.main_active_tab = "📋 Browse Questions"
             
             # Clear export tab state when switching away from Export tab
             current_tab = st.session_state.get('main_active_tab', '')
@@ -381,6 +394,9 @@ class UIManager:
                 if current_tab == "📥 Export":
                     # Force workflow state to EXPORTING when in Export tab
                     UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
+                elif current_tab == "🏷️ Categories":
+                    # Force workflow state to SELECTING_CATEGORIES when in Categories tab
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_CATEGORIES)
                 else:
                     UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
 
@@ -396,6 +412,7 @@ class UIManager:
             # Define tab names for fallback branch
             tab_names = [
                 "📊 Database Overview",
+                "🏷️ Categories",
                 "📋 Browse Questions",
                 "📝 Browse & Edit",
                 "📥 Export"
@@ -403,7 +420,15 @@ class UIManager:
 
             # Button-based navigation
             if 'main_active_tab' not in st.session_state:
-                st.session_state.main_active_tab = tab_names[0]
+                # Check workflow state to determine initial tab
+                upload_state = st.session_state.get('upload_state', {})
+                current_workflow_state = upload_state.get('current_state')
+                
+                # If database just loaded, start with Categories tab for new workflow
+                if current_workflow_state == ProcessingState.DATABASE_LOADED:
+                    st.session_state.main_active_tab = "🏷️ Categories"
+                else:
+                    st.session_state.main_active_tab = tab_names[0]
             
             # Clear export tab state when switching away from Export tab
             current_tab = st.session_state.get('main_active_tab', '')
@@ -434,6 +459,9 @@ class UIManager:
                 if current_tab == "📥 Export":
                     # Force workflow state to EXPORTING when in Export tab
                     UploadInterfaceV2.update_workflow_state(ProcessingState.EXPORTING)
+                elif current_tab == "🏷️ Categories":
+                    # Force workflow state to SELECTING_CATEGORIES when in Categories tab
+                    UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_CATEGORIES)
                 else:
                     UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
 
@@ -463,6 +491,28 @@ class UIManager:
                     ui_components['create_summary_charts'](df, chart_key_suffix='charts_fork_tab')
             else:
                 st.info("No database overview available.")
+        # Categories Tab - Category Selection Interface
+        elif active_tab_name == "🏷️ Categories":
+            if self.app_config.is_available('ui_components'):
+                ui_components = self.app_config.get_feature('ui_components')
+                if 'create_category_selection_interface' in ui_components:
+                    # Call the category selection interface and handle the continue button
+                    filtered_df_from_categories, continue_clicked = ui_components['create_category_selection_interface'](df)
+                    
+                    # Update the filtered_df to use the category selection results
+                    # Store the filtered result for use by other tabs
+                    st.session_state['category_filtered_df'] = filtered_df_from_categories
+                    
+                    # Handle continue button click - transition to SELECTING_QUESTIONS
+                    if continue_clicked:
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
+                        # Switch to Browse Questions tab
+                        st.session_state.main_active_tab = "📋 Browse Questions"
+                        st.rerun()
+                else:
+                    st.error("❌ Category selection interface not available")
+            else:
+                st.error("❌ UI components not available for category selection")
         # Browse Questions Tab
         elif active_tab_name == "📋 Browse Questions":
             if self.app_config.is_available('ui_components'):
@@ -528,6 +578,28 @@ class UIManager:
                     ui_components['create_summary_charts'](df, chart_key_suffix='charts_standard_tab')
             else:
                 st.error("❌ UI components not available for detailed overview")
+        # Categories Tab - Category Selection Interface
+        elif active_tab_name == "🏷️ Categories":
+            if self.app_config.is_available('ui_components'):
+                ui_components = self.app_config.get_feature('ui_components')
+                if 'create_category_selection_interface' in ui_components:
+                    # Call the category selection interface and handle the continue button
+                    filtered_df_from_categories, continue_clicked = ui_components['create_category_selection_interface'](df)
+                    
+                    # Update the filtered_df to use the category selection results
+                    # Store the filtered result for use by other tabs
+                    st.session_state['category_filtered_df'] = filtered_df_from_categories
+                    
+                    # Handle continue button click - transition to SELECTING_QUESTIONS
+                    if continue_clicked:
+                        UploadInterfaceV2.update_workflow_state(ProcessingState.SELECTING_QUESTIONS)
+                        # Switch to Browse Questions tab
+                        st.session_state.main_active_tab = "📋 Browse Questions"
+                        st.rerun()
+                else:
+                    st.error("❌ Category selection interface not available")
+            else:
+                st.error("❌ UI components not available for category selection")
         # Browse Questions Tab
         elif active_tab_name == "📋 Browse Questions":
             if self.app_config.is_available('ui_components'):
