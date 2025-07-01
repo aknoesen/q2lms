@@ -26,9 +26,11 @@ python -m streamlit run streamlit_app.py
 
 ## ✨ Key Features
 
+- **🎯 Enhanced Workflow**: Intuitive category selection with topic, subtopic, and difficulty filtering
 - **📤 Smart Upload System**: Single and multi-file processing with conflict resolution
 - **🔧 Live Question Editor**: Real-time LaTeX preview and editing
 - **📊 Analytics Dashboard**: Question distribution and performance insights  
+- **🎨 Professional Interface**: Streamlined, single-page workflow with comprehensive filtering
 - **🎯 Multi-Format Export**: Canvas QTI, native JSON, and CSV with LaTeX preservation
 - **🧮 LaTeX Excellence**: Full mathematical notation with automatic optimization
 - **🔄 Complete Workflow**: JSON export/import for version control and collaboration
