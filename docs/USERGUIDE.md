@@ -3,13 +3,12 @@
 ## Table of Contents
 1. [Overview](#overview)
 2. [Getting Started](#getting-started)
-3. [Phase 14 Enhanced Workflow](#phase-14-enhanced-workflow)
-4. [Core Workflows](#core-workflows)
-5. [Question Management](#question-management)
-6. [Export and Deployment](#export-and-deployment)
-7. [Advanced Features](#advanced-features)
-8. [Best Practices](#best-practices)
-9. [Troubleshooting](#troubleshooting)
+3. [Core Workflows](#core-workflows)
+4. [Question Management](#question-management)
+5. [Export and Deployment](#export-and-deployment)
+6. [Advanced Features](#advanced-features)
+7. [Best Practices](#best-practices)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -79,53 +78,24 @@ Q2LMS prioritizes instructor efficiency with a clean, professional interface tha
 
 ---
 
-## Phase 14 Enhanced Workflow
+## Core Workflows
 
-Q2LMS now features a streamlined 3-step process that enhances the user experience:
+### New in Q2LMS: 3-Step Workflow (Updated in Phase 14)
 
-### Step 1: Choose Your Path
-After uploading and processing your question database, Q2LMS presents a "Choose Your Path" interface:
-- **🎯 Select Questions Mode**: Curate specific questions for targeted assessments, exams, or custom question sets
-- **🗑️ Delete Questions Mode**: Remove unwanted questions from your database export
+Phase 14 introduces a streamlined 3-step workflow for managing your question database:
 
-### Step 2: Configure Categories (NEW)
-Enhanced category selection with a dedicated main-area interface:
-- **Full-width layout** replaces the previous cramped sidebar filtering approach
-- **Topic, subtopic, and difficulty filters** with intuitive multiselect controls
-- **Live question count preview** displays "X questions match your criteria" in real-time
-- **Professional, spacious design** provides a comfortable filtering experience
-- **Advanced options** including points range and search capabilities
+**Step 1: Choose Your Path**
+- Select between **Select Mode** (curate specific questions) or **Delete Mode** (remove unwanted questions)
 
-### Step 3: Select Questions
-Browse your filtered results and make final selections:
-- **Pre-filtered questions** based on your category selections from Step 2
-- **Streamlined selection interface** without sidebar clutter
-- **Clear export preparation** with guided completion notices
-- **Bulk selection tools** for efficient question management
+**Step 2: Configure Categories**
+- Use the new **Category Selection Interface** in the main area to filter by topic, subtopic, and difficulty
+- Enjoy a full-width layout with multiselect controls and live question count preview
 
-This enhanced workflow provides better visibility, logical task separation, and a more professional user experience compared to the previous interface design.
+**Step 3: Select Questions**
+- Browse the filtered results and proceed with selection or deletion as per your chosen mode
 
----
 
-## Core Workflows (Phase 14 Enhanced)
-
-### New in Q2LMS: Operation Mode Selection
-
-After uploading your question database, Q2LMS presents a clear choice between two instructor-optimized workflows:
-
-**🎯 Select Questions Mode**
-- **Purpose**: Curate specific questions for targeted assessments
-- **Best for**: Building focused quizzes, topic-specific exams, or custom question sets
-- **Workflow**: Review all questions, select desired ones, export selected set
-
-**🗑️ Delete Questions Mode**  
-- **Purpose**: Clean and refine existing question banks
-- **Best for**: Removing outdated questions, cleaning large databases, or filtering content
-- **Workflow**: Review all questions, mark unwanted ones for removal, export remaining set
-
-Both modes provide complete question visibility by default, allowing instructors to see their entire question bank for comprehensive course planning.
-
-### Workflow 1: Creating Questions from Scratch (Phase 14 Enhanced)
+### Workflow 1: Creating Questions from Scratch
 
 **Purpose**: Start a new question database or add questions to existing collections
 
@@ -151,7 +121,7 @@ Both modes provide complete question visibility by default, allowing instructors
 
 > **💡 Pro Tip**: Q2Prompt streamlines bulk question creation by generating structured prompts that produce Q2LMS-compatible JSON output. This approach is especially efficient for creating large question banks or when working with specific learning objectives.
 
-### Workflow 2: Importing and Managing Question Banks (Phase 14 Enhanced)
+### Workflow 2: Importing and Managing Question Banks
 
 **Purpose**: Integrate existing question collections into Q2LMS with instructor-friendly management
 
@@ -169,7 +139,7 @@ Both modes provide complete question visibility by default, allowing instructors
 
 3. **Review Complete Question Set**
    - Q2LMS displays **all questions by default** for comprehensive overview
-   - Use the main-area category selection interface to focus on specific subjects
+   - Use topic filtering in main-area category selection interface to focus on specific subjects
    - No pagination barriers - see entire question bank at once
 
 4. **Manage Questions**
@@ -186,14 +156,14 @@ Both modes provide complete question visibility by default, allowing instructors
 
 > **📋 New Feature**: The instructor-optimized interface shows all questions by default, eliminating the need to navigate through pagination to see your complete question bank.
 
-### Workflow 3: Editing and Refining Questions (Phase 14 Enhanced)
+### Workflow 3: Editing and Refining Questions
 
 **Purpose**: Modify existing questions with advanced editing features
 
 **Steps**:
 1. Access your chosen **Operation Mode** (Select or Delete)
 2. Browse complete question set with **"Show All" default view**
-3. Use the main-area category selection interface to focus on specific content areas
+3. Use main-area category selection interface to focus on specific content areas
 4. Select questions for editing with inline preview capabilities
 5. Modify question text, answers, or metadata with live LaTeX rendering
 6. Apply bulk edits using efficient bulk control tools
@@ -203,7 +173,7 @@ Both modes provide complete question visibility by default, allowing instructors
 
 > **🎯 Interface Enhancement**: All questions are displayed simultaneously by default, allowing instructors to see the complete scope of their question bank and make informed editing decisions.
 
-### Workflow 4: Exporting for LMS Deployment (Phase 14 Enhanced)
+### Workflow 4: Exporting for LMS Deployment
 
 **Purpose**: Generate LMS-compatible question packages for deployment with clear guidance
 
@@ -234,12 +204,24 @@ Both modes provide complete question visibility by default, allowing instructors
 
 ## Question Management
 
+### Category Selection Interface (NEW in Phase 14)
+
+Phase 14 introduces a redesigned category selection interface with the following features:
+
+- **Full-width main area**: Replaces the old main-area category selection interface for better visibility and usability
+- **Multiselect controls**: Filter questions by topic, subtopic, and difficulty using intuitive dropdowns
+- **Live question count preview**: Instantly see how many questions match your selected filters
+- **Spacious layout**: Provides a more comfortable and efficient filtering experience compared to the previous cramped main-area category selection interface
+
+This interface appears in Step 2 of the new 3-step workflow and significantly improves the question selection process.
+
+
 ### Enhanced Question Interface
 
 **Complete Question Visibility**
 - **"Show All" Default**: See entire question bank without pagination barriers
 - **Comprehensive Overview**: Make informed decisions about question selection
-- **Category Selection**: Use the main-area category selection interface to focus on specific subject areas
+- **Topic Filtering**: Use main-area category selection interface to focus on specific subject areas
 - **Instant Statistics**: Key metrics displayed immediately upon database load
 
 **Streamlined Operation Modes**
@@ -314,7 +296,7 @@ Each question in Q2LMS includes comprehensive metadata:
 - Clear indication of database scope and content
 
 **Advanced Filtering**:
-- **Category Selection**: Main-area interface with comprehensive filtering
+- **Topic Filtering**: Sidebar multi-select with clear instructions
 - **Subject Area Focus**: Easily include/exclude specific topics
 - **Visual Feedback**: Clear indication of active filters and excluded content
 
@@ -473,7 +455,7 @@ Each question in Q2LMS includes comprehensive metadata:
 
 **Interface Usage**:
 - **Take advantage of "Show All" default**: Review complete question sets for comprehensive course planning
-- **Use the main-area category selection interface strategically**: Focus on specific subject areas when working with large databases
+- **Use topic filtering strategically**: Focus on specific subject areas when working with large databases
 - **Leverage completion guidance**: Follow red completion notices to ensure successful export completion
 - **Choose appropriate operation mode**: Use Select Mode for curation, Delete Mode for cleaning
 
@@ -502,7 +484,7 @@ Each question in Q2LMS includes comprehensive metadata:
 
 **Organization Strategies**:
 - Implement consistent naming conventions
-- Maintain detailed subject categorization using the main-area category selection interface
+- Maintain detailed subject categorization using topic filters
 - Document learning objective alignments
 - Regular database cleanup using Delete Mode workflow
 
@@ -536,7 +518,7 @@ Each question in Q2LMS includes comprehensive metadata:
 **Interface and Navigation**
 - **Issue**: Cannot see all questions in database
 - **Solution**: Q2LMS now defaults to "Show All" - if you see pagination controls, select "Show All" from the dropdown
-- **Prevention**: Use the main-area category selection interface to focus on specific content areas if working with very large databases
+- **Prevention**: Use topic filtering to focus on specific content areas if working with very large databases
 
 **Upload Problems**
 - **Issue**: File format not recognized
@@ -592,7 +574,7 @@ Each question in Q2LMS includes comprehensive metadata:
 
 **Large Database Management**:
 - Utilize "Show All" default view for comprehensive overview
-- Implement the main-area category selection interface for focused work sessions
+- Implement topic filtering for focused work sessions
 - Use bulk controls for efficient mass operations
 - Monitor export statistics for performance insights
 
