@@ -303,10 +303,19 @@ class UIManager:
         st.success(f"✅ Database loaded successfully! {len(df)} questions ready.")
 
         # --- PROMPT 9: Apply filtering and stats summary globally ---
-        # Use category-filtered data if available, otherwise use enhanced subject filtering
+        # Check current workflow state to determine filtering approach
+        upload_state = st.session_state.get('upload_state', {})
+        current_workflow_state = upload_state.get('current_state')
+        
+        # Use category-filtered data if available, or check workflow state for filtering approach
         if 'category_filtered_df' in st.session_state:
             filtered_df = st.session_state['category_filtered_df']
+        elif current_workflow_state == ProcessingState.SELECTING_CATEGORIES:
+            # During SELECTING_CATEGORIES state, use unfiltered data for the main area interface
+            # The category selection interface will handle filtering in the main area
+            filtered_df = df
         else:
+            # For other states, use the sidebar filtering interface
             filtered_df = self.enhanced_subject_filtering(df)
         self._render_stats_summary_before_tabs(df, metadata)
         # ----------------------------------------------------------
@@ -359,8 +368,8 @@ class UIManager:
                 upload_state = st.session_state.get('upload_state', {})
                 current_workflow_state = upload_state.get('current_state')
                 
-                # If database just loaded, start with Categories tab for new workflow
-                if current_workflow_state == ProcessingState.DATABASE_LOADED:
+                # If database just loaded or in SELECTING_CATEGORIES state, start with Categories tab
+                if current_workflow_state in [ProcessingState.DATABASE_LOADED, ProcessingState.SELECTING_CATEGORIES]:
                     st.session_state.main_active_tab = "🏷️ Categories"
                 else:
                     st.session_state.main_active_tab = "📋 Browse Questions"
@@ -387,6 +396,16 @@ class UIManager:
                                     del st.session_state[key]
                         st.session_state.main_active_tab = tab_name
             st.markdown("---")
+
+            # Force correct tab based on workflow state
+            upload_state = st.session_state.get('upload_state', {})
+            current_workflow_state = upload_state.get('current_state')
+            current_tab = st.session_state.get('main_active_tab', '')
+            
+            # Force Categories tab if in SELECTING_CATEGORIES state and not already there
+            if current_workflow_state == ProcessingState.SELECTING_CATEGORIES and current_tab != "🏷️ Categories":
+                st.session_state.main_active_tab = "🏷️ Categories"
+                st.rerun()  # Refresh to show the correct tab
 
             # Update workflow state based on the active tab (fork branch)
             if 'upload_state' in st.session_state:

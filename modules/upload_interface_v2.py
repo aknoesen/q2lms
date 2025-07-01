@@ -182,7 +182,7 @@ class UploadInterfaceV2:
                 (ProcessingState.WAITING_FOR_FILES, "📁 Upload Files"),
                 (ProcessingState.FILES_READY, "🔄 Process Files"),
                 (ProcessingState.PREVIEW_READY, "📊 Review & Load"),
-                (ProcessingState.SELECTING_CATEGORIES, "🏷️ Select Categories"),
+                (ProcessingState.SELECTING_CATEGORIES, "🛤️ Choose Path"),
                 (ProcessingState.SELECTING_QUESTIONS, "📝 Select Questions"),
                 (ProcessingState.EXPORTING, "📥 Export"),
                 (ProcessingState.DOWNLOADING, "📥 Download"),
@@ -551,11 +551,14 @@ class UploadInterfaceV2:
             current_state = st.session_state.upload_state.get('current_state')
             later_states = [ProcessingState.SELECTING_QUESTIONS, ProcessingState.EXPORTING, ProcessingState.DOWNLOADING, ProcessingState.FINISHED]
             if current_state not in later_states:
+                # Set to DATABASE_LOADED first, then immediately transition to SELECTING_CATEGORIES
                 self._set_state(
-                    ProcessingState.COMPLETED,
+                    ProcessingState.DATABASE_LOADED,
                     final_database=all_merged_questions,
                     error_message=None
                 )
+                # Automatically transition to SELECTING_CATEGORIES for the new workflow
+                self._set_state(ProcessingState.SELECTING_CATEGORIES)
             
             # Transfer to main app session state
             df_data = []
