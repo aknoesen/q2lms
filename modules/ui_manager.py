@@ -53,12 +53,9 @@ class UIManager:
         return None
 
     def _render_stats_summary_before_tabs(self, df: pd.DataFrame, metadata: dict):
-        """Render a concise summary and charts before main tabs."""
-        if self.app_config.is_available('ui_components'):
-            ui_components = self.app_config.get_feature('ui_components')
-            if 'display_database_summary' in ui_components:
-                ui_components['display_database_summary'](df, metadata)
-        st.markdown("---")
+        """Database overview section completely removed for clean interface."""
+        # Database overview section removed - no summary or metadata display
+        pass
     
     
     
@@ -299,9 +296,6 @@ class UIManager:
     def render_main_tabs(self, df, metadata, original_questions, fork_components=None):
         """Render the main application tabs with fork feature integration"""
 
-        # Show success message
-        st.success(f"✅ Database loaded successfully! {len(df)} questions ready.")
-
         # --- PROMPT 9: Apply filtering and stats summary globally ---
         # Check current workflow state to determine filtering approach
         upload_state = st.session_state.get('upload_state', {})
@@ -501,15 +495,14 @@ class UIManager:
 
         # Charts Tab
         if active_tab_name == "📊 Charts":
-            st.markdown("### 📊 Database Overview")
+            st.markdown("### 📊 Charts & Analytics")
             if self.app_config.is_available('ui_components'):
                 ui_components = self.app_config.get_feature('ui_components')
-                if 'display_database_summary' in ui_components:
-                    ui_components['display_database_summary'](df, metadata)
+                # Database overview section removed - show only charts
                 if 'create_summary_charts' in ui_components:
                     ui_components['create_summary_charts'](df, chart_key_suffix='charts_fork_tab')
             else:
-                st.info("No database overview available.")
+                st.info("No charts available.")
         # Categories Tab - Category Selection Interface
         elif active_tab_name == "🏷️ Categories":
             if self.app_config.is_available('ui_components'):
@@ -588,15 +581,14 @@ class UIManager:
         """Render tab content without fork features but with overview using active_tab_name"""
         # Database Overview Tab
         if active_tab_name == "📊 Database Overview":
-            st.markdown("### 📊 Detailed Database Analysis")
+            st.markdown("### 📊 Charts & Analytics")
             if self.app_config.is_available('ui_components'):
                 ui_components = self.app_config.get_feature('ui_components')
-                if 'display_database_summary' in ui_components:
-                    ui_components['display_database_summary'](df, metadata)
+                # Database overview section removed - show only charts
                 if 'create_summary_charts' in ui_components:
                     ui_components['create_summary_charts'](df, chart_key_suffix='charts_standard_tab')
             else:
-                st.error("❌ UI components not available for detailed overview")
+                st.error("❌ UI components not available for charts")
         # Categories Tab - Category Selection Interface
         elif active_tab_name == "🏷️ Categories":
             if self.app_config.is_available('ui_components'):

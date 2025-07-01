@@ -105,7 +105,6 @@ class OperationModeManager:
             
             with col1:
                 st.markdown("### 📊 Current Database")
-                st.success(f"**{total_questions} questions** loaded and ready")
                 
                 if 'metadata' in st.session_state:
                     metadata = st.session_state.metadata

@@ -411,8 +411,13 @@ class UploadInterfaceV2:
         upload_state = st.session_state.get('upload_state', {})
         preview_data = upload_state.get('preview_data')
         
+        # Concise status indicator
         if preview_data:
-            st.success(f"🎉 **{preview_data.total_questions} questions** loaded and ready to use!")
+            # Get topic count from the actual dataframe if available
+            topics_count = 0
+            if 'df' in st.session_state and not st.session_state['df'].empty:
+                df = st.session_state['df']
+                topics_count = df['Topic'].dropna().nunique() if 'Topic' in df.columns else 0
         
         # Show what user can do next
         st.info("""
@@ -422,7 +427,33 @@ class UploadInterfaceV2:
         - Export to various formats when ready
         """)
         
-        # Option to load another database
+        # Database Analysis Section
+        if 'df' in st.session_state and not st.session_state['df'].empty:
+            st.markdown("---")
+            st.markdown("### 📊 Database Overview")
+            
+            # Quick stats in columns
+            df = st.session_state['df']
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Total Questions", len(df))
+            with col2:
+                unique_topics = df['Topic'].dropna().nunique() if 'Topic' in df.columns else 0
+                st.metric("Topics", unique_topics)
+            with col3:
+                unique_subtopics = df['Subtopic'].dropna().nunique() if 'Subtopic' in df.columns else 0
+                st.metric("Subtopics", unique_subtopics)
+            with col4:
+                unique_difficulties = df['Difficulty'].dropna().nunique() if 'Difficulty' in df.columns else 0
+                st.metric("Difficulty Levels", unique_difficulties)
+            
+            # Detailed Analysis (Expandable)
+            with st.expander("🔍 **View Detailed Database Analysis**", expanded=False):
+                self._render_database_analysis(df)
+        
+        # Action buttons
+        st.markdown("---")
         col1, col2 = st.columns([1, 1])
         with col1:
             if AppConfig.create_red_button("📁 Load Another Database", "secondary-action", "load_another_btn", use_container_width=True):
@@ -805,5 +836,239 @@ class UploadInterfaceV2:
                 st.session_state['show_exit_interface'] = True
                 st.session_state['exit_message'] = "Opening graceful exit interface..."
                 st.rerun()
+
+    def _render_database_analysis(self, df: pd.DataFrame):
+        """Render detailed database analysis for course planning"""
+        st.markdown("#### 📋 **Detailed Database Analysis for Course Planning**")
+        
+        # Topic Analysis
+        if 'Topic' in df.columns:
+            st.markdown("##### 🏷️ **Topic Distribution**")
+            topic_counts = df['Topic'].value_counts().sort_values(ascending=False)
+            
+            if not topic_counts.empty:
+                # Create two columns for topic display
+                topic_col1, topic_col2 = st.columns(2)
+                
+                with topic_col1:
+                    st.markdown("**Questions per Topic:**")
+                    for topic, count in topic_counts.head(10).items():
+                        percentage = (count / len(df)) * 100
+                        st.write(f"• **{topic}:** {count} questions ({percentage:.1f}%)")
+                    
+                    if len(topic_counts) > 10:
+                        st.caption(f"... and {len(topic_counts) - 10} more topics")
+                
+                with topic_col2:
+                    # Topic coverage chart
+                    try:
+                        import plotly.express as px
+                        fig = px.pie(
+                            values=topic_counts.head(8).values,
+                            names=topic_counts.head(8).index,
+                            title="Topic Distribution (Top 8)"
+                        )
+                        fig.update_traces(textposition='inside', textinfo='percent+label')
+                        fig.update_layout(height=300, showlegend=False)
+                        st.plotly_chart(fig, use_container_width=True)
+                    except ImportError:
+                        # Fallback to simple bar chart with matplotlib/streamlit
+                        st.bar_chart(topic_counts.head(8))
+            else:
+                st.info("No topic information available")
+        
+        st.markdown("---")
+        
+        # Subtopic Analysis
+        if 'Subtopic' in df.columns:
+            st.markdown("##### 🎯 **Subtopic Breakdown**")
+            subtopic_counts = df['Subtopic'].value_counts().sort_values(ascending=False)
+            
+            if not subtopic_counts.empty:
+                # Group by topic if possible
+                if 'Topic' in df.columns:
+                    st.markdown("**Subtopics by Topic:**")
+                    for topic in df['Topic'].unique()[:5]:  # Show top 5 topics
+                        if pd.notna(topic):
+                            topic_subtopics = df[df['Topic'] == topic]['Subtopic'].value_counts()
+                            if not topic_subtopics.empty:
+                                st.write(f"**{topic}:**")
+                                for subtopic, count in topic_subtopics.head(5).items():
+                                    if pd.notna(subtopic):
+                                        st.write(f"  • {subtopic}: {count} questions")
+                else:
+                    st.markdown("**All Subtopics:**")
+                    for subtopic, count in subtopic_counts.head(15).items():
+                        if pd.notna(subtopic):
+                            percentage = (count / len(df)) * 100
+                            st.write(f"• **{subtopic}:** {count} questions ({percentage:.1f}%)")
+            else:
+                st.info("No subtopic information available")
+        
+        st.markdown("---")
+        
+        # Difficulty Analysis
+        if 'Difficulty' in df.columns:
+            st.markdown("##### ⚡ **Difficulty Distribution**")
+            difficulty_counts = df['Difficulty'].value_counts()
+            
+            if not difficulty_counts.empty:
+                diff_col1, diff_col2 = st.columns(2)
+                
+                with diff_col1:
+                    st.markdown("**Question Difficulty Breakdown:**")
+                    total_questions = len(df)
+                    for difficulty, count in difficulty_counts.items():
+                        if pd.notna(difficulty):
+                            percentage = (count / total_questions) * 100
+                            # Color code by difficulty
+                            if difficulty.lower() in ['easy', 'beginner', 'basic']:
+                                st.success(f"🟢 **{difficulty}:** {count} questions ({percentage:.1f}%)")
+                            elif difficulty.lower() in ['medium', 'intermediate', 'moderate']:
+                                st.warning(f"🟡 **{difficulty}:** {count} questions ({percentage:.1f}%)")
+                            elif difficulty.lower() in ['hard', 'difficult', 'advanced', 'expert']:
+                                st.error(f"🔴 **{difficulty}:** {count} questions ({percentage:.1f}%)")
+                            else:
+                                st.info(f"⚪ **{difficulty}:** {count} questions ({percentage:.1f}%)")
+                
+                with diff_col2:
+                    # Difficulty balance analysis
+                    st.markdown("**Difficulty Balance Analysis:**")
+                    if len(difficulty_counts) >= 2:
+                        # Calculate balance score
+                        std_dev = difficulty_counts.std()
+                        mean_count = difficulty_counts.mean()
+                        balance_score = (1 - (std_dev / mean_count)) * 100 if mean_count > 0 else 0
+                        
+                        if balance_score > 80:
+                            st.success(f"✅ Well balanced ({balance_score:.0f}% balance score)")
+                        elif balance_score > 60:
+                            st.warning(f"⚠️ Moderately balanced ({balance_score:.0f}% balance score)")
+                        else:
+                            st.error(f"❌ Unbalanced ({balance_score:.0f}% balance score)")
+                        
+                        st.caption("Balance score indicates how evenly distributed questions are across difficulty levels")
+            else:
+                st.info("No difficulty information available")
+        
+        st.markdown("---")
+        
+        # Question Type Analysis
+        if 'Type' in df.columns:
+            st.markdown("##### 📝 **Question Type Summary**")
+            type_counts = df['Type'].value_counts()
+            
+            if not type_counts.empty:
+                type_col1, type_col2 = st.columns(2)
+                
+                with type_col1:
+                    st.markdown("**Question Types:**")
+                    for qtype, count in type_counts.items():
+                        if pd.notna(qtype):
+                            percentage = (count / len(df)) * 100
+                            # Add icons for common question types
+                            if 'multiple' in qtype.lower() or 'choice' in qtype.lower():
+                                st.write(f"🔘 **Multiple Choice:** {count} questions ({percentage:.1f}%)")
+                            elif 'true' in qtype.lower() or 'false' in qtype.lower():
+                                st.write(f"✓/✗ **True/False:** {count} questions ({percentage:.1f}%)")
+                            elif 'essay' in qtype.lower() or 'open' in qtype.lower():
+                                st.write(f"📝 **Essay/Open:** {count} questions ({percentage:.1f}%)")
+                            elif 'fill' in qtype.lower() or 'blank' in qtype.lower():
+                                st.write(f"📝 **Fill-in-blank:** {count} questions ({percentage:.1f}%)")
+                            else:
+                                st.write(f"❓ **{qtype}:** {count} questions ({percentage:.1f}%)")
+                
+                with type_col2:
+                    # Question type recommendations
+                    st.markdown("**Assessment Recommendations:**")
+                    total = len(df)
+                    mc_count = sum(count for qtype, count in type_counts.items() 
+                                 if 'multiple' in str(qtype).lower() or 'choice' in str(qtype).lower())
+                    
+                    if mc_count / total > 0.8:
+                        st.info("💡 Consider adding essay questions for deeper assessment")
+                    elif mc_count / total < 0.3:
+                        st.info("💡 Multiple choice questions can speed up grading")
+                    else:
+                        st.success("✅ Good mix of question types")
+            else:
+                st.info("No question type information available")
+        
+        st.markdown("---")
+        
+        # Points Analysis
+        if 'Points' in df.columns:
+            st.markdown("##### 🎯 **Point Distribution Analysis**")
+            
+            # Clean points data
+            points_data = pd.to_numeric(df['Points'], errors='coerce').dropna()
+            
+            if not points_data.empty:
+                points_col1, points_col2 = st.columns(2)
+                
+                with points_col1:
+                    st.markdown("**Point Statistics:**")
+                    st.write(f"• **Total Possible Points:** {points_data.sum()}")
+                    st.write(f"• **Average Points per Question:** {points_data.mean():.1f}")
+                    st.write(f"• **Point Range:** {points_data.min()} - {points_data.max()}")
+                    st.write(f"• **Most Common Point Value:** {points_data.mode().iloc[0] if not points_data.mode().empty else 'N/A'}")
+                
+                with points_col2:
+                    st.markdown("**Point Distribution:**")
+                    point_counts = points_data.value_counts().sort_index()
+                    for points, count in point_counts.items():
+                        percentage = (count / len(points_data)) * 100
+                        st.write(f"• **{points} points:** {count} questions ({percentage:.1f}%)")
+                
+                # Assessment planning insights
+                st.markdown("**📋 Assessment Planning Insights:**")
+                total_points = points_data.sum()
+                avg_points = points_data.mean()
+                
+                if total_points > 100:
+                    st.info(f"💡 High point total ({total_points}). Consider multiple assessments or scaling.")
+                elif total_points < 50:
+                    st.info(f"💡 Low point total ({total_points}). Good for quick assessments or quizzes.")
+                else:
+                    st.success(f"✅ Balanced point total ({total_points}) for standard assessment.")
+                
+                if avg_points > 5:
+                    st.info("💡 High average points per question. Consider detailed rubrics.")
+                elif avg_points < 1:
+                    st.info("💡 Low average points per question. Efficient for large assessments.")
+            else:
+                st.info("No valid point information available")
+        
+        # Course Planning Summary
+        st.markdown("---")
+        st.markdown("##### 🎓 **Course Planning Summary**")
+        
+        total_questions = len(df)
+        
+        # Generate planning recommendations
+        recommendations = []
+        
+        if total_questions < 20:
+            recommendations.append("📝 Small question set - ideal for quizzes or focused assessments")
+        elif total_questions < 100:
+            recommendations.append("📚 Medium question set - good for unit tests or midterm exams")
+        else:
+            recommendations.append("🏛️ Large question set - suitable for comprehensive final exams or question banks")
+        
+        if 'Topic' in df.columns:
+            topic_count = df['Topic'].nunique()
+            if topic_count > 5:
+                recommendations.append(f"🎯 {topic_count} topics covered - consider topic-based modules")
+            elif topic_count < 3:
+                recommendations.append(f"🎯 {topic_count} topics - focused content area")
+        
+        if 'Difficulty' in df.columns and len(df['Difficulty'].value_counts()) >= 3:
+            recommendations.append("⚡ Multiple difficulty levels - supports progressive learning")
+        
+        for rec in recommendations:
+            st.success(rec)
+        
+        # Export planning note
+        st.info("💡 **Planning Tip:** Use this analysis to plan your course structure, assessment distribution, and student progression path.")
 
     # ...existing code...
